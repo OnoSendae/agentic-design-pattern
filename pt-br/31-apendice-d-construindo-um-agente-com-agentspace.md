@@ -50,3 +50,15 @@ Esta abordagem abstrai a complexidade técnica subjacente, habilitando a constru
 
 1. Create a no-code agent with Agent Designer, [https://cloud.google.com/agentspace/agentspace-enterprise/docs/agent-designer](https://cloud.google.com/agentspace/agentspace-enterprise/docs/agent-designer)   
 2. Google Cloud Skills Boost, [https://www.cloudskillsboost.google/](https://www.cloudskillsboost.google/)
+
+[image1]: ../assets/30-appendix-d-image-1-line-54.png
+
+[image2]: ../assets/30-appendix-d-image-2-line-56.png
+
+[image3]: ../assets/30-appendix-d-image-3-line-58.png
+
+[image4]: ../assets/30-appendix-d-image-4-line-60.png
+
+[image5]: ../assets/30-appendix-d-image-5-line-62.png
+
+[image6]: ../assets/30-appendix-d-image-6-line-64.png

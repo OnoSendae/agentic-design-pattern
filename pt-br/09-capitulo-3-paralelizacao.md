@@ -92,8 +92,106 @@ A seguinte implementação demonstra um workflow de processamento paralelo const
 
 Os pré-requisitos para esta implementação incluem a instalação dos pacotes Python necessários, como langchain, langchain-community, e uma biblioteca de provedor de modelo como langchain-openai. Além disso, uma chave API válida para o modelo de linguagem escolhido deve ser configurada no ambiente local para autenticação.
 
-| ``import os import asyncio from typing import Optional from langchain_openai import ChatOpenAI from langchain_core.prompts import ChatPromptTemplate from langchain_core.output_parsers import StrOutputParser from langchain_core.runnables import Runnable, RunnableParallel, RunnablePassthrough # --- Configuração --- # Certifique-se de que sua variável de ambiente de chave API está definida (ex., OPENAI_API_KEY) try:    llm: Optional[ChatOpenAI] = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)    except Exception as e:    print(f"Erro ao inicializar modelo de linguagem: {e}")    llm = None # --- Definir Cadeias Independentes --- # Essas três cadeias representam tarefas distintas que podem ser executadas em paralelo. summarize_chain: Runnable = (    ChatPromptTemplate.from_messages([        ("system", "Resuma o seguinte tópico de forma concisa:"),        ("user", "{topic}")    ])    | llm    | StrOutputParser() ) questions_chain: Runnable = (    ChatPromptTemplate.from_messages([        ("system", "Gere três perguntas interessantes sobre o seguinte tópico:"),        ("user", "{topic}")    ])    | llm    | StrOutputParser() ) terms_chain: Runnable = (    ChatPromptTemplate.from_messages([        ("system", "Identifique 5-10 termos-chave do seguinte tópico, separados por vírgulas:"),        ("user", "{topic}")    ])    | llm    | StrOutputParser() ) # --- Construir a Cadeia Paralela + Síntese --- # 1. Definir o bloco de tarefas para executar em paralelo. Os resultados destas, #    junto com o tópico original, serão alimentados no próximo passo. map_chain = RunnableParallel(    {        "summary": summarize_chain,        "questions": questions_chain,        "key_terms": terms_chain,        "topic": RunnablePassthrough(),  # Passar o tópico original através    } ) # 2. Definir o prompt de síntese final que combinará os resultados paralelos. synthesis_prompt = ChatPromptTemplate.from_messages([    ("system", """Com base nas seguintes informações:     Resumo: {summary}     Perguntas Relacionadas: {questions}     Termos-Chave: {key_terms}     Sintetize uma resposta abrangente."""),    ("user", "Tópico original: {topic}") ]) # 3. Construir a cadeia completa canalizando os resultados paralelos diretamente #    no prompt de síntese, seguido pelo LLM e parser de saída. full_parallel_chain = map_chain | synthesis_prompt | llm | StrOutputParser() # --- Executar a Cadeia --- async def run_parallel_example(topic: str) -> None:    """    Invoca assincronamente a cadeia de processamento paralelo com um tópico específico    e imprime o resultado sintetizado.    Args:        topic: O tópico de entrada a ser processado pelas cadeias LangChain.    """    if not llm:        print("LLM não inicializado. Não é possível executar o exemplo.")        return    print(f"\n--- Executando Exemplo Paralelo LangChain para Tópico: '{topic}' ---")    try:        # A entrada para `ainvoke` é a única string 'topic',         # então passada para cada executável no `map_chain`.        response = await full_parallel_chain.ainvoke(topic)        print("\n--- Resposta Final ---")        print(response)    except Exception as e:        print(f"\nOcorreu um erro durante a execução da cadeia: {e}") if __name__ == "__main__":    test_topic = "A história da exploração espacial"    # Em Python 3.7+, asyncio.run é a maneira padrão de executar uma função async.    asyncio.run(run_parallel_example(test_topic))`` |
-| :---- |
+```python
+import os
+import asyncio
+from typing import Optional
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import Runnable, RunnableParallel, RunnablePassthrough
+
+# --- Configuração ---
+# Certifique-se de que sua variável de ambiente de chave API está definida (ex., OPENAI_API_KEY)
+try:
+    llm: Optional[ChatOpenAI] = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+except Exception as e:
+    print(f"Erro ao inicializar modelo de linguagem: {e}")
+    llm = None
+
+# --- Definir Cadeias Independentes ---
+# Essas três cadeias representam tarefas distintas que podem ser executadas em paralelo.
+summarize_chain: Runnable = (
+    ChatPromptTemplate.from_messages([
+        ("system", "Resuma o seguinte tópico de forma concisa:"),
+        ("user", "{topic}")
+    ])
+    | llm
+    | StrOutputParser()
+)
+
+questions_chain: Runnable = (
+    ChatPromptTemplate.from_messages([
+        ("system", "Gere três perguntas interessantes sobre o seguinte tópico:"),
+        ("user", "{topic}")
+    ])
+    | llm
+    | StrOutputParser()
+)
+
+terms_chain: Runnable = (
+    ChatPromptTemplate.from_messages([
+        ("system", "Identifique 5-10 termos-chave do seguinte tópico, separados por vírgulas:"),
+        ("user", "{topic}")
+    ])
+    | llm
+    | StrOutputParser()
+)
+
+# --- Construir a Cadeia Paralela + Síntese ---
+# 1. Definir o bloco de tarefas para executar em paralelo. Os resultados destas,
+# junto com o tópico original, serão alimentados no próximo passo.
+map_chain = RunnableParallel({
+    "summary": summarize_chain,
+    "questions": questions_chain,
+    "key_terms": terms_chain,
+    "topic": RunnablePassthrough(),  # Passar o tópico original através
+})
+
+# 2. Definir o prompt de síntese final que combinará os resultados paralelos.
+synthesis_prompt = ChatPromptTemplate.from_messages([
+    ("system", """Com base nas seguintes informações:
+Resumo: {summary}
+Perguntas Relacionadas: {questions}
+Termos-Chave: {key_terms}
+
+Sintetize uma resposta abrangente."""),
+    ("user", "Tópico original: {topic}")
+])
+
+# 3. Construir a cadeia completa canalizando os resultados paralelos diretamente
+# no prompt de síntese, seguido pelo LLM e parser de saída.
+full_parallel_chain = map_chain | synthesis_prompt | llm | StrOutputParser()
+
+# --- Executar a Cadeia ---
+async def run_parallel_example(topic: str) -> None:
+    """
+    Invoca assincronamente a cadeia de processamento paralelo com um tópico específico
+    e imprime o resultado sintetizado.
+    
+    Args:
+        topic: O tópico de entrada a ser processado pelas cadeias LangChain.
+    """
+    if not llm:
+        print("LLM não inicializado. Não é possível executar o exemplo.")
+        return
+    
+    print(f"\n--- Executando Exemplo Paralelo LangChain para Tópico: '{topic}' ---")
+    
+    try:
+        # A entrada para `ainvoke` é a única string 'topic',
+        # então passada para cada executável no `map_chain`.
+        response = await full_parallel_chain.ainvoke(topic)
+        print("\n--- Resposta Final ---")
+        print(response)
+    except Exception as e:
+        print(f"\nOcorreu um erro durante a execução da cadeia: {e}")
+
+if __name__ == "__main__":
+    test_topic = "A história da exploração espacial"
+    # Em Python 3.7+, asyncio.run é a maneira padrão de executar uma função async.
+    asyncio.run(run_parallel_example(test_topic))
+```
 
 O código Python fornecido implementa uma aplicação LangChain projetada para processar um tópico dado eficientemente aproveitando a execução paralela. Note que asyncio fornece concorrência, não paralelismo. Ele consegue isso em uma única thread usando um loop de eventos que muda inteligentemente entre tarefas quando uma está inativa (ex., aguardando uma solicitação de rede). Isso cria o efeito de múltiplas tarefas progredindo de uma vez, mas o código em si ainda está sendo executado por apenas uma thread, limitado pelo Global Interpreter Lock (GIL) do Python.
 
@@ -107,8 +205,119 @@ Em essência, este código configura um workflow onde múltiplas chamadas LLM (p
 
 Ok, vamos agora voltar nossa atenção para um exemplo concreto ilustrando esses conceitos dentro do framework Google ADK. Vamos examinar como as primitivas ADK, como ParallelAgent e SequentialAgent, podem ser aplicadas para construir um fluxo de agente que aproveita a execução concorrente para eficiência melhorada.
 
-| `from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent from google.adk.tools import google_search GEMINI_MODEL="gemini-2.0-flash" # --- 1. Definir Sub-Agentes Pesquisadores (para executar em paralelo) --- # Pesquisador 1: Energia Renovável researcher_agent_1 = LlmAgent(     name="RenewableEnergyResearcher",     model=GEMINI_MODEL,     instruction="""Você é um Assistente de Pesquisa em IA especializado em energia. Pesquise os últimos avanços em 'fontes de energia renovável'. Use a ferramenta Google Search fornecida. Resuma seus principais achados de forma concisa (1-2 frases). Saída *apenas* o resumo. """,     description="Pesquisa fontes de energia renovável.",     tools=[google_search],     # Armazenar resultado no estado para o agente de fusão     output_key="renewable_energy_result" ) # Pesquisador 2: Veículos Elétricos researcher_agent_2 = LlmAgent(     name="EVResearcher",     model=GEMINI_MODEL,     instruction="""Você é um Assistente de Pesquisa em IA especializado em transporte. Pesquise os últimos desenvolvimentos em 'tecnologia de veículos elétricos'. Use a ferramenta Google Search fornecida. Resuma seus principais achados de forma concisa (1-2 frases). Saída *apenas* o resumo. """,     description="Pesquisa tecnologia de veículos elétricos.",     tools=[google_search],     # Armazenar resultado no estado para o agente de fusão     output_key="ev_technology_result" ) # Pesquisador 3: Captura de Carbono researcher_agent_3 = LlmAgent(     name="CarbonCaptureResearcher",     model=GEMINI_MODEL,     instruction="""Você é um Assistente de Pesquisa em IA especializado em soluções climáticas. Pesquise o estado atual de 'métodos de captura de carbono'. Use a ferramenta Google Search fornecida. Resuma seus principais achados de forma concisa (1-2 frases). Saída *apenas* o resumo. """,     description="Pesquisa métodos de captura de carbono.",     tools=[google_search],     # Armazenar resultado no estado para o agente de fusão     output_key="carbon_capture_result" ) # --- 2. Criar o ParallelAgent (Executa pesquisadores concorrentemente) --- # Este agente orquestra a execução concorrente dos pesquisadores. # Ele termina uma vez que todos os pesquisadores tenham completado e armazenado seus resultados no estado. parallel_research_agent = ParallelAgent(     name="ParallelWebResearchAgent",     sub_agents=[researcher_agent_1, researcher_agent_2, researcher_agent_3],     description="Executa múltiplos agentes de pesquisa em paralelo para reunir informações." ) # --- 3. Definir o Agente de Fusão (Executa *após* os agentes paralelos) --- # Este agente toma os resultados armazenados no estado da sessão pelos agentes paralelos # e os sintetiza em uma única resposta estruturada com atribuições. merger_agent = LlmAgent(     name="SynthesisAgent",     model=GEMINI_MODEL,  # Ou potencialmente um modelo mais poderoso se necessário para síntese     instruction="""Você é um Assistente de IA responsável por combinar achados de pesquisa em um relatório estruturado. Sua tarefa principal é sintetizar os seguintes resumos de pesquisa, atribuindo claramente os achados às suas áreas de origem. Estruture sua resposta usando cabeçalhos para cada tópico. Certifique-se de que o relatório é coerente e integra os pontos-chave suavemente. **Crucialmente: Sua resposta inteira DEVE ser fundamentada *exclusivamente* nas informações fornecidas nos 'Resumos de Entrada' abaixo. NÃO adicione nenhum conhecimento externo, fatos, ou detalhes não presentes nesses resumos específicos.** **Resumos de Entrada:** *   **Energia Renovável:**     {renewable_energy_result} *   **Veículos Elétricos:**     {ev_technology_result} *   **Captura de Carbono:**     {carbon_capture_result} **Formato de Saída:** ## Resumo dos Recentes Avanços em Tecnologia Sustentável ### Achados de Energia Renovável (Baseado nos achados do RenewableEnergyResearcher) [Sintetize e elabore *apenas* no resumo de entrada de energia renovável fornecido acima.] ### Achados de Veículos Elétricos (Baseado nos achados do EVResearcher) [Sintetize e elabore *apenas* no resumo de entrada de VE fornecido acima.] ### Achados de Captura de Carbono (Baseado nos achados do CarbonCaptureResearcher) [Sintetize e elabore *apenas* no resumo de entrada de captura de carbono fornecido acima.] ### Conclusão Geral [Forneça uma declaração conclusiva breve (1-2 frases) que conecte *apenas* os achados apresentados acima.] Saída *apenas* o relatório estruturado seguindo este formato. Não inclua frases introdutórias ou conclusivas fora desta estrutura, e adira estritamente ao uso apenas do conteúdo de resumo de entrada fornecido. """,     description="Combina achados de pesquisa de agentes paralelos em um relatório estruturado e citado, estritamente fundamentado em entradas fornecidas.",     # Nenhuma ferramenta necessária para fusão     # Nenhuma output_key necessária aqui, pois sua resposta direta é a saída final da sequência ) # --- 4. Criar o SequentialAgent (Orquestra o fluxo geral) --- # Este é o agente principal que será executado. Ele primeiro executa o ParallelAgent # para popular o estado, e então executa o MergerAgent para produzir a saída final. sequential_pipeline_agent = SequentialAgent(     name="ResearchAndSynthesisPipeline",     # Executar pesquisa paralela primeiro, depois mesclar     sub_agents=[parallel_research_agent, merger_agent],     description="Coordena pesquisa paralela e sintetiza os resultados." ) root_agent = sequential_pipeline_agent` |
-| :---- |
+```python
+from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
+from google.adk.tools import google_search
+
+GEMINI_MODEL = "gemini-2.0-flash"
+
+# --- 1. Definir Sub-Agentes Pesquisadores (para executar em paralelo) ---
+
+# Pesquisador 1: Energia Renovável
+researcher_agent_1 = LlmAgent(
+    name="RenewableEnergyResearcher",
+    model=GEMINI_MODEL,
+    instruction="""Você é um Assistente de Pesquisa em IA especializado em energia.
+Pesquise os últimos avanços em 'fontes de energia renovável'.
+Use a ferramenta Google Search fornecida.
+Resuma seus principais achados de forma concisa (1-2 frases).
+Saída *apenas* o resumo.""",
+    description="Pesquisa fontes de energia renovável.",
+    tools=[google_search],
+    # Armazenar resultado no estado para o agente de fusão
+    output_key="renewable_energy_result"
+)
+
+# Pesquisador 2: Veículos Elétricos
+researcher_agent_2 = LlmAgent(
+    name="EVResearcher",
+    model=GEMINI_MODEL,
+    instruction="""Você é um Assistente de Pesquisa em IA especializado em transporte.
+Pesquise os últimos desenvolvimentos em 'tecnologia de veículos elétricos'.
+Use a ferramenta Google Search fornecida.
+Resuma seus principais achados de forma concisa (1-2 frases).
+Saída *apenas* o resumo.""",
+    description="Pesquisa tecnologia de veículos elétricos.",
+    tools=[google_search],
+    # Armazenar resultado no estado para o agente de fusão
+    output_key="ev_technology_result"
+)
+
+# Pesquisador 3: Captura de Carbono
+researcher_agent_3 = LlmAgent(
+    name="CarbonCaptureResearcher",
+    model=GEMINI_MODEL,
+    instruction="""Você é um Assistente de Pesquisa em IA especializado em soluções climáticas.
+Pesquise o estado atual de 'métodos de captura de carbono'.
+Use a ferramenta Google Search fornecida.
+Resuma seus principais achados de forma concisa (1-2 frases).
+Saída *apenas* o resumo.""",
+    description="Pesquisa métodos de captura de carbono.",
+    tools=[google_search],
+    # Armazenar resultado no estado para o agente de fusão
+    output_key="carbon_capture_result"
+)
+
+# --- 2. Criar o ParallelAgent (Executa pesquisadores concorrentemente) ---
+# Este agente orquestra a execução concorrente dos pesquisadores.
+# Ele termina uma vez que todos os pesquisadores tenham completado e armazenado seus resultados no estado.
+parallel_research_agent = ParallelAgent(
+    name="ParallelWebResearchAgent",
+    sub_agents=[researcher_agent_1, researcher_agent_2, researcher_agent_3],
+    description="Executa múltiplos agentes de pesquisa em paralelo para reunir informações."
+)
+
+# --- 3. Definir o Agente de Fusão (Executa *após* os agentes paralelos) ---
+# Este agente toma os resultados armazenados no estado da sessão pelos agentes paralelos
+# e os sintetiza em uma única resposta estruturada com atribuições.
+merger_agent = LlmAgent(
+    name="SynthesisAgent",
+    model=GEMINI_MODEL,  # Ou potencialmente um modelo mais poderoso se necessário para síntese
+    instruction="""Você é um Assistente de IA responsável por combinar achados de pesquisa em um relatório estruturado.
+Sua tarefa principal é sintetizar os seguintes resumos de pesquisa, atribuindo claramente os achados às suas áreas de origem.
+Estruture sua resposta usando cabeçalhos para cada tópico.
+Certifique-se de que o relatório é coerente e integra os pontos-chave suavemente.
+
+**Crucialmente: Sua resposta inteira DEVE ser fundamentada *exclusivamente* nas informações fornecidas nos 'Resumos de Entrada' abaixo. NÃO adicione nenhum conhecimento externo, fatos, ou detalhes não presentes nesses resumos específicos.**
+
+**Resumos de Entrada:**
+* **Energia Renovável:** {renewable_energy_result}
+* **Veículos Elétricos:** {ev_technology_result}
+* **Captura de Carbono:** {carbon_capture_result}
+
+**Formato de Saída:**
+## Resumo dos Recentes Avanços em Tecnologia Sustentável
+
+### Achados de Energia Renovável (Baseado nos achados do RenewableEnergyResearcher)
+[Sintetize e elabore *apenas* no resumo de entrada de energia renovável fornecido acima.]
+
+### Achados de Veículos Elétricos (Baseado nos achados do EVResearcher)
+[Sintetize e elabore *apenas* no resumo de entrada de VE fornecido acima.]
+
+### Achados de Captura de Carbono (Baseado nos achados do CarbonCaptureResearcher)
+[Sintetize e elabore *apenas* no resumo de entrada de captura de carbono fornecido acima.]
+
+### Conclusão Geral
+[Forneça uma declaração conclusiva breve (1-2 frases) que conecte *apenas* os achados apresentados acima.]
+
+Saída *apenas* o relatório estruturado seguindo este formato. Não inclua frases introdutórias ou conclusivas fora desta estrutura, e adira estritamente ao uso apenas do conteúdo de resumo de entrada fornecido.""",
+    description="Combina achados de pesquisa de agentes paralelos em um relatório estruturado e citado, estritamente fundamentado em entradas fornecidas.",
+    # Nenhuma ferramenta necessária para fusão
+    # Nenhuma output_key necessária aqui, pois sua resposta direta é a saída final da sequência
+)
+
+# --- 4. Criar o SequentialAgent (Orquestra o fluxo geral) ---
+# Este é o agente principal que será executado. Ele primeiro executa o ParallelAgent
+# para popular o estado, e então executa o MergerAgent para produzir a saída final.
+sequential_pipeline_agent = SequentialAgent(
+    name="ResearchAndSynthesisPipeline",
+    # Executar pesquisa paralela primeiro, depois mesclar
+    sub_agents=[parallel_research_agent, merger_agent],
+    description="Coordena pesquisa paralela e sintetiza os resultados."
+)
+
+root_agent = sequential_pipeline_agent
+```
 
 Este código define um sistema multi-agente usado para pesquisar e sintetizar informações sobre avanços em tecnologia sustentável. Ele configura três instâncias LlmAgent para atuar como pesquisadores especializados. ResearcherAgent_1 foca em fontes de energia renovável, ResearcherAgent_2 pesquisa tecnologia de veículos elétricos, e ResearcherAgent_3 investiga métodos de captura de carbono. Cada agente pesquisador é configurado para usar um GEMINI_MODEL e a ferramenta google_search. Eles são instruídos a resumir seus achados de forma concisa (1-2 frases) e armazenar esses resumos no estado da sessão usando output_key.
 
@@ -159,3 +368,7 @@ Aqui estão alguns recursos para leitura adicional sobre o padrão de Paraleliza
 1. Documentação da LangChain Expression Language (LCEL) (Paralelismo): [https://python.langchain.com/docs/concepts/lcel/](https://python.langchain.com/docs/concepts/lcel/)   
 2. Documentação do Google Agent Developer Kit (ADK) (Sistemas Multi-Agente): [https://google.github.io/adk-docs/agents/multi-agents/](https://google.github.io/adk-docs/agents/multi-agents/)  
 3. Documentação do Python asyncio: [https://docs.python.org/3/library/asyncio.html](https://docs.python.org/3/library/asyncio.html)
+
+[image1]: ../assets/08-chapter-3-image-1-line-168.png
+
+[image2]: ../assets/08-chapter-3-image-2-line-170.png

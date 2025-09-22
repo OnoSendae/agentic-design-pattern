@@ -41,8 +41,44 @@ Em resumo, este padrão é fundamental para construir agentes que são não apen
 
 Tratamento de exceções e recuperação são vitais para robustez e confiabilidade do sistema. Considere, por exemplo, a resposta de um agente a uma chamada de ferramenta falhada. Tais falhas podem surgir de entrada incorreta de ferramenta ou questões com um serviço externo do qual a ferramenta depende.
 
-| `from google.adk.agents import Agent, SequentialAgent # Agente 1: Tenta a ferramenta primária. Seu foco é estreito e claro. primary_handler = Agent(    name="primary_handler",    model="gemini-2.0-flash-exp",    instruction=""" Seu trabalho é obter informação de localização precisa. Use a ferramenta get_precise_location_info com o endereço fornecido pelo usuário.    """,    tools=[get_precise_location_info] ) # Agente 2: Atua como o manipulador de fallback, verificando estado para decidir sua ação. fallback_handler = Agent(    name="fallback_handler",    model="gemini-2.0-flash-exp",    instruction=""" Verifique se a busca de localização primária falhou olhando em state["primary_location_failed"]. - Se for True, extraia a cidade da consulta original do usuário e use a ferramenta get_general_area_info. - Se for False, não faça nada.    """,    tools=[get_general_area_info] ) # Agente 3: Apresenta o resultado final do estado. response_agent = Agent(    name="response_agent",    model="gemini-2.0-flash-exp",    instruction=""" Revise a informação de localização armazenada em state["location_result"]. Apresente esta informação de forma clara e concisa ao usuário. Se state["location_result"] não existir ou estiver vazio, peça desculpas que você não pôde recuperar a localização.    """,    tools=[] # Este agente apenas raciocina sobre o estado final. ) # O SequentialAgent garante que os manipuladores executem em uma ordem garantida. robust_location_agent = SequentialAgent(    name="robust_location_agent",    sub_agents=[primary_handler, fallback_handler, response_agent] )` |
-| :---- |
+```python
+from google.adk.agents import Agent, SequentialAgent
+
+# Agente 1: Tenta a ferramenta primária. Seu foco é estreito e claro.
+primary_handler = Agent(
+    name="primary_handler",
+    model="gemini-2.0-flash-exp",
+    instruction="""Seu trabalho é obter informação de localização precisa.
+Use a ferramenta get_precise_location_info com o endereço fornecido pelo usuário.""",
+    tools=[get_precise_location_info]
+)
+
+# Agente 2: Atua como o manipulador de fallback, verificando estado para decidir sua ação.
+fallback_handler = Agent(
+    name="fallback_handler",
+    model="gemini-2.0-flash-exp",
+    instruction="""Verifique se a busca de localização primária falhou olhando em state["primary_location_failed"].
+- Se for True, extraia a cidade da consulta original do usuário e use a ferramenta get_general_area_info.
+- Se for False, não faça nada.""",
+    tools=[get_general_area_info]
+)
+
+# Agente 3: Apresenta o resultado final do estado.
+response_agent = Agent(
+    name="response_agent",
+    model="gemini-2.0-flash-exp",
+    instruction="""Revise a informação de localização armazenada em state["location_result"].
+Apresente esta informação de forma clara e concisa ao usuário.
+Se state["location_result"] não existir ou estiver vazio, peça desculpas que você não pôde recuperar a localização.""",
+    tools=[]  # Este agente apenas raciocina sobre o estado final.
+)
+
+# O SequentialAgent garante que os manipuladores executem em uma ordem garantida.
+robust_location_agent = SequentialAgent(
+    name="robust_location_agent",
+    sub_agents=[primary_handler, fallback_handler, response_agent]
+)
+```
 
 Este código define um sistema robusto de recuperação de localização usando um SequentialAgent do ADK com três sub-agentes. O primary_handler é o primeiro agente, tentando obter informação de localização precisa usando a ferramenta get_precise_location_info. O fallback_handler atua como backup, verificando se a busca primária falhou inspecionando uma variável de estado. Se a busca primária falhou, o agente de fallback extrai a cidade da consulta do usuário e usa a ferramenta get_general_area_info. O response_agent é o agente final na sequência. Ele revisa a informação de localização armazenada no estado. Este agente é projetado para apresentar o resultado final ao usuário. Se nenhuma informação de localização foi encontrada, ele se desculpa. O SequentialAgent garante que estes três agentes executem em uma ordem pré-definida. Esta estrutura permite uma abordagem em camadas para recuperação de informação de localização.
 
@@ -80,3 +116,7 @@ Este capítulo explora o padrão de Tratamento de Exceções e Recuperação, qu
 1. McConnell, S. (2004). *Code Complete (2nd ed.)*. Microsoft Press.   
 2. Shi, Y., Pei, H., Feng, L., Zhang, Y., & Yao, D. (2024). *Towards Fault Tolerance in Multi-Agent Reinforcement Learning*. arXiv preprint arXiv:2412.00534.   
 3. O'Neill, V. (2022). *Improving Fault Tolerance and Reliability of Heterogeneous Multi-Agent IoT Systems Using Intelligence Transfer*. Electronics, 11(17), 2724\. 
+
+[image1]: ../assets/17-chapter-12-image-1-line-84.png
+
+[image2]: ../assets/17-chapter-12-image-2-line-86.png

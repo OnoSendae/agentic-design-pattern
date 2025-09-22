@@ -42,8 +42,41 @@ Este padrão exemplifica um método prático para implementação de IA. Ele apr
 
 Para demonstrar o padrão Human-in-the-Loop, um agente ADK pode identificar cenários requerendo revisão humana e iniciar um processo de escalação. Isto permite intervenção humana em situações onde as capacidades de tomada de decisão autônoma do agente são limitadas ou quando julgamentos complexos são necessários. Isto não é uma funcionalidade isolada; outros frameworks populares adotaram capacidades similares. LangChain, por exemplo, também fornece ferramentas para implementar estes tipos de interações.
 
-| `from google.adk.agents import Agent from google.adk.tools.tool_context import ToolContext from google.adk.callbacks import CallbackContext from google.adk.models.llm import LlmRequest from google.genai import types from typing import Optional # Placeholder para ferramentas (substituir com implementações reais se necessário) def troubleshoot_issue(issue: str) -> dict:    return {"status": "success", "report": f"Passos de solução de problemas para {issue}."} def create_ticket(issue_type: str, details: str) -> dict:    return {"status": "success", "ticket_id": "TICKET123"} def escalate_to_human(issue_type: str) -> dict:    # Isto normalmente transferiria para uma fila humana em um sistema real    return {"status": "success", "message": f"Escalado {issue_type} para um especialista humano."} technical_support_agent = Agent(    name="technical_support_specialist",    model="gemini-2.0-flash-exp",    instruction=""" Você é um especialista de suporte técnico para nossa empresa de eletrônicos. PRIMEIRO, verifique se o usuário tem um histórico de suporte em state["customer_info"]["support_history"]. Se tiver, referencie este histórico em suas respostas. Para questões técnicas: 1. Use a ferramenta troubleshoot_issue para analisar o problema. 2. Guie o usuário através de passos básicos de solução de problemas. 3. Se a questão persistir, use create_ticket para registrar a questão. Para questões complexas além de solução de problemas básicos: 1. Use escalate_to_human para transferir para um especialista humano. Mantenha um tom profissional mas empático. Reconheça a frustração que questões técnicas podem causar, enquanto fornece passos claros em direção à resolução. """,    tools=[troubleshoot_issue, create_ticket, escalate_to_human] ) def personalization_callback(    callback_context: CallbackContext, llm_request: LlmRequest ) -> Optional[LlmRequest]:    """Adiciona informação de personalização à solicitação LLM."""    # Obter informação do cliente do estado    customer_info = callback_context.state.get("customer_info")    if customer_info:        customer_name = customer_info.get("name", "cliente valorizado")        customer_tier = customer_info.get("tier", "standard")        recent_purchases = customer_info.get("recent_purchases", [])        personalization_note = (            f"\nPERSONALIZAÇÃO IMPORTANTE:\n"            f"Nome do Cliente: {customer_name}\n"            f"Tier do Cliente: {customer_tier}\n"        )        if recent_purchases:            personalization_note += f"Compras Recentes: {', '.join(recent_purchases)}\n"        if llm_request.contents:            # Adicionar como uma mensagem de sistema antes do primeiro conteúdo            system_content = types.Content(                role="system", parts=[types.Part(text=personalization_note)]            )            llm_request.contents.insert(0, system_content)    return None # Retornar None para continuar com a solicitação modificada` |
-| :---- |
+```python
+from google.adk.agents import Agent
+from google.adk.tools.tool_context import ToolContext
+from google.adk.callbacks import CallbackContext
+from google.adk.models.llm import LlmRequest
+from google.genai import types
+from typing import Optional
+
+# Placeholder para ferramentas (substituir com implementações reais se necessário)
+def troubleshoot_issue(issue: str) -> dict:
+    return {
+        "status": "success",
+        "report": f"Passos de solução de problemas para {issue}."
+    }
+
+def create_ticket(issue_type: str, details: str) -> dict:
+    return {
+        "status": "success",
+        "ticket_id": "TICKET123"
+    }
+
+def escalate_to_human(issue_type: str) -> dict:
+    # Isto normalmente transferiria para uma fila humana em um sistema real
+    return {
+        "status": "success",
+        "message": f"Escalado {issue_type} para um especialista humano."
+    }
+technical_support_agent = Agent( name="technical_support_specialist", model="gemini-2.0-flash-exp", instruction=""" Você é um especialista de suporte técnico para nossa empresa de eletrônicos. PRIMEIRO, verifique se o usuário tem um histórico de suporte em state["customer_info"]["support_history"]. Se tiver, referencie este histórico em suas respostas. Para questões técnicas: 1. Use a ferramenta troubleshoot_issue para analisar o problema. 2. Guie o usuário através de passos básicos de solução de problemas. 3. Se a questão persistir, use create_ticket para registrar a questão. Para questões complexas além de solução de problemas básicos: 1. Use escalate_to_human para transferir para um especialista humano. Mantenha um tom profissional mas empático. Reconheça a frustração que questões técnicas podem causar, enquanto fornece passos claros em direção à resolução. """, tools=[troubleshoot_issue, create_ticket, escalate_to_human] ) def personalization_callback( callback_context: CallbackContext, llm_request: LlmRequest ) -> Optional[LlmRequest]: """Adiciona informação de personalização à solicitação LLM.""" # Obter informação do cliente do estado customer_info = callback_context.state.get("customer_info") if customer_info: customer_name = customer_info.get("name", "cliente valorizado") customer_tier = customer_info.get("tier", "standard") recent_purchases = customer_info.get("recent_purchases", []) personalization_note = ( f"\nPERSONALIZAÇÃO IMPORTANTE:\n" f"Nome do Cliente:  {
+customer_name}
+\n" f"Tier do Cliente:  {
+customer_tier}
+\n" ) if recent_purchases: personalization_note += f"Compras Recentes:  {
+', '.join(recent_purchases)}
+\n" if llm_request.contents: # Adicionar como uma mensagem de sistema antes do primeiro conteúdo system_content = types.Content( role="system", parts=[types.Part(text=personalization_note)] ) llm_request.contents.insert(0, system_content) return None # Retornar None para continuar com a solicitação modificada
+```
 
 Este código oferece um modelo para criar um agente de suporte técnico usando o ADK do Google, projetado em torno de um framework HITL. O agente atua como uma primeira linha inteligente de suporte, configurado com instruções específicas e equipado com ferramentas como troubleshoot_issue, create_ticket e escalate_to_human para gerenciar um fluxo de trabalho de suporte completo. A ferramenta de escalação é uma parte central do design HITL, garantindo que casos complexos ou sensíveis sejam passados para especialistas humanos.
 
@@ -82,3 +115,5 @@ Este capítulo explorou o padrão vital Human-in-the-Loop (HITL), enfatizando se
 # Referências
 
 1. A Survey of Human-in-the-loop for Machine Learning, Xingjiao Wu, Luwei Xiao, Yixuan Sun, Junhang Zhang, Tianlong Ma, Liang He, [https://arxiv.org/abs/2108.00941](https://arxiv.org/abs/2108.00941)
+
+[image1]: ../assets/18-chapter-13-image-1-line-86.png

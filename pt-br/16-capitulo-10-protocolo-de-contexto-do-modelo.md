@@ -86,25 +86,73 @@ Esta seção descreve como conectar a um servidor MCP local que fornece operaç�
 
 Para configurar um agente para interação com sistema de arquivos, um arquivo `agent.py` deve ser criado (ex., em `./adk_agent_samples/mcp_agent/agent.py`). O `MCPToolset` é instanciado dentro da lista `tools` do objeto `LlmAgent`. É crucial substituir `"/path/to/your/folder"` na lista `args` pelo caminho absoluto para um diretório no sistema local que o servidor MCP pode acessar. Este diretório será a raiz para as operações de sistema de arquivos executadas pelo agente.
 
-| `import os from google.adk.agents import LlmAgent from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters # Criar um caminho absoluto confiável para uma pasta nomeada 'mcp_managed_files' # dentro do mesmo diretório deste script de agente. # Isso garante que o agente funcione out-of-the-box para demonstração. # Para produção, você apontaria isso para um local mais persistente e seguro. TARGET_FOLDER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_managed_files") # Garantir que o diretório alvo existe antes do agente precisar dele. os.makedirs(TARGET_FOLDER_PATH, exist_ok=True) root_agent = LlmAgent(    model='gemini-2.0-flash',    name='filesystem_assistant_agent',    instruction=(        'Ajude o usuário a gerenciar seus arquivos. Você pode listar arquivos, ler arquivos e escrever arquivos. '        f'Você está operando no seguinte diretório: {TARGET_FOLDER_PATH}'    ),    tools=[        MCPToolset(            connection_params=StdioServerParameters(                command='npx',                args=[                    "-y",  # Argumento para npx auto-confirmar instalação                    "@modelcontextprotocol/server-filesystem",                    # Isto DEVE ser um caminho absoluto para uma pasta.                    TARGET_FOLDER_PATH,                ],            ),            # Opcional: Você pode filtrar quais ferramentas do servidor MCP são expostas.            # Por exemplo, para apenas permitir leitura:            # tool_filter=['list_directory', 'read_file']        )    ], )` |
-| :---- |
+```python
+import os
+from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
+
+# Criar um caminho absoluto confiável para uma pasta nomeada 'mcp_managed_files'
+# dentro do mesmo diretório deste script de agente.
+# Isso garante que o agente funcione out-of-the-box para demonstração.
+# Para produção, você apontaria isso para um local mais persistente e seguro.
+TARGET_FOLDER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_managed_files")
+
+# Garantir que o diretório alvo existe antes do agente precisar dele.
+os.makedirs(TARGET_FOLDER_PATH, exist_ok=True)
+
+root_agent = LlmAgent(
+    model='gemini-2.0-flash',
+    name='filesystem_assistant_agent',
+    instruction=(
+        'Ajude o usuário a gerenciar seus arquivos. Você pode listar arquivos, ler arquivos e escrever arquivos. '
+        f'Você está operando no seguinte diretório: {TARGET_FOLDER_PATH}'
+    ),
+    tools=[
+        MCPToolset(
+            connection_params=StdioServerParameters(
+                command='npx',
+                args=[
+                    "-y",  # Argumento para npx auto-confirmar instalação
+                    "@modelcontextprotocol/server-filesystem",
+                    # Isto DEVE ser um caminho absoluto para uma pasta.
+                    TARGET_FOLDER_PATH,
+                ],
+            ),
+            # Opcional: Você pode filtrar quais ferramentas do servidor MCP são expostas.
+            # Por exemplo, para apenas permitir leitura:
+            # tool_filter=['list_directory', 'read_file']
+        )
+    ],
+)
+```
 
 `npx` (Node Package Execute), empacotado com versões npm (Node Package Manager) 5.2.0 e posteriores, é uma utilidade que permite execução direta de pacotes Node.js do registro npm. Isso elimina a necessidade de instalação global. Em essência, `npx` serve como um executor de pacote npm, e é comumente usado para executar muitos servidores MCP da comunidade, que são distribuídos como pacotes Node.js.
 
 Criar um arquivo `__init__.py` é necessário para garantir que o arquivo agent.py seja reconhecido como parte de um pacote Python descobrível para o Agent Development Kit (ADK). Este arquivo deve residir no mesmo diretório que agent.py.
 
-| `# ./adk_agent_samples/mcp_agent/__init__.py from . import agent` |
-| :---- |
+```python
+# ./adk_agent_samples/mcp_agent/__init__.py from . import agent
+```
 
 Certamente, outros comandos suportados estão disponíveis para uso. Por exemplo, conectar ao python3 pode ser alcançado da seguinte forma:
 
-| `connection_params = StdioConnectionParams(  server_params={      "command": "python3",      "args": ["./agent/mcp_server.py"],      "env": {        "SERVICE_ACCOUNT_PATH":SERVICE_ACCOUNT_PATH,        "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID      }  } )` |
-| :---- |
+```python
+connection_params = StdioConnectionParams( server_params= {
+"command": "python3", "args": ["./agent/mcp_server.py"], "env":  {
+"SERVICE_ACCOUNT_PATH":SERVICE_ACCOUNT_PATH, "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID }
+}
+)
+```
 
 UVX, no contexto de Python, refere-se a uma ferramenta de linha de comando que utiliza uv para executar comandos em um ambiente Python temporário e isolado. Essencialmente, permite que você execute ferramentas e pacotes Python sem precisar instalá-los globalmente ou dentro do ambiente do seu projeto. Você pode executá-lo via servidor MCP.
 
-| `connection_params = StdioConnectionParams(  server_params={    "command": "uvx",    "args": ["mcp-google-sheets@latest"],    "env": {      "SERVICE_ACCOUNT_PATH":SERVICE_ACCOUNT_PATH,      "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID    }  } )` |
-| :---- |
+```text
+connection_params = StdioConnectionParams( server_params= {
+"command": "uvx", "args": ["mcp-google-sheets@latest"], "env":  {
+"SERVICE_ACCOUNT_PATH":SERVICE_ACCOUNT_PATH, "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID }
+}
+)
+```
 
 Uma vez que o Servidor MCP é criado, o próximo passo é conectar a ele.
 
@@ -112,8 +160,9 @@ Uma vez que o Servidor MCP é criado, o próximo passo é conectar a ele.
 
 Para começar, execute 'adk web'. Navegue até o diretório pai de mcp_agent (ex., adk_agent_samples) no seu terminal e execute:
 
-| `cd ./adk_agent_samples # Ou seu diretório pai equivalente adk web` |
-| :---- |
+```bash
+cd ./adk_agent_samples # Ou seu diretório pai equivalente adk web
+```
 
 Uma vez que a UI ADK Web carregou no seu navegador, selecione o `filesystem_assistant_agent` do menu de agentes. Em seguida, experimente com prompts como:
 
@@ -133,8 +182,11 @@ Além da criação básica de ferramentas, FastMCP facilita padrões arquitetura
 
 ## Para ilustrar, considere uma ferramenta básica "greet" fornecida pelo servidor. Agentes ADK e outros clientes MCP podem interagir com esta ferramenta usando HTTP uma vez que ela esteja ativa.
 
-| `# fastmcp_server.py # Este script demonstra como criar um servidor MCP simples usando FastMCP. # Ele expõe uma única ferramenta que gera uma saudação. # 1. Certifique-se de ter o FastMCP instalado: # pip install fastmcp from fastmcp import FastMCP, Client # Inicializar o servidor FastMCP. mcp_server = FastMCP() # Definir uma função de ferramenta simples. # O decorador `@mcp_server.tool` registra esta função Python como uma ferramenta MCP. # A docstring torna-se a descrição da ferramenta para o LLM. @mcp_server.tool def greet(name: str) -> str:     """     Gera uma saudação personalizada.     Args:         name: O nome da pessoa a cumprimentar.     Returns:         Uma string de saudação.     """     return f"Olá, {name}! Prazer em conhecê-lo." # Ou se você quiser executá-lo a partir do script: if __name__ == "__main__":     mcp_server.run(         transport="http",         host="127.0.0.1",         port=8000     )` |
-| :---- |
+```python
+# fastmcp_server.py # Este script demonstra como criar um servidor MCP simples usando FastMCP. # Ele expõe uma única ferramenta que gera uma saudação. # 1. Certifique-se de ter o FastMCP instalado: # pip install fastmcp from fastmcp import FastMCP, Client # Inicializar o servidor FastMCP. mcp_server = FastMCP() # Definir uma função de ferramenta simples. # O decorador `@mcp_server.tool` registra esta função Python como uma ferramenta MCP. # A docstring torna-se a descrição da ferramenta para o LLM. @mcp_server.tool def greet(name: str) -> str: """ Gera uma saudação personalizada. Args: name: O nome da pessoa a cumprimentar. Returns: Uma string de saudação. """ return f"Olá,  {
+name}
+! Prazer em conhecê-lo." # Ou se você quiser executá-lo a partir do script: if __name__ == "__main__": mcp_server.run( transport="http", host="127.0.0.1", port=8000 )
+```
 
 Este script Python define uma única função chamada greet, que toma o nome de uma pessoa e retorna uma saudação personalizada. O decorador @tool() acima desta função automaticamente a registra como uma ferramenta que uma IA ou outro programa pode usar. A string de documentação da função e dicas de tipo são usadas pelo FastMCP para dizer ao Agente como a ferramenta funciona, que entradas ela precisa e o que retornará.
 
@@ -148,8 +200,9 @@ Um parâmetro tool_filter pode ser incluído para restringir o uso de ferramenta
 
 Para estabelecer esta configuração, um arquivo de agente (ex., agent.py localizado em ./adk_agent_samples/fastmcp_client_agent/) é requerido. Este arquivo instanciará um agente ADK e usará HttpServerParameters para estabelecer uma conexão com o servidor FastMCP operacional.
 
-| `# ./adk_agent_samples/fastmcp_client_agent/agent.py import os from google.adk.agents import LlmAgent from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, HttpServerParameters # Definir o endereço do servidor FastMCP. # Certifique-se de que seu fastmcp_server.py (definido anteriormente) esteja executando nesta porta. FASTMCP_SERVER_URL = "http://localhost:8000" root_agent = LlmAgent(    model='gemini-2.0-flash', # Ou seu modelo preferido    name='fastmcp_greeter_agent',    instruction='Você é um assistente amigável que pode cumprimentar pessoas pelo nome. Use a ferramenta "greet".',    tools=[        MCPToolset(            connection_params=HttpServerParameters(                url=FASTMCP_SERVER_URL,            ),            # Opcional: Filtrar quais ferramentas do servidor MCP são expostas            # Para este exemplo, esperamos apenas 'greet'            tool_filter=['greet']        )    ], )` |
-| :---- |
+```python
+# ./adk_agent_samples/fastmcp_client_agent/agent.py import os from google.adk.agents import LlmAgent from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, HttpServerParameters # Definir o endereço do servidor FastMCP. # Certifique-se de que seu fastmcp_server.py (definido anteriormente) esteja executando nesta porta. FASTMCP_SERVER_URL = "http://localhost:8000" root_agent = LlmAgent( model='gemini-2.0-flash', # Ou seu modelo preferido name='fastmcp_greeter_agent', instruction='Você é um assistente amigável que pode cumprimentar pessoas pelo nome. Use a ferramenta "greet".', tools=[ MCPToolset( connection_params=HttpServerParameters( url=FASTMCP_SERVER_URL, ), # Opcional: Filtrar quais ferramentas do servidor MCP são expostas # Para este exemplo, esperamos apenas 'greet' tool_filter=['greet'] ) ], )
+```
 
 O script define um Agente nomeado fastmcp_greeter_agent que usa um modelo de linguagem Gemini. Ele recebe uma instrução específica para atuar como um assistente amigável cujo propósito é cumprimentar pessoas. Crucialmente, o código equipa este agente com uma ferramenta para executar sua tarefa. Ele configura um MCPToolset para conectar a um servidor separado executando em localhost:8000, que espera ser o servidor FastMCP do exemplo anterior. O agente é especificamente concedido acesso à ferramenta greet hospedada naquele servidor. Em essência, este código configura o lado cliente do sistema, criando um agente inteligente que entende que seu objetivo é cumprimentar pessoas e sabe exatamente qual ferramenta externa usar para realizá-lo.
 
@@ -190,3 +243,5 @@ O Protocolo de Contexto do Modelo (MCP) é um padrão aberto que facilita comuni
 2. FastMCP Documentation. FastMCP. [https://github.com/jlowin/fastmcp](https://github.com/jlowin/fastmcp)  
 3. MCP Tools for Genmedia Services. *MCP Tools for Genmedia Services*. [https://google.github.io/adk-docs/mcp/#mcp-servers-for-google-cloud-genmedia](https://google.github.io/adk-docs/mcp/#mcp-servers-for-google-cloud-genmedia)  
 4. MCP Toolbox for Databases Documentation. (Latest). *MCP Toolbox for Databases*. [https://google.github.io/adk-docs/mcp/databases/](https://google.github.io/adk-docs/mcp/databases/)
+
+[image1]: ../assets/15-chapter-10-image-1-line-194.png

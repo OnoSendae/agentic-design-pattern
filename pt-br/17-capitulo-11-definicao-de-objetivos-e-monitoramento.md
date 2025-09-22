@@ -31,13 +31,106 @@ Ele emprega um padrão de "definição de objetivos e monitoramento" onde não a
 
  **Dependências**: 
 
-| `pip install langchain_openai openai python-dotenv .env file with key in OPENAI_API_KEY` |
-| :---- |
+```python
+pip install langchain_openai openai python-dotenv .env file with key in OPENAI_API_KEY
+```
 
 Você pode entender melhor este script imaginando-o como um programador de IA autônomo designado para um projeto (consulte Fig. 1). O processo começa quando você entrega à IA um brief detalhado do projeto, que é o problema específico de codificação que ela precisa resolver.
 
-| `# MIT License # Copyright (c) 2025 Mahtab Syed # https://www.linkedin.com/in/mahtabsyed/ """ Exemplo de Código Hands-On - Iteração 2 - Para ilustrar o padrão de Definição de Objetivos e Monitoramento, temos um exemplo usando APIs LangChain e OpenAI: Objetivo: Construir um Agente de IA que pode escrever código para um caso de uso especificado baseado em objetivos especificados: - Aceita um problema de codificação (caso de uso) em código ou pode ser como entrada. - Aceita uma lista de objetivos (ex., "simples", "testado", "lida com casos extremos") em código ou pode ser entrada. - Usa um LLM (como GPT-4o) para gerar e refinar código Python até que os objetivos sejam atingidos. (Estou usando máx 5 iterações, isso poderia ser baseado em um objetivo definido também) - Para verificar se atingimos nossos objetivos estou pedindo ao LLM para julgar isso e responder apenas True ou False que torna mais fácil parar as iterações. - Salva o código final em um arquivo .py com um nome de arquivo limpo e um comentário de cabeçalho. """ import os import random import re from pathlib import Path from langchain_openai import ChatOpenAI from dotenv import load_dotenv, find_dotenv # 🔐 Carregar variáveis de ambiente _ = load_dotenv(find_dotenv()) OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") if not OPENAI_API_KEY:    raise EnvironmentError("❌ Por favor, defina a variável de ambiente OPENAI_API_KEY.") # ✅ Inicializar modelo OpenAI print("📡 Inicializando LLM OpenAI (gpt-4o)...") llm = ChatOpenAI(    model="gpt-4o", # Se você não tem acesso ao got-4o use outros LLMs OpenAI    temperature=0.3,    openai_api_key=OPENAI_API_KEY, ) # --- Funções Utilitárias --- def generate_prompt(    use_case: str, goals: list[str], previous_code: str = "", feedback: str = "" ) -> str:    print("📝 Construindo prompt para geração de código...")    base_prompt = f""" Você é um agente de codificação de IA. Seu trabalho é escrever código Python baseado no seguinte caso de uso: Caso de Uso: {use_case} Seus objetivos são: {chr(10).join(f"- {g.strip()}" for g in goals)} """    if previous_code:        print("🔄 Adicionando código anterior ao prompt para refinamento.")        base_prompt += f"\nCódigo previamente gerado:\n{previous_code}"    if feedback:        print("📋 Incluindo feedback para revisão.")        base_prompt += f"\nFeedback na versão anterior:\n{feedback}\n"    base_prompt += "\nPor favor, retorne apenas o código Python revisado. Não inclua comentários ou explicações fora do código."    return base_prompt def get_code_feedback(code: str, goals: list[str]) -> str:    print("🔍 Avaliando código contra os objetivos...")    feedback_prompt = f""" Você é um revisor de código Python. Um snippet de código é mostrado abaixo. Baseado nos seguintes objetivos: {chr(10).join(f"- {g.strip()}" for g in goals)} Por favor, critique este código e identifique se os objetivos são atendidos. Mencione se melhorias são necessárias para clareza, simplicidade, correção, tratamento de casos extremos, ou cobertura de testes. Código: {code} """    return llm.invoke(feedback_prompt) def goals_met(feedback_text: str, goals: list[str]) -> bool:    """    Usa o LLM para avaliar se os objetivos foram atingidos baseado no texto de feedback.    Retorna True ou False (parseado da saída do LLM).    """    review_prompt = f""" Você é um revisor de IA. Aqui estão os objetivos: {chr(10).join(f"- {g.strip()}" for g in goals)} Aqui está o feedback no código: \"\"\" {feedback_text} \"\"\" Baseado no feedback acima, os objetivos foram atingidos? Responda com apenas uma palavra: True ou False. """    response = llm.invoke(review_prompt).content.strip().lower()    return response == "true" def clean_code_block(code: str) -> str:    lines = code.strip().splitlines()    if lines and lines[0].strip().startswith("```"):        lines = lines[1:]    if lines and lines[-1].strip() == "```":        lines = lines[:-1]    return "\n".join(lines).strip() def add_comment_header(code: str, use_case: str) -> str:    comment = f"# Este programa Python implementa o seguinte caso de uso:\n# {use_case.strip()}\n"    return comment + "\n" + code def to_snake_case(text: str) -> str:    text = re.sub(r"[^a-zA-Z0-9 ]", "", text)    return re.sub(r"\s+", "_", text.strip().lower()) def save_code_to_file(code: str, use_case: str) -> str:    print("💾 Salvando código final no arquivo...")    summary_prompt = (        f"Resuma o seguinte caso de uso em uma única palavra ou frase em minúsculas, "        f"não mais que 10 caracteres, adequada para um nome de arquivo Python:\n\n{use_case}"    )    raw_summary = llm.invoke(summary_prompt).content.strip()    short_name = re.sub(r"[^a-zA-Z0-9_]", "", raw_summary.replace(" ", "_").lower())[:10]    random_suffix = str(random.randint(1000, 9999))    filename = f"{short_name}_{random_suffix}.py"    filepath = Path.cwd() / filename    with open(filepath, "w") as f:        f.write(code)    print(f"✅ Código salvo em: {filepath}")    return str(filepath) # --- Função Principal do Agente --- def run_code_agent(use_case: str, goals_input: str, max_iterations: int = 5) -> str:    goals = [g.strip() for g in goals_input.split(",")]    print(f"\n🎯 Caso de Uso: {use_case}")    print("🎯 Objetivos:")    for g in goals:        print(f"  - {g}")    previous_code = ""    feedback = ""    for i in range(max_iterations):        print(f"\n=== 🔁 Iteração {i + 1} de {max_iterations} ===")        prompt = generate_prompt(use_case, goals, previous_code, feedback if isinstance(feedback, str) else feedback.content)        print("🚧 Gerando código...")        code_response = llm.invoke(prompt)        raw_code = code_response.content.strip()        code = clean_code_block(raw_code)        print("\n🧾 Código Gerado:\n" + "-" * 50 + f"\n{code}\n" + "-" * 50)        print("\n📤 Submetendo código para revisão de feedback...")        feedback = get_code_feedback(code, goals)        feedback_text = feedback.content.strip()        print("\n📥 Feedback Recebido:\n" + "-" * 50 + f"\n{feedback_text}\n" + "-" * 50)        if goals_met(feedback_text, goals):            print("✅ LLM confirma que objetivos são atingidos. Parando iteração.")            break        print("🛠️ Objetivos não totalmente atingidos. Preparando para próxima iteração...")        previous_code = code    final_code = add_comment_header(code, use_case)    return save_code_to_file(final_code, use_case) # --- Execução de Teste CLI --- if __name__ == "__main__":    print("\n🧠 Bem-vindo ao Agente de Geração de Código IA")    # Exemplo 1    use_case_input = "Escreva código para encontrar BinaryGap de um inteiro positivo dado"    goals_input = "Código simples de entender, Funcionalmente correto, Lida com casos extremos abrangentes, Aceita apenas entrada de inteiro positivo, imprime os resultados com alguns exemplos"    run_code_agent(use_case_input, goals_input)    # Exemplo 2    # use_case_input = "Escreva código para contar o número de arquivos no diretório atual e todos os seus sub diretórios aninhados, e imprimir a contagem total"    # goals_input = (    #     "Código simples de entender, Funcionalmente correto, Lida com casos extremos abrangentes, Ignorar recomendações de performance, Ignorar recomendações para usar suite de testes como unittest ou pytest"    # )    # run_code_agent(use_case_input, goals_input)    # Exemplo 3    # use_case_input = "Escreva código que toma uma entrada de linha de comando de um arquivo word doc ou docx e o abre e conta o número de palavras, e caracteres nele e imprime tudo"    # goals_input = "Código simples de entender, Funcionalmente correto, Lida com casos extremos"    # run_code_agent(use_case_input, goals_input)` |
-| :---- |
+```python
+# MIT License
+# Copyright (c) 2025 Mahtab Syed
+# https://www.linkedin.com/in/mahtabsyed/
+
+"""
+Exemplo de Código Hands-On - Iteração 2
+Para ilustrar o padrão de Definição de Objetivos e Monitoramento, temos um exemplo usando APIs LangChain e OpenAI:
+
+Objetivo: Construir um Agente de IA que pode escrever código para um caso de uso especificado baseado em objetivos especificados:
+- Aceita um problema de codificação (caso de uso) em código ou pode ser como entrada.
+- Aceita uma lista de objetivos (ex., "simples", "testado", "lida com casos extremos") em código ou pode ser entrada.
+- Usa um LLM (como GPT-4o) para gerar e refinar código Python até que os objetivos sejam atingidos.
+  (Estou usando máx 5 iterações, isso poderia ser baseado em um objetivo definido também)
+- Para verificar se atingimos nossos objetivos estou pedindo ao LLM para julgar isso e responder apenas True ou False que torna mais fácil parar as iterações.
+- Salva o código final em um arquivo .py com um nome de arquivo limpo e um comentário de cabeçalho.
+"""
+
+import os
+import random
+import re
+from pathlib import Path
+from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv, find_dotenv
+
+# 🔐 Carregar variáveis de ambiente
+_ = load_dotenv(find_dotenv())
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not OPENAI_API_KEY:
+    raise EnvironmentError("❌ Por favor, defina a variável de ambiente OPENAI_API_KEY.")
+
+# ✅ Inicializar modelo OpenAI
+print("📡 Inicializando LLM OpenAI (gpt-4o)...")
+llm = ChatOpenAI(
+    model="gpt-4o",  # Se você não tem acesso ao gpt-4o use outros LLMs OpenAI
+    temperature=0.3,
+    openai_api_key=OPENAI_API_KEY,
+)
+
+# --- Funções Utilitárias --- 
+def generate_prompt( use_case: str, goals: list[str], previous_code: str = "", feedback: str = "" ) -> str: print("📝 Construindo prompt para geração de código...") base_prompt = f""" Você é um agente de codificação de IA. Seu trabalho é escrever código Python baseado no seguinte caso de uso: Caso de Uso:  {
+use_case}
+Seus objetivos são:  {
+chr(10).join(f"-  {
+g.strip()}
+" for g in goals)}
+""" if previous_code: print("🔄 Adicionando código anterior ao prompt para refinamento.") base_prompt += f"\nCódigo previamente gerado:\n {
+previous_code}
+" if feedback: print("📋 Incluindo feedback para revisão.") base_prompt += f"\nFeedback na versão anterior:\n {
+feedback}
+\n" base_prompt += "\nPor favor, retorne apenas o código Python revisado. Não inclua comentários ou explicações fora do código." return base_prompt 
+def get_code_feedback(code: str, goals: list[str]) -> str: print("🔍 Avaliando código contra os objetivos...") feedback_prompt = f""" Você é um revisor de código Python. Um snippet de código é mostrado abaixo. Baseado nos seguintes objetivos:  {
+chr(10).join(f"-  {
+g.strip()}
+" for g in goals)}
+Por favor, critique este código e identifique se os objetivos são atendidos. Mencione se melhorias são necessárias para clareza, simplicidade, correção, tratamento de casos extremos, ou cobertura de testes. Código:  {
+code}
+""" return llm.invoke(feedback_prompt) 
+def goals_met(feedback_text: str, goals: list[str]) -> bool: """ Usa o LLM para avaliar se os objetivos foram atingidos baseado no texto de feedback. Retorna True ou False (parseado da saída do LLM). """ review_prompt = f""" Você é um revisor de IA. Aqui estão os objetivos:  {
+chr(10).join(f"-  {
+g.strip()}
+" for g in goals)}
+Aqui está o feedback no código: \"\"\"  {
+feedback_text}
+\"\"\" Baseado no feedback acima, os objetivos foram atingidos? Responda com apenas uma palavra: True ou False. """ response = llm.invoke(review_prompt).content.strip().lower() return response == "true" 
+def clean_code_block(code: str) -> str: lines = code.strip().splitlines() if lines and lines[0].strip().startswith("```"): lines = lines[1:] if lines and lines[-1].strip() == "```": lines = lines[:-1] return "\n".join(lines).strip() 
+def add_comment_header(code: str, use_case: str) -> str: comment = f"# Este programa Python implementa o seguinte caso de uso:\n#  {
+use_case.strip()}
+\n" return comment + "\n" + code 
+def to_snake_case(text: str) -> str: text = re.sub(r"[^a-zA-Z0-9 ]", "", text) return re.sub(r"\s+", "_", text.strip().lower()) 
+def save_code_to_file(code: str, use_case: str) -> str: print("💾 Salvando código final no arquivo...") summary_prompt = ( f"Resuma o seguinte caso de uso em uma única palavra ou frase em minúsculas, " f"não mais que 10 caracteres, adequada para um nome de arquivo Python:\n\n {
+use_case}
+" ) raw_summary = llm.invoke(summary_prompt).content.strip() short_name = re.sub(r"[^a-zA-Z0-9_]", "", raw_summary.replace(" ", "_").lower())[:10] random_suffix = str(random.randint(1000, 9999)) filename = f" {
+short_name}
+_ {
+random_suffix}
+.py" filepath = Path.cwd() / filename with open(filepath, "w") as f: f.write(code) print(f"✅ Código salvo em:  {
+filepath}
+") return str(filepath) # --- Função Principal do Agente --- 
+def run_code_agent(use_case: str, goals_input: str, max_iterations: int = 5) -> str: goals = [g.strip() for g in goals_input.split(",")] print(f"\n🎯 Caso de Uso:  {
+use_case}
+") print("🎯 Objetivos:") for g in goals: print(f" -  {
+g}
+") previous_code = "" feedback = "" for i in range(max_iterations): print(f"\n=== 🔁 Iteração  {
+i + 1}
+de  {
+max_iterations}
+===") prompt = generate_prompt(use_case, goals, previous_code, feedback if isinstance(feedback, str) else feedback.content) print("🚧 Gerando código...") code_response = llm.invoke(prompt) raw_code = code_response.content.strip() code = clean_code_block(raw_code) print("\n🧾 Código Gerado:\n" + "-" * 50 + f"\n {
+code}
+\n" + "-" * 50) print("\n📤 Submetendo código para revisão de feedback...") feedback = get_code_feedback(code, goals) feedback_text = feedback.content.strip() print("\n📥 Feedback Recebido:\n" + "-" * 50 + f"\n {
+feedback_text}
+\n" + "-" * 50) if goals_met(feedback_text, goals): print("✅ LLM confirma que objetivos são atingidos. Parando iteração.") break print("🛠️ Objetivos não totalmente atingidos. Preparando para próxima iteração...") previous_code = code final_code = add_comment_header(code, use_case) return save_code_to_file(final_code, use_case) # --- Execução de Teste CLI --- if __name__ == "__main__": print("\n🧠 Bem-vindo ao Agente de Geração de Código IA") # Exemplo 1 use_case_input = "Escreva código para encontrar BinaryGap de um inteiro positivo dado" goals_input = "Código simples de entender, Funcionalmente correto, Lida com casos extremos abrangentes, Aceita apenas entrada de inteiro positivo, imprime os resultados com alguns exemplos" run_code_agent(use_case_input, goals_input) # Exemplo 2 # use_case_input = "Escreva código para contar o número de arquivos no diretório atual e todos os seus sub diretórios aninhados, e imprimir a contagem total" # goals_input = ( # "Código simples de entender, Funcionalmente correto, Lida com casos extremos abrangentes, Ignorar recomendações de performance, Ignorar recomendações para usar suite de testes como unittest ou pytest" # ) # run_code_agent(use_case_input, goals_input) # Exemplo 3 # use_case_input = "Escreva código que toma uma entrada de linha de comando de um arquivo word doc ou docx e o abre e conta o número de palavras, e caracteres nele e imprime tudo" # goals_input = "Código simples de entender, Funcionalmente correto, Lida com casos extremos" # run_code_agent(use_case_input, goals_input)
+```
 
 Junto com este brief, você fornece uma lista de verificação de qualidade rigorosa, que representa os objetivos que o código final deve atender—critérios como "a solução deve ser simples," "deve ser funcionalmente correta," ou "precisa lidar com casos extremos inesperados."
 
@@ -53,8 +146,9 @@ Se o veredito for "False," a IA não desiste. Ela entra em uma fase de revisão 
 
 Em última análise, LLMs não produzem código impecável por magia; você ainda precisa executar e testar o código produzido. Além disso, o "monitoramento" no exemplo simples é básico e cria um risco potencial do processo executar para sempre. 
 
-| `Atue como um revisor de código especialista com um compromisso profundo de produzir código limpo, correto e simples. Sua missão principal é eliminar "alucinações" de código garantindo que toda sugestão seja fundamentada na realidade e melhores práticas. Quando eu fornecer um snippet de código, quero que você: -- Identifique e Corrija Erros: Aponte qualquer falha lógica, bugs ou erros de runtime potenciais. -- Simplifique e Refatore: Sugira mudanças que tornem o código mais legível, eficiente e manutenível sem sacrificar correção. -- Forneça Explicações Claras: Para cada mudança sugerida, explique por que é uma melhoria, referenciando princípios de código limpo, performance ou segurança. -- Ofereça Código Corrigido: Mostre o "antes" e "depois" de suas mudanças sugeridas para que a melhoria seja clara. Seu feedback deve ser direto, construtivo e sempre visando melhorar a qualidade do código.` |
-| :---- |
+```text
+Atue como um revisor de código especialista com um compromisso profundo de produzir código limpo, correto e simples. Sua missão principal é eliminar "alucinações" de código garantindo que toda sugestão seja fundamentada na realidade e melhores práticas. Quando eu fornecer um snippet de código, quero que você: -- Identifique e Corrija Erros: Aponte qualquer falha lógica, bugs ou erros de runtime potenciais. -- Simplifique e Refatore: Sugira mudanças que tornem o código mais legível, eficiente e manutenível sem sacrificar correção. -- Forneça Explicações Claras: Para cada mudança sugerida, explique por que é uma melhoria, referenciando princípios de código limpo, performance ou segurança. -- Ofereça Código Corrigido: Mostre o "antes" e "depois" de suas mudanças sugeridas para que a melhoria seja clara. Seu feedback deve ser direto, construtivo e sempre visando melhorar a qualidade do código.
+```
 
 Uma abordagem mais robusta envolve separar estas preocupações dando papéis específicos a uma equipe de agentes. Por exemplo, construí uma equipe pessoal de agentes de IA usando Gemini onde cada um tem um papel específico:
 
@@ -100,3 +194,7 @@ Este capítulo focou no paradigma crucial de Definição de Objetivos e Monitora
 # Referências
 
 1. Mahtab Syed, [https://www.linkedin.com/in/mahtabsyed/](https://www.linkedin.com/in/mahtabsyed/)
+
+[image1]: ../assets/16-chapter-11-image-1-line-104.png
+
+[image2]: ../assets/16-chapter-11-image-2-line-106.png

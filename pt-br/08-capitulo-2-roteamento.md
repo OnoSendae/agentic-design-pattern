@@ -92,3 +92,5 @@ Dominar o padrão de Roteamento é essencial para construir agentes que podem na
 
 1. Documentação LangGraph: [https://www.langchain.com/](https://www.langchain.com/)    
 2. Documentação Google Agent Developer Kit: [https://google.github.io/adk-docs/](https://google.github.io/adk-docs/)
+
+[image1]: ../assets/08-chapter-2-image-1-line-115.png

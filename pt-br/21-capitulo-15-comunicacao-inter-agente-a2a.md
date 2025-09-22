@@ -24,8 +24,18 @@ O protocolo A2A fornece uma abordagem estruturada para interações de agentes, 
 
 **Cartão de Agente:** A identidade digital de um agente é definida por seu Cartão de Agente, geralmente um arquivo JSON. Este arquivo contém informação chave para interação de cliente e descoberta automática, incluindo a identidade do agente, URL do endpoint e versão. Também detalha capacidades suportadas como streaming ou notificações push, habilidades específicas, modos de entrada/saída padrão e requisitos de autenticação. Abaixo está um exemplo de um Cartão de Agente para um WeatherBot.
 
-| `{  "name": "WeatherBot",  "description": "Fornece previsões meteorológicas precisas e dados históricos.",  "url": "http://weather-service.example.com/a2a",  "version": "1.0.0",  "capabilities": {    "streaming": true,    "pushNotifications": false,    "stateTransitionHistory": true  },  "authentication": {    "schemes": [      "apiKey"    ]  },  "defaultInputModes": [    "text"  ],  "defaultOutputModes": [    "text"  ],  "skills": [    {      "id": "get_current_weather",      "name": "Obter Clima Atual",      "description": "Recuperar clima em tempo real para qualquer localização.",      "inputModes": [        "text"      ],      "outputModes": [        "text"      ],      "examples": [        "Qual é o clima em Paris?",        "Condições atuais em Tóquio"      ],      "tags": [        "clima",        "atual",        "tempo-real"      ]    },    {      "id": "get_forecast",      "name": "Obter Previsão",      "description": "Obter previsões meteorológicas de 5 dias.",      "inputModes": [        "text"      ],      "outputModes": [        "text"      ],      "examples": [        "Previsão de 5 dias para Nova York",        "Vai chover em Londres neste fim de semana?"      ],      "tags": [        "clima",        "previsão",        "predição"      ]    }  ] }` |
-| :---- |
+```json
+{
+"name": "WeatherBot", "description": "Fornece previsões meteorológicas precisas e dados históricos.", "url": "http://weather-service.example.com/a2a", "version": "1.0.0", "capabilities":  {
+"streaming": true, "pushNotifications": false, "stateTransitionHistory": true }
+, "authentication":  {
+"schemes": [ "apiKey" ] }
+, "defaultInputModes": [ "text" ], "defaultOutputModes": [ "text" ], "skills": [  {
+"id": "get_current_weather", "name": "Obter Clima Atual", "description": "Recuperar clima em tempo real para qualquer localização.", "inputModes": [ "text" ], "outputModes": [ "text" ], "examples": [ "Qual é o clima em Paris?", "Condições atuais em Tóquio" ], "tags": [ "clima", "atual", "tempo-real" ] }
+,  {
+"id": "get_forecast", "name": "Obter Previsão", "description": "Obter previsões meteorológicas de 5 dias.", "inputModes": [ "text" ], "outputModes": [ "text" ], "examples": [ "Previsão de 5 dias para Nova York", "Vai chover em Londres neste fim de semana?" ], "tags": [ "clima", "previsão", "predição" ] }
+] }
+```
 
 **Descoberta de agente:** permite que clientes encontrem Cartões de Agente, que descrevem as capacidades de Servidores A2A disponíveis. Várias estratégias existem para este processo:
 
@@ -48,13 +58,29 @@ Esta comunicação contém atributos, que são metadados chave-valor descrevendo
 
 O Cartão de Agente especifica se um agente suporta capacidades de streaming ou notificação push. Além disso, A2A é agnóstico de modalidade, significando que pode facilitar estes padrões de interação não apenas para texto, mas também para outros tipos de dados como áudio e vídeo, permitindo aplicações de IA ricas e multimodais. Tanto capacidades de streaming quanto notificação push são especificadas dentro do Cartão de Agente.
 
-| `#Exemplo de Solicitação Síncrona {  "jsonrpc": "2.0",  "id": "1",  "method": "sendTask",  "params": {    "id": "task-001",    "sessionId": "session-001",    "message": {      "role": "user",      "parts": [        {          "type": "text",          "text": "Qual é a taxa de câmbio de USD para EUR?"        }      ]    },    "acceptedOutputModes": ["text/plain"],    "historyLength": 5  } }` |
-| :---- |
+```text
+#Exemplo de Solicitação Síncrona  {
+"jsonrpc": "2.0", "id": "1", "method": "sendTask", "params":  {
+"id": "task-001", "sessionId": "session-001", "message":  {
+"role": "user", "parts": [  {
+"type": "text", "text": "Qual é a taxa de câmbio de USD para EUR?" }
+] }
+, "acceptedOutputModes": ["text/plain"], "historyLength": 5 }
+}
+```
 
 A solicitação síncrona usa o método sendTask, onde o cliente pede e espera uma única resposta completa para sua consulta. Em contraste, a solicitação de streaming usa o método sendTaskSubscribe para estabelecer uma conexão persistente, permitindo que o agente envie de volta múltiplas atualizações incrementais ou resultados parciais ao longo do tempo.
 
-| `# Exemplo de Solicitação de Streaming {  "jsonrpc": "2.0",  "id": "2",  "method": "sendTaskSubscribe",  "params": {    "id": "task-002",    "sessionId": "session-001",    "message": {      "role": "user",      "parts": [        {          "type": "text",          "text": "Qual é a taxa de câmbio para JPY para GBP hoje?"        }      ]    },    "acceptedOutputModes": ["text/plain"],    "historyLength": 5  } }` |
-| :---- |
+```text
+# Exemplo de Solicitação de Streaming  {
+"jsonrpc": "2.0", "id": "2", "method": "sendTaskSubscribe", "params":  {
+"id": "task-002", "sessionId": "session-001", "message":  {
+"role": "user", "parts": [  {
+"type": "text", "text": "Qual é a taxa de câmbio para JPY para GBP hoje?" }
+] }
+, "acceptedOutputModes": ["text/plain"], "historyLength": 5 }
+}
+```
 
 **Segurança:** Comunicação Inter-Agente (A2A): Comunicação Inter-Agente (A2A) é um componente vital da arquitetura de sistema, permitindo troca de dados segura e perfeita entre agentes. Ela garante robustez e integridade através de vários mecanismos integrados.
 
@@ -88,17 +114,47 @@ Comunicação Inter-Agente é indispensável para construir soluções de IA sof
 
 Vamos examinar as aplicações práticas do protocolo A2A. O repositório em [https://github.com/google-a2a/a2a-samples/tree/main/samples](https://github.com/google-a2a/a2a-samples/tree/main/samples) fornece exemplos em Java, Go e Python que ilustram como vários frameworks de agentes, como LangGraph, CrewAI, Azure AI Foundry e AG2, podem comunicar usando A2A. Todo código neste repositório é liberado sob licença Apache 2.0. Para ilustrar ainda mais os conceitos centrais do A2A, revisaremos trechos de código focando na configuração de um Servidor A2A usando um agente baseado em ADK com ferramentas autenticadas pelo Google. Olhando em [https://github.com/google-a2a/a2a-samples/blob/main/samples/python/agents/birthday_planner_adk/calendar_agent/adk_agent.py](https://github.com/google-a2a/a2a-samples/blob/main/samples/python/agents/birthday_planner_adk/calendar_agent/adk_agent.py)
 
-| `import datetime from google.adk.agents import LlmAgent # type: ignore[import-untyped] from google.adk.tools.google_api_tool import CalendarToolset # type: ignore[import-untyped] async def create_agent(client_id, client_secret) -> LlmAgent:    """Constrói o agente ADK."""    toolset = CalendarToolset(client_id=client_id, client_secret=client_secret)    return LlmAgent(        model='gemini-2.0-flash-001',        name='calendar_agent',        description="Um agente que pode ajudar a gerenciar o calendário de um usuário",        instruction=f""" Você é um agente que pode ajudar a gerenciar o calendário de um usuário. Usuários solicitarão informação sobre o estado de seu calendário ou para fazer mudanças em seu calendário. Use as ferramentas fornecidas para interagir com a API do calendário. Se não especificado, assuma que o calendário que o usuário quer é o calendário 'primário'. Ao usar as ferramentas da API do Calendário, use timestamps RFC3339 bem formados. Hoje é {datetime.datetime.now()}. """,        tools=await toolset.get_tools(),    )` |
-| :---- |
+```python
+import datetime
+from google.adk.agents import LlmAgent  # type: ignore[import-untyped]
+from google.adk.tools.google_api_tool import CalendarToolset  # type: ignore[import-untyped]
+
+async def create_agent(client_id, client_secret) -> LlmAgent:
+    """Constrói o agente ADK."""
+    toolset = CalendarToolset(client_id=client_id, client_secret=client_secret)
+    
+    return LlmAgent(
+        model='gemini-2.0-flash-001',
+        name='calendar_agent',
+        description="Um agente que pode ajudar a gerenciar o calendário de um usuário",
+        instruction=f"""Você é um agente que pode ajudar a gerenciar o calendário de um usuário.
+Usuários solicitarão informação sobre o estado de seu calendário ou para fazer mudanças em seu calendário.
+Use as ferramentas fornecidas para interagir com a API do calendário.
+Se não especificado, assuma que o calendário que o usuário quer é o calendário 'primário'.
+Ao usar as ferramentas da API do Calendário, use timestamps RFC3339 bem formados.
+Hoje é {datetime.datetime.now()}.""",
+        tools=await toolset.get_tools(),
+    )
+```
 
 Este código Python define uma função assíncrona `create_agent` que constrói um LlmAgent ADK. Ele começa inicializando um `CalendarToolset` usando as credenciais de cliente fornecidas para acessar a API do Google Calendar. Subsequentemente, uma instância `LlmAgent` é criada, configurada com um modelo Gemini especificado, um nome descritivo e instruções para gerenciar o calendário de um usuário. O agente é equipado com ferramentas de calendário do `CalendarToolset`, permitindo que interaja com a API do Calendário e responda a consultas de usuário sobre estados de calendário ou modificações. As instruções do agente incorporam dinamicamente a data atual para contexto temporal. Para ilustrar como um agente é construído, vamos examinar uma seção chave do calendar_agent encontrado nas amostras A2A no GitHub.
 
 O código abaixo mostra como o agente é definido com suas instruções específicas e ferramentas. Por favor, note que apenas o código necessário para explicar esta funcionalidade é mostrado; você pode acessar o arquivo completo aqui: [https://github.com/a2aproject/a2a-samples/blob/main/samples/python/agents/birthday_planner_adk/calendar_agent/__main__.py](https://github.com/a2aproject/a2a-samples/blob/main/samples/python/agents/birthday_planner_adk/calendar_agent/__main__.py)
 
-| `def main(host: str, port: int):    # Verificar se uma chave de API está definida.    # Não necessário se usando APIs Vertex AI.    if os.getenv('GOOGLE_GENAI_USE_VERTEXAI') != 'TRUE' and not os.getenv(        'GOOGLE_API_KEY'    ):        raise ValueError(            'Variável de ambiente GOOGLE_API_KEY não definida e '            'GOOGLE_GENAI_USE_VERTEXAI não é TRUE.'        )    skill = AgentSkill(        id='check_availability',        name='Verificar Disponibilidade',        description="Verifica a disponibilidade de um usuário para um tempo usando seu Google Calendar",        tags=['calendar'],        examples=['Estou livre das 10h às 11h amanhã?'],    )    agent_card = AgentCard(        name='Agente de Calendário',        description="Um agente que pode gerenciar o calendário de um usuário",        url=f'http://{host}:{port}/',        version='1.0.0',        defaultInputModes=['text'],        defaultOutputModes=['text'],        capabilities=AgentCapabilities(streaming=True),        skills=[skill],    )    adk_agent = asyncio.run(create_agent(        client_id=os.getenv('GOOGLE_CLIENT_ID'),        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),    ))    runner = Runner(        app_name=agent_card.name,        agent=adk_agent,        artifact_service=InMemoryArtifactService(),        session_service=InMemorySessionService(),        memory_service=InMemoryMemoryService(),    )    agent_executor = ADKAgentExecutor(runner, agent_card)    async def handle_auth(request: Request) -> PlainTextResponse:        await agent_executor.on_auth_callback(            str(request.query_params.get('state')), str(request.url)        )        return PlainTextResponse('Autenticação bem-sucedida.')    request_handler = DefaultRequestHandler(        agent_executor=agent_executor, task_store=InMemoryTaskStore()    )    a2a_app = A2AStarletteApplication(        agent_card=agent_card, http_handler=request_handler    )    routes = a2a_app.routes()    routes.append(        Route(            path='/authenticate',            methods=['GET'],            endpoint=handle_auth,        )    )    app = Starlette(routes=routes)    uvicorn.run(app, host=host, port=port) if __name__ == '__main__':    main()` |
-| :---- |
+```python
+def main(host: str, port: int): # Verificar se uma chave de API está definida. # Não necessário se usando APIs Vertex AI. if os.getenv('GOOGLE_GENAI_USE_VERTEXAI') != 'TRUE' and not os.getenv( 'GOOGLE_API_KEY' ): raise ValueError( 'Variável de ambiente GOOGLE_API_KEY não definida e ' 'GOOGLE_GENAI_USE_VERTEXAI não é TRUE.' ) skill = AgentSkill( id='check_availability', name='Verificar Disponibilidade', description="Verifica a disponibilidade de um usuário para um tempo usando seu Google Calendar", tags=['calendar'], examples=['Estou livre das 10h às 11h amanhã?'], ) agent_card = AgentCard( name='Agente de Calendário', description="Um agente que pode gerenciar o calendário de um usuário", url=f'http:// {
+host}
+: {
+port}
+/', version='1.0.0', defaultInputModes=['text'], defaultOutputModes=['text'], capabilities=AgentCapabilities(streaming=True), skills=[skill], ) adk_agent = asyncio.run(create_agent( client_id=os.getenv('GOOGLE_CLIENT_ID'), client_secret=os.getenv('GOOGLE_CLIENT_SECRET'), )) runner = Runner( app_name=agent_card.name, agent=adk_agent, artifact_service=InMemoryArtifactService(), session_service=InMemorySessionService(), memory_service=InMemoryMemoryService(), ) agent_executor = ADKAgentExecutor(runner, agent_card) async def handle_auth(request: Request) -> PlainTextResponse: await agent_executor.on_auth_callback( str(request.query_params.get('state')), str(request.url) ) return PlainTextResponse('Autenticação bem-sucedida.') request_handler = DefaultRequestHandler( agent_executor=agent_executor, task_store=InMemoryTaskStore() ) a2a_app = A2AStarletteApplication( agent_card=agent_card, http_handler=request_handler ) routes = a2a_app.routes() routes.append( Route( path='/authenticate', methods=['GET'], endpoint=handle_auth, ) ) app = Starlette(routes=routes) uvicorn.run(app, host=host, port=port) if __name__ == '__main__': main()
+```
 
 Este código demonstra a configuração completa de um servidor A2A usando um agente ADK. Ele começa verificando as credenciais necessárias e então define um `AgentSkill` específico para verificação de disponibilidade de calendário. O `AgentCard` é criado com informações de identidade e capacidades do agente. O agente ADK é construído usando a função `create_agent` assíncrona, e um `Runner` é configurado com serviços de memória, sessão e artefatos. O `ADKAgentExecutor` conecta o runner ao cartão de agente, e um handler de solicitação é configurado para gerenciar comunicação A2A. A aplicação Starlette é criada com rotas A2A e um endpoint de autenticação, permitindo que o servidor seja executado na porta especificada.
+
+
+**Diagrama de Comunicação**
+
+![][image2]
 
 # Principais Conclusões
 
@@ -127,3 +183,7 @@ Isto permite a criação de arquiteturas modulares e escaláveis onde agentes es
 5. Google AgentDiscovery \- [https://a2a-protocol.org/latest/](https://a2a-protocol.org/latest/)    
 6. Communication between different AI frameworks such as LangGraph, CrewAI, and Google ADK [https://www.trickle.so/blog/how-to-build-google-a2a-project](https://www.trickle.so/blog/how-to-build-google-a2a-project#setting-up-your-a2a-development-environment)   
 7. Designing Collaborative Multi-Agent Systems with the A2A Protocol [https://www.oreilly.com/radar/designing-collaborative-multi-agent-systems-with-the-a2a-protocol/](https://www.oreilly.com/radar/designing-collaborative-multi-agent-systems-with-the-a2a-protocol/)
+
+[image1]: ../assets/20-chapter-15-image-1-line-149.png
+
+[image2]: ../assets/20-chapter-15-image-2-line-151.png

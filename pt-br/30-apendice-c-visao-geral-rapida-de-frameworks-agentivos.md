@@ -12,8 +12,9 @@ Use para:
 
 Python
 
-| `# Uma cadeia LCEL simples conceitualmente # (Este não é código executável, apenas ilustra o fluxo) chain = prompt | model | output_parse` |
-| :---- |
+```text
+# Uma cadeia LCEL simples conceitualmente # (Este não é código executável, apenas ilustra o fluxo) chain = prompt | model | output_parse
+```
 
 ### LangGraph
 
@@ -39,8 +40,66 @@ Use para:
 
 Python
 
-| `# Classe de estado do grafo class State(TypedDict):    topic: str    joke: str    story: str    poem: str    combined_output: str # Nós def call_llm_1(state: State):    """Primeira chamada LLM para gerar piada inicial"""    msg = llm.invoke(f"Escreva uma piada sobre {state['topic']}")    return {"joke": msg.content} def call_llm_2(state: State):    """Segunda chamada LLM para gerar história"""    msg = llm.invoke(f"Escreva uma história sobre {state['topic']}")    return {"story": msg.content} def call_llm_3(state: State):    """Terceira chamada LLM para gerar poema"""    msg = llm.invoke(f"Escreva um poema sobre {state['topic']}")    return {"poem": msg.content} def aggregator(state: State):    """Combine a piada e história em uma única saída"""    combined = f"Aqui está uma história, piada e poema sobre {state['topic']}!\n\n"    combined += f"HISTÓRIA:\n{state['story']}\n\n"    combined += f"PIADA:\n{state['joke']}\n\n"    combined += f"POEMA:\n{state['poem']}"    return {"combined_output": combined} # Construir workflow parallel_builder = StateGraph(State) # Adicionar nós parallel_builder.add_node("call_llm_1", call_llm_1) parallel_builder.add_node("call_llm_2", call_llm_2) parallel_builder.add_node("call_llm_3", call_llm_3) parallel_builder.add_node("aggregator", aggregator) # Adicionar arestas para conectar nós parallel_builder.add_edge(START, "call_llm_1") parallel_builder.add_edge(START, "call_llm_2") parallel_builder.add_edge(START, "call_llm_3") parallel_builder.add_edge("call_llm_1", "aggregator") parallel_builder.add_edge("call_llm_2", "aggregator") parallel_builder.add_edge("call_llm_3", "aggregator") parallel_builder.add_edge("aggregator", END) parallel_workflow = parallel_builder.compile() # Mostrar workflow display(Image(parallel_workflow.get_graph().draw_mermaid_png())) # Invocar state = parallel_workflow.invoke({"topic": "gatos"}) print(state["combined_output"])` |
-| :---- |
+```python
+# Classe de estado do grafo
+class State(TypedDict):
+    topic: str
+    joke: str
+    story: str
+    poem: str
+    combined_output: str
+
+# Nós
+def call_llm_1(state: State):
+    """Primeira chamada LLM para gerar piada inicial"""
+    msg = llm.invoke(f"Escreva uma piada sobre {state['topic']}")
+    return {"joke": msg.content}
+
+def call_llm_2(state: State):
+    """Segunda chamada LLM para gerar história"""
+    msg = llm.invoke(f"Escreva uma história sobre {state['topic']}")
+    return {"story": msg.content}
+
+def call_llm_3(state: State):
+    """Terceira chamada LLM para gerar poema"""
+    msg = llm.invoke(f"Escreva um poema sobre {state['topic']}")
+    return {"poem": msg.content}
+
+def aggregator(state: State):
+    """Combine a piada e história em uma única saída"""
+    combined = f"Aqui está uma história, piada e poema sobre {state['topic']}!\n\n"
+    combined += f"HISTÓRIA:\n{state['story']}\n\n"
+    combined += f"PIADA:\n{state['joke']}\n\n"
+    combined += f"POEMA:\n{state['poem']}"
+    return {"combined_output": combined}
+
+# Construir workflow
+parallel_builder = StateGraph(State)
+
+# Adicionar nós
+parallel_builder.add_node("call_llm_1", call_llm_1)
+parallel_builder.add_node("call_llm_2", call_llm_2)
+parallel_builder.add_node("call_llm_3", call_llm_3)
+parallel_builder.add_node("aggregator", aggregator)
+
+# Adicionar arestas para conectar nós
+parallel_builder.add_edge(START, "call_llm_1")
+parallel_builder.add_edge(START, "call_llm_2")
+parallel_builder.add_edge(START, "call_llm_3")
+parallel_builder.add_edge("call_llm_1", "aggregator")
+parallel_builder.add_edge("call_llm_2", "aggregator")
+parallel_builder.add_edge("call_llm_3", "aggregator")
+parallel_builder.add_edge("aggregator", END)
+
+parallel_workflow = parallel_builder.compile()
+
+# Mostrar workflow
+display(Image(parallel_workflow.get_graph().draw_mermaid_png()))
+
+# Invocar
+state = parallel_workflow.invoke({"topic": "gatos"})
+) print(state["combined_output"])
+```
 
 Este código define e executa um workflow LangGraph que opera em paralelo. Seu propósito principal é simultaneamente gerar uma piada, uma história e um poema sobre um tópico dado e então combiná-los em uma única saída de texto formatada.
 
@@ -54,8 +113,18 @@ O ADK do Google abstrai muito desta construção de grafo de baixo nível. Em ve
 
 Python
 
-| `from google.adk.agents import LlmAgent from google.adk.tools import google_Search dice_agent = LlmAgent(    model="gemini-2.0-flash-exp",     name="question_answer_agent",    description="Um agente assistente útil que pode responder perguntas.",    instruction="""Responda à consulta usando busca do google""",    tools=[google_search], )` |
-| :---- |
+```python
+from google.adk.agents import LlmAgent
+from google.adk.tools import google_search
+
+dice_agent = LlmAgent(
+    model="gemini-2.0-flash-exp",
+    name="question_answer_agent",
+    description="Um agente assistente útil que pode responder perguntas.",
+    instruction="""Responda à consulta usando busca do google""",
+    tools=[google_search],
+)
+```
 
 Este código cria um agente aumentado por busca. Quando este agente recebe uma pergunta, ele não apenas confiará em seu conhecimento pré-existente. Em vez disso, seguindo suas instruções, ele usará a ferramenta Google Search para encontrar informação relevante e em tempo real da web e então usar essa informação para construir sua resposta.
 
@@ -69,8 +138,17 @@ Quando comparado a outros frameworks, CrewAI ocupa uma posição distinta. Ele s
 
 Python
 
-| `@crew def crew(self) -> Crew:    """Cria a equipe de pesquisa"""    return Crew(      agents=self.agents,      tasks=self.tasks,      process=Process.sequential,      verbose=True,    )` |
-| :---- |
+```python
+@crew
+def crew(self) -> Crew:
+    """Cria a equipe de pesquisa"""
+    return Crew(
+        agents=self.agents,
+        tasks=self.tasks,
+        process=Process.sequential,
+        verbose=True,
+    )
+```
 
 Este código configura um workflow sequencial para uma equipe de agentes de IA, onde eles abordam uma lista de tarefas em uma ordem específica, com logging detalhado habilitado para monitorar seu progresso.
 

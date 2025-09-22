@@ -26,8 +26,19 @@ Esta decomposição permite controle mais granular sobre o processo. Cada etapa 
 
 Por exemplo, a saída da etapa de identificação de tendências poderia ser formatada como um objeto JSON:
 
-| `{  "trends": [    {      "trend_name": "Personalização Impulsionada por IA",      "supporting_data": "73% dos consumidores preferem fazer negócios com marcas que usam informação pessoal para tornar suas experiências de compra mais relevantes."    },    {      "trend_name": "Marcas Sustentáveis e Éticas",      "supporting_data": "Vendas de produtos com reivindicações relacionadas a ESG cresceram 28% nos últimos cinco anos, comparado a 20% para produtos sem."    }  ] }` |
-| :---- |
+```json
+{
+"trends": [  {
+        "trend_name": "Personalização Impulsionada por IA",
+        "supporting_data": "73% dos consumidores preferem fazer negócios com marcas que usam informação pessoal para tornar suas experiências de compra mais relevantes."
+    },
+    { 
+        "trend_name": "Marcas Sustentáveis e Éticas",
+        "supporting_data": "Vendas de produtos com reivindicações relacionadas a ESG cresceram 28% nos últimos cinco anos, comparado a 20% para produtos sem."
+        }
+    ] 
+}
+```
 
 Este formato estruturado garante que os dados sejam legíveis por máquina e podem ser precisamente analisados e inseridos no próximo prompt sem ambiguidade. Esta prática minimiza erros que podem surgir da interpretação de linguagem natural e é um componente-chave na construção de sistemas robustos baseados em LLM multi-etapas.
 
@@ -116,13 +127,59 @@ O seguinte código implementa uma cadeia de prompts de duas etapas que funciona 
 
 Para replicar este procedimento, as bibliotecas requeridas devem primeiro ser instaladas. Isso pode ser realizado usando o seguinte comando:
 
-| `pip install langchain langchain-community langchain-openai langgraph` |
-| :---- |
+```python
+pip install langchain langchain-community langchain-openai langgraph
+```
 
 Note que langchain-openai pode ser substituído pelo pacote apropriado para um provedor de modelo diferente. Posteriormente, o ambiente de execução deve ser configurado com as credenciais de API necessárias para o provedor de modelo de linguagem selecionado, como OpenAI, Google Gemini, ou Anthropic.
 
-| `import os from langchain_openai import ChatOpenAI from langchain_core.prompts import ChatPromptTemplate from langchain_core.output_parsers import StrOutputParser # Para melhor segurança, carregue variáveis de ambiente de um arquivo .env # from dotenv import load_dotenv # load_dotenv() # Certifique-se de que sua OPENAI_API_KEY está definida no arquivo .env # Inicializar o Modelo de Linguagem (usar ChatOpenAI é recomendado) llm = ChatOpenAI(temperature=0) # --- Prompt 1: Extrair Informação --- prompt_extract = ChatPromptTemplate.from_template(    "Extraia as especificações técnicas do seguinte texto:\n\n{text_input}" ) # --- Prompt 2: Transformar para JSON --- prompt_transform = ChatPromptTemplate.from_template(    "Transforme as seguintes especificações em um objeto JSON com 'cpu', 'memory', e 'storage' como chaves:\n\n{specifications}" ) # --- Construir a Cadeia usando LCEL --- # O StrOutputParser() converte a saída de mensagem do LLM para uma string simples. extraction_chain = prompt_extract | llm | StrOutputParser() # A cadeia completa passa a saída da cadeia de extração para a variável 'specifications' # para o prompt de transformação. full_chain = (    {"specifications": extraction_chain}    | prompt_transform    | llm    | StrOutputParser() ) # --- Executar a Cadeia --- input_text = "O novo modelo de laptop apresenta um processador octa-core de 3,5 GHz, 16GB de RAM e um SSD NVMe de 1TB." # Executar a cadeia com o dicionário de texto de entrada. final_result = full_chain.invoke({"text_input": input_text}) print("\n--- Saída JSON Final ---") print(final_result)` |
-| :---- |
+```python
+import os
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Para melhor segurança, carregue variáveis de ambiente de um arquivo .env
+# from dotenv import load_dotenv
+# load_dotenv()
+
+# Certifique-se de que sua OPENAI_API_KEY está definida no arquivo .env
+
+# Inicializar o Modelo de Linguagem (usar ChatOpenAI é recomendado)
+llm = ChatOpenAI(temperature=0)
+
+# --- Prompt 1: Extrair Informação ---
+prompt_extract = ChatPromptTemplate.from_template(
+    "Extraia as especificações técnicas do seguinte texto:\n\n{text_input}"
+)
+
+# --- Prompt 2: Transformar para JSON ---
+prompt_transform = ChatPromptTemplate.from_template(
+    "Transforme as seguintes especificações em um objeto JSON com 'cpu', 'memory', e 'storage' como chaves:\n\n{specifications}"
+)
+
+# --- Construir a Cadeia usando LCEL ---
+# O StrOutputParser() converte a saída de mensagem do LLM para uma string simples.
+extraction_chain = prompt_extract | llm | StrOutputParser()
+
+# A cadeia completa passa a saída da cadeia de extração para a variável 'specifications'
+# para o prompt de transformação.
+full_chain = (
+    {"specifications": extraction_chain}
+| prompt_transform
+    | llm
+    | StrOutputParser()
+)
+
+# --- Executar a Cadeia ---
+input_text = "O novo modelo de laptop apresenta um processador octa-core de 3,5 GHz, 16GB de RAM e um SSD NVMe de 1TB."
+
+# Executar a cadeia com o dicionário de texto de entrada.
+final_result = full_chain.invoke({"text_input": input_text})
+
+print("\n--- Saída JSON Final ---")
+print(final_result)
+```
 
 Este código Python demonstra como usar a biblioteca LangChain para processar texto. Ele utiliza dois prompts separados: um para extrair especificações técnicas de uma string de entrada e outro para formatar essas especificações em um objeto JSON. O modelo ChatOpenAI é empregado para interações de modelo de linguagem, e o StrOutputParser garante que a saída esteja em um formato de string utilizável. A LangChain Expression Language (LCEL) é usada para encadear elegantemente esses prompts e o modelo de linguagem. A primeira cadeia, extraction_chain, extrai as especificações. A full_chain então pega a saída da extração e a usa como entrada para o prompt de transformação. Um texto de entrada de exemplo descrevendo um laptop é fornecido. A full_chain é invocada com este texto, processando-o através de ambas as etapas. O resultado final, uma string JSON contendo as especificações extraídas e formatadas, é então impresso.
 
@@ -178,3 +235,7 @@ Ao desconstruir problemas complexos em uma sequência de sub-tarefas mais simple
 5. Documentação Crew AI (Tarefas e Processos): [https://docs.crewai.com/](https://docs.crewai.com/)
 6. Google AI for Developers (Guias de Prompting): [https://cloud.google.com/discover/what-is-prompt-engineering?hl=en](https://cloud.google.com/discover/what-is-prompt-engineering?hl=en)
 7. Vertex Prompt Optimizer [https://cloud.google.com/vertex-ai/generative-ai/docs/learn/prompts/prompt-optimizer](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/prompts/prompt-optimizer)
+
+[image1]: ../assets/07-chapter-1-image-1-line-182.png
+
+[image2]: ../assets/07-chapter-1-image-2-line-184.png

@@ -84,3 +84,5 @@ Implementar guardrails efetivos representa um compromisso central com desenvolvi
 1. Google AI Safety Principles: [https://ai.google/principles/](https://ai.google/principles/)  
 2. OpenAI API Moderation Guide: [https://platform.openai.com/docs/guides/moderation](https://platform.openai.com/docs/guides/moderation)  
 3. Prompt injection: [https://en.wikipedia.org/wiki/Prompt_injection](https://en.wikipedia.org/wiki/Prompt_injection)
+
+[image1]: ../assets/23-chapter-18-image-1-line-119.png

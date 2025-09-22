@@ -125,8 +125,93 @@ A implementação do uso de ferramentas dentro do framework LangChain é um proc
 
 A seguinte implementação demonstrará este princípio primeiro definindo uma função simples para simular uma ferramenta de recuperação de informação. Seguindo isso, um agente será construído e configurado para aproveitar esta ferramenta em resposta à entrada do usuário. A execução deste exemplo requer a instalação das bibliotecas principais do LangChain e um pacote de provedor específico do modelo. Além disso, autenticação adequada com o serviço de modelo de linguagem selecionado, tipicamente via uma chave API configurada no ambiente local, é um pré-requisito necessário.
 
-| ``import os, getpass import asyncio import nest_asyncio from typing import List from dotenv import load_dotenv import logging from langchain_google_genai import ChatGoogleGenerativeAI from langchain_core.prompts import ChatPromptTemplate from langchain_core.tools import tool as langchain_tool from langchain.agents import create_tool_calling_agent, AgentExecutor # UNCOMMENT # Prompt the user securely and set API keys as an environment variables os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter your Google API key: ") os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ") try:   # A model with function/tool calling capabilities is required.   llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)   print(f"✅ Language model initialized: {llm.model}") except Exception as e:   print(f"🛑 Error initializing language model: {e}")   llm = None # --- Define a Tool --- @langchain_tool def search_information(query: str) -> str:   """   Provides factual information on a given topic. Use this tool to find answers to phrases   like 'capital of France' or 'weather in London?'.   """   print(f"\n--- 🛠️ Tool Called: search_information with query: '{query}' ---")   # Simulate a search tool with a dictionary of predefined results.   simulated_results = {       "weather in london": "The weather in London is currently cloudy with a temperature of 15°C.",       "capital of france": "The capital of France is Paris.",       "population of earth": "The estimated population of Earth is around 8 billion people.",       "tallest mountain": "Mount Everest is the tallest mountain above sea level.",       "default": f"Simulated search result for '{query}': No specific information found, but the topic seems interesting."   }   result = simulated_results.get(query.lower(), simulated_results["default"])   print(f"--- TOOL RESULT: {result} ---")   return result tools = [search_information] # --- Create a Tool-Calling Agent --- if llm:   # This prompt template requires an `agent_scratchpad` placeholder for the agent's internal steps.   agent_prompt = ChatPromptTemplate.from_messages([       ("system", "You are a helpful assistant."),       ("human", "{input}"),       ("placeholder", "{agent_scratchpad}"),   ])   # Create the agent, binding the LLM, tools, and prompt together.   agent = create_tool_calling_agent(llm, tools, agent_prompt)   # AgentExecutor is the runtime that invokes the agent and executes the chosen tools.   # The 'tools' argument is not needed here as they are already bound to the agent.   agent_executor = AgentExecutor(agent=agent, verbose=True, tools=tools) async def run_agent_with_tool(query: str):   """Invokes the agent executor with a query and prints the final response."""   print(f"\n--- 🏃 Running Agent with Query: '{query}' ---")   try:       response = await agent_executor.ainvoke({"input": query})       print("\n--- ✅ Final Agent Response ---")       print(response["output"])   except Exception as e:       print(f"\n🛑 An error occurred during agent execution: {e}") async def main():   """Runs all agent queries concurrently."""   tasks = [       run_agent_with_tool("What is the capital of France?"),       run_agent_with_tool("What's the weather like in London?"),       run_agent_with_tool("Tell me something about dogs.") # Should trigger the default tool response   ]   await asyncio.gather(*tasks) nest_asyncio.apply() asyncio.run(main())`` |
-| :---- |
+```python
+import os, getpass
+import asyncio
+import nest_asyncio
+from typing import List
+from dotenv import load_dotenv
+import logging
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool as langchain_tool
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+
+# UNCOMMENT
+# Prompt the user securely and set API keys as an environment variables
+os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter your Google API key: ")
+os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
+
+try:
+    # A model with function/tool calling capabilities is required.
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+    print(f"✅ Language model initialized: {llm.model}")
+except Exception as e:
+    print(f"🛑 Error initializing language model: {e}")
+    llm = None
+
+# --- Define a Tool ---
+@langchain_tool
+def search_information(query: str) -> str:
+    """
+    Provides factual information on a given topic.
+    Use this tool to find answers to phrases like 'capital of France' or 'weather in London?'.
+    """
+    print(f"\n--- 🛠️ Tool Called: search_information with query: '{query}' ---")
+    
+    # Simulate a search tool with a dictionary of predefined results.
+    simulated_results = {
+        "weather in london": "The weather in London is currently cloudy with a temperature of 15°C.",
+        "capital of france": "The capital of France is Paris.",
+        "population of earth": "The estimated population of Earth is around 8 billion people.",
+        "tallest mountain": "Mount Everest is the tallest mountain above sea level.",
+        "default": f"Simulated search result for '{query}': No specific information found, but the topic seems interesting."
+    }
+    
+    result = simulated_results.get(query.lower(), simulated_results["default"])
+    print(f"--- TOOL RESULT: {result} ---")
+    return result
+
+tools = [search_information]
+
+# --- Create a Tool-Calling Agent ---
+if llm:
+    # This prompt template requires an `agent_scratchpad` placeholder for the agent's internal steps.
+    agent_prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful assistant."),
+        ("human", "{input}"),
+        ("placeholder", "{agent_scratchpad}"),
+    ])
+    
+    # Create the agent, binding the LLM, tools, and prompt together.
+    agent = create_tool_calling_agent(llm, tools, agent_prompt)
+    
+    # AgentExecutor is the runtime that invokes the agent and executes the chosen tools.
+    # The 'tools' argument is not needed here as they are already bound to the agent.
+    agent_executor = AgentExecutor(agent=agent, verbose=True, tools=tools)
+    
+    async def run_agent_with_tool(query: str):
+        """Invokes the agent executor with a query and prints the final response."""
+        print(f"\n--- 🏃 Running Agent with Query: '{query}' ---")
+        try:
+            response = await agent_executor.ainvoke({"input": query})
+            print("\n--- ✅ Final Agent Response ---")
+            print(response["output"])
+        except Exception as e:
+            print(f"\n🛑 An error occurred during agent execution: {e}")
+    
+    async def main():
+        """Runs all agent queries concurrently."""
+        tasks = [
+            run_agent_with_tool("What is the capital of France?"),
+            run_agent_with_tool("What's the weather like in London?"),
+            run_agent_with_tool("Tell me something about dogs.")  # Should trigger the default tool response
+        ]
+        await asyncio.gather(*tasks)
+
+    nest_asyncio.apply()
+    asyncio.run(main())
+```
 
 O código configura um agente que chama ferramentas usando a biblioteca LangChain e o modelo Google Gemini. Ele define uma ferramenta search_information que simula fornecer respostas factuais para consultas específicas. A ferramenta tem respostas pré-definidas para "weather in london," "capital of france," e "population of earth," e uma resposta padrão para outras consultas. Um modelo ChatGoogleGenerativeAI é inicializado, garantindo que tenha capacidades de chamada de ferramenta. Um ChatPromptTemplate é criado para guiar a interação do agente. A função create_tool_calling_agent é usada para combinar o modelo de linguagem, ferramentas e prompt em um agente. Um AgentExecutor é então configurado para gerenciar a execução do agente e invocação de ferramentas. A função assíncrona run_agent_with_tool é definida para invocar o agente com uma consulta dada e imprimir o resultado. A função assíncrona main prepara múltiplas consultas para serem executadas concorrentemente. Estas consultas são projetadas para testar tanto as respostas específicas quanto padrão da ferramenta search_information. Finalmente, a chamada asyncio.run(main()) executa todas as tarefas do agente. O código inclui verificações para inicialização bem-sucedida do LLM antes de prosseguir com configuração e execução do agente.
 
@@ -134,8 +219,112 @@ O código configura um agente que chama ferramentas usando a biblioteca LangChai
 
 Este código fornece um exemplo prático de como implementar function calling (Ferramentas) dentro do framework CrewAI. Ele configura um cenário simples onde um agente é equipado com uma ferramenta para buscar informação. O exemplo demonstra especificamente buscar um preço de ação simulado usando este agente e ferramenta.
 
-| `# pip install crewai langchain-openai import os from crewai import Agent, Task, Crew from crewai.tools import tool import logging # --- Melhor Prática: Configurar Logging --- # Uma configuração básica de logging ajuda na depuração e rastreamento da execução do crew. logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s') # --- Configurar sua Chave API --- # Para produção, é recomendado usar um método mais seguro para gerenciamento de chaves # como variáveis de ambiente carregadas em tempo de execução ou um gerenciador de segredos. # # Definir a variável de ambiente para seu provedor LLM escolhido (ex., OPENAI_API_KEY) # os.environ["OPENAI_API_KEY"] = "YOUR_API_KEY" # os.environ["OPENAI_MODEL_NAME"] = "gpt-4o" # --- 1. Ferramenta Refatorada: Retorna Dados Limpos --- # A ferramenta agora retorna dados brutos (um float) ou levanta um erro Python padrão. # Isso a torna mais reutilizável e força o agente a lidar com resultados adequadamente. @tool("Stock Price Lookup Tool") def get_stock_price(ticker: str) -> float:    """    Busca o último preço simulado de ação para um símbolo de ticker de ação dado.    Retorna o preço como um float. Levanta um ValueError se o ticker não for encontrado.    """    logging.info(f"Tool Call: get_stock_price for ticker '{ticker}'")    simulated_prices = {        "AAPL": 178.15,        "GOOGL": 1750.30,        "MSFT": 425.50,    }    price = simulated_prices.get(ticker.upper())    if price is not None:        return price    else:        # Levantar um erro específico é melhor que retornar uma string.        # O agente está equipado para lidar com exceções e pode decidir sobre a próxima ação.        raise ValueError(f"Preço simulado para ticker '{ticker.upper()}' não encontrado.") # --- 2. Definir o Agente --- # A definição do agente permanece a mesma, mas agora aproveitará a ferramenta melhorada. financial_analyst_agent = Agent(  role='Senior Financial Analyst',  goal='Analisar dados de ações usando ferramentas fornecidas e reportar preços chave.',  backstory="Você é um analista financeiro experiente adepto a usar fontes de dados para encontrar informação de ações. Você fornece respostas claras e diretas.",  verbose=True,  tools=[get_stock_price],  # Permitir delegação pode ser útil, mas não é necessário para esta tarefa simples.  allow_delegation=False, ) # --- 3. Tarefa Refinada: Instruções Mais Claras e Tratamento de Erro --- # A descrição da tarefa é mais específica e guia o agente sobre como reagir # tanto a recuperação bem-sucedida de dados quanto a erros potenciais. analyze_aapl_task = Task(  description=(      "Qual é o preço atual simulado de ação da Apple (ticker: AAPL)? "      "Use a 'Stock Price Lookup Tool' para encontrá-lo. "      "Se o ticker não for encontrado, você deve reportar que foi incapaz de recuperar o preço."  ),  expected_output=(      "Uma única frase clara declarando o preço simulado de ação para AAPL. "      "Por exemplo: 'O preço simulado de ação para AAPL é $178.15.' "      "Se o preço não puder ser encontrado, declare isso claramente."  ),  agent=financial_analyst_agent, ) # --- 4. Formular o Crew --- # O crew orquestra como o agente e tarefa trabalham juntos. financial_crew = Crew(  agents=[financial_analyst_agent],  tasks=[analyze_aapl_task],  verbose=True # Definir como False para logs menos detalhados em produção ) # --- 5. Executar o Crew dentro de um Bloco de Execução Principal --- # Usar um bloco __name__ == "__main__": é uma melhor prática Python padrão. def main():    """Função principal para executar o crew."""    # Verificar chave API antes de começar para evitar erros de runtime.    if not os.environ.get("OPENAI_API_KEY"):        print("ERRO: A variável de ambiente OPENAI_API_KEY não está definida.")        print("Por favor, defina-a antes de executar o script.")        return    print("\n## Iniciando o Financial Crew...")    print("---------------------------------")       # O método kickoff inicia a execução.    result = financial_crew.kickoff()    print("\n---------------------------------")    print("## Execução do crew finalizada.")    print("\nResultado Final:\n", result) if __name__ == "__main__":    main()` |
-| :---- |
+```python
+# pip install crewai langchain-openai
+
+import os
+from crewai import Agent, Task, Crew
+from crewai.tools import tool
+import logging
+
+# --- Melhor Prática: Configurar Logging ---
+# Uma configuração básica de logging ajuda na depuração e rastreamento da execução do crew.
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- Configurar sua Chave API ---
+# Para produção, é recomendado usar um método mais seguro para gerenciamento de chaves
+# como variáveis de ambiente carregadas em tempo de execução ou um gerenciador de segredos.
+#
+# Definir a variável de ambiente para seu provedor LLM escolhido (ex., OPENAI_API_KEY)
+# os.environ["OPENAI_API_KEY"] = "YOUR_API_KEY"
+# os.environ["OPENAI_MODEL_NAME"] = "gpt-4o"
+
+# --- 1. Ferramenta Refatorada: Retorna Dados Limpos ---
+# A ferramenta agora retorna dados brutos (um float) ou levanta um erro Python padrão.
+# Isso a torna mais reutilizável e força o agente a lidar com resultados adequadamente.
+@tool("Stock Price Lookup Tool")
+def get_stock_price(ticker: str) -> float:
+    """
+    Busca o último preço simulado de ação para um símbolo de ticker de ação dado.
+    Retorna o preço como um float.
+    Levanta um ValueError se o ticker não for encontrado.
+    """
+    logging.info(f"Tool Call: get_stock_price for ticker '{ticker}'")
+    
+    simulated_prices = {
+        "AAPL": 178.15,
+        "GOOGL": 1750.30,
+        "MSFT": 425.50,
+    }
+    
+    price = simulated_prices.get(ticker.upper())
+    if price is not None:
+        return price
+    else:
+        # Levantar um erro específico é melhor que retornar uma string.
+        # O agente está equipado para lidar com exceções e pode decidir sobre a próxima ação.
+        raise ValueError(f"Preço simulado para ticker '{ticker.upper()}' não encontrado.")
+
+# --- 2. Definir o Agente ---
+# A definição do agente permanece a mesma, mas agora aproveitará a ferramenta melhorada.
+financial_analyst_agent = Agent(
+    role='Senior Financial Analyst',
+    goal='Analisar dados de ações usando ferramentas fornecidas e reportar preços chave.',
+    backstory="Você é um analista financeiro experiente adepto a usar fontes de dados para encontrar informação de ações. Você fornece respostas claras e diretas.",
+    verbose=True,
+    tools=[get_stock_price],
+    # Permitir delegação pode ser útil, mas não é necessário para esta tarefa simples.
+    allow_delegation=False,
+)
+
+# --- 3. Tarefa Refinada: Instruções Mais Claras e Tratamento de Erro ---
+# A descrição da tarefa é mais específica e guia o agente sobre como reagir
+# tanto a recuperação bem-sucedida de dados quanto a erros potenciais.
+analyze_aapl_task = Task(
+    description=(
+        "Qual é o preço atual simulado de ação da Apple (ticker: AAPL)? "
+        "Use a 'Stock Price Lookup Tool' para encontrá-lo. "
+        "Se o ticker não for encontrado, você deve reportar que foi incapaz de recuperar o preço."
+    ),
+    expected_output=(
+        "Uma única frase clara declarando o preço simulado de ação para AAPL. "
+        "Por exemplo: 'O preço simulado de ação para AAPL é $178.15.' "
+        "Se o preço não puder ser encontrado, declare isso claramente."
+    ),
+    agent=financial_analyst_agent,
+)
+
+# --- 4. Formular o Crew ---
+# O crew orquestra como o agente e tarefa trabalham juntos.
+financial_crew = Crew(
+    agents=[financial_analyst_agent],
+    tasks=[analyze_aapl_task],
+    verbose=True  # Definir como False para logs menos detalhados em produção
+)
+
+# --- 5. Executar o Crew dentro de um Bloco de Execução Principal ---
+# Usar um bloco __name__ == "__main__": é uma melhor prática Python padrão.
+def main():
+    """Função principal para executar o crew."""
+    # Verificar chave API antes de começar para evitar erros de runtime.
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("ERRO: A variável de ambiente OPENAI_API_KEY não está definida.")
+        print("Por favor, defina-a antes de executar o script.")
+        return
+    
+    print("\n## Iniciando o Financial Crew...")
+    print("---------------------------------")
+    
+    # O método kickoff inicia a execução.
+    result = financial_crew.kickoff()
+    
+    print("\n---------------------------------")
+    print("## Execução do crew finalizada.")
+    print("\nResultado Final:\n", result)
+
+if __name__ == "__main__":
+    main()
+```
 
 Este código demonstra uma aplicação simples usando a biblioteca Crew.ai para simular uma tarefa de análise financeira. Ele define uma ferramenta customizada, get_stock_price, que simula buscar preços de ações para tickers pré-definidos. A ferramenta é projetada para retornar um número de ponto flutuante para tickers válidos ou levantar um ValueError para inválidos. Um Agente Crew.ai nomeado financial_analyst_agent é criado com o papel de Senior Financial Analyst. Este agente recebe a ferramenta get_stock_price para interagir. Uma Tarefa é definida, analyze_aapl_task, instruindo especificamente o agente a encontrar o preço simulado de ação para AAPL usando a ferramenta. A descrição da tarefa inclui instruções claras sobre como lidar com casos de sucesso e falha ao usar a ferramenta. Um Crew é montado, compreendendo o financial_analyst_agent e o analyze_aapl_task. A configuração verbose está habilitada tanto para o agente quanto para o crew para fornecer logging detalhado durante a execução. A parte principal do script executa a tarefa do crew usando o método kickoff() dentro de um bloco padrão if __name__ == "__main__":. Antes de iniciar o crew, ele verifica se a variável de ambiente OPENAI_API_KEY está definida, que é necessária para o agente funcionar. O resultado da execução do crew, que é a saída da tarefa, é então impresso no console. O código também inclui configuração básica de logging para melhor rastreamento das ações do crew e chamadas de ferramentas. Ele usa variáveis de ambiente para gerenciamento de chave API, embora observe que métodos mais seguros são recomendados para ambientes de produção. Em resumo, a lógica central mostra como definir ferramentas, agentes e tarefas para criar um workflow colaborativo no Crew.ai.
 
@@ -145,8 +334,50 @@ Este código demonstra uma aplicação simples usando a biblioteca Crew.ai para 
 
 # **Pesquisa Google:** Um exemplo primário de tal componente é a ferramenta Google Search. Esta ferramenta serve como uma interface direta para o motor de busca Google, equipando o agente com a funcionalidade para realizar buscas na web e recuperar informação externa.
 
-| `from google.adk.agents import Agent from google.adk.runners import Runner from google.adk.sessions import InMemorySessionService from google.adk.tools import google_search from google.genai import types import nest_asyncio import asyncio # Definir variáveis necessárias para configuração de Sessão e execução de Agente APP_NAME="Google Search_agent" USER_ID="user1234" SESSION_ID="1234" # Definir Agente com acesso à ferramenta de busca root_agent = ADKAgent(   name="basic_search_agent",   model="gemini-2.0-flash-exp",   description="Agente para responder perguntas usando Google Search.",   instruction="Posso responder suas perguntas pesquisando na internet. Apenas me pergunte qualquer coisa!",   tools=[google_search] # Google Search é uma ferramenta pré-construída para realizar buscas Google. ) # Interação do Agente async def call_agent(query):   """   Função auxiliar para chamar o agente com uma consulta.   """   # Sessão e Runner   session_service = InMemorySessionService()   session = await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)   runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)   content = types.Content(role='user', parts=[types.Part(text=query)])   events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)   for event in events:       if event.is_final_response():           final_response = event.content.parts[0].text           print("Resposta do Agente: ", final_response) nest_asyncio.apply() asyncio.run(call_agent("qual é a última notícia de IA?"))` |
-| :---- |
+```python
+from google.adk.agents import Agent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.adk.tools import google_search
+from google.genai import types
+import nest_asyncio
+import asyncio
+
+# Definir variáveis necessárias para configuração de Sessão e execução de Agente
+APP_NAME = "Google Search_agent"
+USER_ID = "user1234"
+SESSION_ID = "1234"
+
+# Definir Agente com acesso à ferramenta de busca
+root_agent = ADKAgent(
+    name="basic_search_agent",
+    model="gemini-2.0-flash-exp",
+    description="Agente para responder perguntas usando Google Search.",
+    instruction="Posso responder suas perguntas pesquisando na internet. Apenas me pergunte qualquer coisa!",
+    tools=[google_search]  # Google Search é uma ferramenta pré-construída para realizar buscas Google.
+)
+
+# Interação do Agente
+async def call_agent(query):
+    """
+    Função auxiliar para chamar o agente com uma consulta.
+    """
+    # Sessão e Runner
+    session_service = InMemorySessionService()
+    session = await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
+    runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
+    
+    content = types.Content(role='user', parts=[types.Part(text=query)])
+    events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
+    
+    for event in events:
+        if event.is_final_response():
+            final_response = event.content.parts[0].text
+            print("Resposta do Agente: ", final_response)
+
+nest_asyncio.apply()
+asyncio.run(call_agent("qual é a última notícia de IA?"))
+```
 
 Este código demonstra como criar e usar um agente básico alimentado pelo Google ADK para Python. O agente é projetado para responder perguntas utilizando Google Search como ferramenta. Primeiro, bibliotecas necessárias do IPython, google.adk, e google.genai são importadas. Constantes para o nome da aplicação, ID do usuário, e ID da sessão são definidas. Uma instância Agent nomeada "basic_search_agent" é criada com uma descrição e instruções indicando seu propósito. Ela está configurada para usar a ferramenta Google Search, que é uma ferramenta pré-construída fornecida pelo ADK. Um InMemorySessionService (ver Capítulo 8) é inicializado para gerenciar sessões para o agente. Uma nova sessão é criada para os IDs de aplicação, usuário e sessão especificados. Um Runner é instanciado, ligando o agente criado com o serviço de sessão. Este runner é responsável por executar as interações do agente dentro de uma sessão. Uma função auxiliar call_agent é definida para simplificar o processo de enviar uma consulta ao agente e processar a resposta. Dentro de call_agent, a consulta do usuário é formatada como um objeto types.Content com o papel 'user'. O método runner.run é chamado com o ID do usuário, ID da sessão, e o conteúdo da nova mensagem. O método runner.run retorna uma lista de eventos representando as ações e respostas do agente. O código itera através destes eventos para encontrar a resposta final. Se um evento é identificado como a resposta final, o conteúdo de texto dessa resposta é extraído. A resposta extraída do agente é então impressa no console. Finalmente, a função call_agent é chamada com a consulta "qual é a última notícia de IA?" para demonstrar o agente em ação.
 
@@ -183,3 +414,7 @@ Fig.2: Padrão de design de uso de ferramentas
 # Conclusão
 
 O padrão de Uso de Ferramentas representa uma transformação fundamental na capacidade dos agentes de IA para interagir com o mundo real. Através de function calling e tool calling, agentes podem transcender as limitações de seus dados de treinamento e executar ações práticas que fornecem valor real aos usuários. Este padrão é essencial para qualquer sistema agêntico que aspira a ser verdadeiramente útil e funcional no mundo real, estabelecendo a base para a próxima geração de aplicações de IA interativas e práticas.
+
+[image1]: ../assets/10-chapter-5-image-1-line-160.png
+
+[image2]: ../assets/10-chapter-5-image-2-line-162.png

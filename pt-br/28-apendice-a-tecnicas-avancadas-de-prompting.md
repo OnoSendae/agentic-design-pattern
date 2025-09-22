@@ -140,8 +140,52 @@ Utilizar efetivamente system prompts, atribuições de papel, informação conte
 
 Você pode analisar diretamente uma string JSON de um LLM em um objeto Pydantic usando o método model_validate_json. Isso é particularmente útil pois combina análise e validação em um único passo.
 
-|| `from pydantic import BaseModel, EmailStr, Field, ValidationError from typing import List, Optional from datetime import date # --- Definição do Modelo Pydantic (de acima) --- class User(BaseModel):    name: str = Field(..., description="O nome completo do usuário.")    email: EmailStr = Field(..., description="O endereço de email do usuário.")    date_of_birth: Optional[date] = Field(None, description="A data de nascimento do usuário.")    interests: List[str] = Field(default_factory=list, description="Uma lista dos interesses do usuário.") # --- Saída Hipotética do LLM --- llm_output_json = """ {    "name": "Alice Wonderland",    "email": "alice.w@example.com",    "date_of_birth": "1995-07-21",    "interests": [        "Processamento de Linguagem Natural",        "Programação Python",        "Jardinagem"    ] } """ # --- Análise e Validação --- try:    # Use o método de classe model_validate_json para analisar a string JSON.    # Este único passo analisa o JSON e valida os dados contra o modelo User.    user_object = User.model_validate_json(llm_output_json)    # Agora você pode trabalhar com um objeto Python limpo e type-safe.    print("Objeto User criado com sucesso!")    print(f"Nome: {user_object.name}")    print(f"Email: {user_object.email}")    print(f"Data de Nascimento: {user_object.date_of_birth}")    print(f"Primeiro Interesse: {user_object.interests[0]}")    # Você pode acessar os dados como qualquer outro atributo de objeto Python.    # Pydantic já converteu a string 'date_of_birth' para um objeto datetime.date.    print(f"Tipo de date_of_birth: {type(user_object.date_of_birth)}") except ValidationError as e:    # Se o JSON estiver malformado ou os dados não corresponderem aos tipos do modelo,    # Pydantic levantará um ValidationError.    print("Falha ao validar JSON do LLM.")    print(e)` |
-|| :---- |
+```python
+from pydantic import BaseModel, EmailStr, Field, ValidationError
+from typing import List, Optional
+from datetime import date
+
+# --- Definição do Modelo Pydantic (de acima) ---
+class User(BaseModel):
+    name: str = Field(..., description="O nome completo do usuário.")
+    email: EmailStr = Field(..., description="O endereço de email do usuário.")
+    date_of_birth: Optional[date] = Field(None, description="A data de nascimento do usuário.")
+    interests: List[str] = Field(default_factory=list, description="Uma lista dos interesses do usuário.")
+
+# --- Saída Hipotética do LLM ---
+llm_output_json = """{
+    "name": "Alice Wonderland",
+    "email": "alice.w@example.com",
+    "date_of_birth": "1995-07-21",
+    "interests": [
+        "Processamento de Linguagem Natural",
+        "Programação Python",
+        "Jardinagem"
+    ]
+}"""
+
+# --- Análise e Validação ---
+try:
+    # Use o método de classe model_validate_json para analisar a string JSON.
+    # Este único passo analisa o JSON e valida os dados contra o modelo User.
+    user_object = User.model_validate_json(llm_output_json)
+    
+    # Agora você pode trabalhar com um objeto Python limpo e type-safe.
+    print("Objeto User criado com sucesso!")
+    print(f"Nome: {user_object.name}")
+    print(f"Email: {user_object.email}")
+    print(f"Data de Nascimento: {user_object.date_of_birth}")
+    print(f"Interesses: {', '.join(user_object.interests)}")
+    
+except ValidationError as e:
+    print(f"Erro de validação: {e}")
+user_object.date_of_birth}
+") print(f"Primeiro Interesse:  {
+user_object.interests[0]}
+") # Você pode acessar os dados como qualquer outro atributo de objeto Python. # Pydantic já converteu a string 'date_of_birth' para um objeto datetime.date. print(f"Tipo de date_of_birth:  {
+type(user_object.date_of_birth)}
+") except ValidationError as e: # Se o JSON estiver malformado ou os dados não corresponderem aos tipos do modelo, # Pydantic levantará um ValidationError. print("Falha ao validar JSON do LLM.") print(e)
+```
 
 Este código Python demonstra como usar a biblioteca Pydantic para definir um modelo de dados e validar dados JSON. Define um modelo User com campos para nome, email, data de nascimento e interesses, incluindo dicas de tipo e descrições. O código então analisa uma saída JSON hipotética de um Large Language Model (LLM) usando o método model_validate_json do modelo User. Este método lida com análise JSON e validação de dados de acordo com a estrutura e tipos do modelo. Finalmente, o código acessa os dados validados do objeto Python resultante e inclui tratamento de erro para ValidationError caso o JSON seja inválido.
 

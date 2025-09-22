@@ -96,9 +96,10 @@ O terceiro pilar é Execução Iterativa Focada em Qualidade. Ao contrário de a
 
 **Resumo visual**
 
-![][image1]
-
 Fig. 1: Padrão de design de avaliação e monitoramento
+
+
+**Métricas e Monitoramento**
 
 # Principais Conclusões
 
@@ -125,3 +126,7 @@ Pesquisa relevante inclui:
 3. Survey on Evaluation of LLM-based Agents, [https://arxiv.org/abs/2503.16416](https://arxiv.org/abs/2503.16416)   
 4. Agent-as-a-Judge: Evaluate Agents with Agents, [https://arxiv.org/abs/2410.10934](https://arxiv.org/abs/2410.10934)   
 5. Agent Companion, gulli et al: [https://www.kaggle.com/whitepaper-agent-companion](https://www.kaggle.com/whitepaper-agent-companion)
+
+[image1]: ../assets/24-chapter-19-image-1-line-157.png
+
+[image2]: ../assets/24-chapter-19-image-2-line-159.png

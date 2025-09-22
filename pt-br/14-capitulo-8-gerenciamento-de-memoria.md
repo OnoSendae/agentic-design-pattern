@@ -40,18 +40,21 @@ Tanto o SessionService quanto o MemoryService oferecem várias opções de confi
 
 Um objeto Session no ADK é projetado para rastrear e gerenciar threads de chat individuais. Na iniciação de uma conversa com um agente, o SessionService gera um objeto Session, representado como `google.adk.sessions.Session`. Este objeto encapsula todos os dados relevantes para um thread de conversa específico, incluindo identificadores únicos (id, app_name, user_id), um registro cronológico de eventos como objetos Event, uma área de armazenamento para dados temporários específicos da sessão conhecidos como state, e um timestamp indicando a última atualização (last_update_time). Desenvolvedores tipicamente interagem com objetos Session indiretamente através do SessionService. O SessionService é responsável por gerenciar o ciclo de vida de sessões de conversa, que inclui iniciar novas sessões, retomar sessões anteriores, registrar atividade da sessão (incluindo atualizações de estado), identificar sessões ativas e gerenciar a remoção de dados da sessão. O ADK fornece várias implementações de SessionService com mecanismos de armazenamento variados para histórico da sessão e dados temporários, como o InMemorySessionService, que é adequado para teste mas não fornece persistência de dados através de reinicializações da aplicação.
 
-| `# Exemplo: Usando InMemorySessionService # Isso é adequado para desenvolvimento local e teste onde persistência # de dados através de reinicializações da aplicação não é requerida. from google.adk.sessions import InMemorySessionService session_service = InMemorySessionService()` |
-| :---- |
+```python
+# Exemplo: Usando InMemorySessionService # Isso é adequado para desenvolvimento local e teste onde persistência # de dados através de reinicializações da aplicação não é requerida. from google.adk.sessions import InMemorySessionService session_service = InMemorySessionService()
+```
 
 Então há o DatabaseSessionService se você quiser salvamento confiável em um banco de dados que você gerencia.
 
-| `# Exemplo: Usando DatabaseSessionService # Isso é adequado para produção ou desenvolvimento requerendo armazenamento persistente. # Você precisa configurar uma URL do banco de dados (ex., para SQLite, PostgreSQL, etc.). # Requer: pip install google-adk[sqlalchemy] e um driver de banco de dados (ex., psycopg2 para PostgreSQL) from google.adk.sessions import DatabaseSessionService # Exemplo usando um arquivo SQLite local: db_url = "sqlite:///./my_agent_data.db" session_service = DatabaseSessionService(db_url=db_url)` |
-| :---- |
+```python
+# Exemplo: Usando DatabaseSessionService # Isso é adequado para produção ou desenvolvimento requerendo armazenamento persistente. # Você precisa configurar uma URL do banco de dados (ex., para SQLite, PostgreSQL, etc.). # Requer: pip install google-adk[sqlalchemy] e um driver de banco de dados (ex., psycopg2 para PostgreSQL) from google.adk.sessions import DatabaseSessionService # Exemplo usando um arquivo SQLite local: db_url = "sqlite:///./my_agent_data.db" session_service = DatabaseSessionService(db_url=db_url)
+```
 
 Além disso, há o VertexAiSessionService que usa infraestrutura Vertex AI para produção escalável no Google Cloud.
 
-| `# Exemplo: Usando VertexAiSessionService # Isso é adequado para produção escalável no Google Cloud Platform, aproveitando # infraestrutura Vertex AI para gerenciamento de sessão. # Requer: pip install google-adk[vertexai] e configuração/autenticação GCP from google.adk.sessions import VertexAiSessionService PROJECT_ID = "your-gcp-project-id" # Substitua pelo seu ID do projeto GCP LOCATION = "us-central1" # Substitua pela sua localização GCP desejada # O app_name usado com este serviço deve corresponder ao ID do Reasoning Engine ou nome REASONING_ENGINE_APP_NAME = "projects/your-gcp-project-id/locations/us-central1/reasoningEngines/your-engine-id" # Substitua pelo nome do recurso Reasoning Engine session_service = VertexAiSessionService(project=PROJECT_ID, location=LOCATION) # Ao usar este serviço, passe REASONING_ENGINE_APP_NAME para métodos do serviço: # session_service.create_session(app_name=REASONING_ENGINE_APP_NAME, ...) # session_service.get_session(app_name=REASONING_ENGINE_APP_NAME, ...) # session_service.append_event(session, event, app_name=REASONING_ENGINE_APP_NAME) # session_service.delete_session(app_name=REASONING_ENGINE_APP_NAME, ...)` |
-| :---- |
+```python
+# Exemplo: Usando VertexAiSessionService # Isso é adequado para produção escalável no Google Cloud Platform, aproveitando # infraestrutura Vertex AI para gerenciamento de sessão. # Requer: pip install google-adk[vertexai] e configuração/autenticação GCP from google.adk.sessions import VertexAiSessionService PROJECT_ID = "your-gcp-project-id" # Substitua pelo seu ID do projeto GCP LOCATION = "us-central1" # Substitua pela sua localização GCP desejada # O app_name usado com este serviço deve corresponder ao ID do Reasoning Engine ou nome REASONING_ENGINE_APP_NAME = "projects/your-gcp-project-id/locations/us-central1/reasoningEngines/your-engine-id" # Substitua pelo nome do recurso Reasoning Engine session_service = VertexAiSessionService(project=PROJECT_ID, location=LOCATION) # Ao usar este serviço, passe REASONING_ENGINE_APP_NAME para métodos do serviço: # session_service.create_session(app_name=REASONING_ENGINE_APP_NAME, ...) # session_service.get_session(app_name=REASONING_ENGINE_APP_NAME, ...) # session_service.append_event(session, event, app_name=REASONING_ENGINE_APP_NAME) # session_service.delete_session(app_name=REASONING_ENGINE_APP_NAME, ...)
+```
 
 Escolher um SessionService apropriado é crucial pois determina como o histórico de interação do agente e dados temporários são armazenados e sua persistência.
 
@@ -75,15 +78,81 @@ O agente acessa todos os dados de estado através de um único dicionário sessi
 
 1. **A Maneira Simples: Usando output_key (para Respostas de Texto do Agente):** Esta é a maneira mais fácil se você apenas quiser salvar a resposta final de texto do seu agente diretamente no estado. Quando você configura seu LlmAgent, apenas diga a ele o output_key que você quer usar. O Runner vê isso e automaticamente cria as ações necessárias para salvar a resposta no estado quando ele anexa o evento. Vamos ver um exemplo de código demonstrando atualização de estado via output_key.
 
-| `# Importar classes necessárias do Google Agent Developer Kit (ADK) from google.adk.agents import LlmAgent from google.adk.sessions import InMemorySessionService, Session from google.adk.runners import Runner from google.genai.types import Content, Part # Definir um LlmAgent com um output_key. greeting_agent = LlmAgent(    name="Greeter",    model="gemini-2.0-flash",    instruction="Gere uma saudação curta e amigável.",    output_key="last_greeting" ) # --- Configurar Runner e Session --- app_name, user_id, session_id = "state_app", "user1", "session1" session_service = InMemorySessionService() runner = Runner(    agent=greeting_agent,    app_name=app_name,    session_service=session_service ) session = session_service.create_session(    app_name=app_name,    user_id=user_id,    session_id=session_id ) print(f"Estado inicial: {session.state}") # --- Executar o Agente --- user_message = Content(parts=[Part(text="Hello")]) print("\n--- Executando o agente ---") for event in runner.run(    user_id=user_id,    session_id=session_id,    new_message=user_message ):    if event.is_final_response():      print("Agente respondeu.") # --- Verificar Estado Atualizado --- # Verificar corretamente o estado *após* o runner ter terminado de processar todos os eventos. updated_session = session_service.get_session(app_name, user_id, session_id) print(f"\nEstado após execução do agente: {updated_session.state}")` |
-| :---- |
+```python
+# Importar classes necessárias do Google Agent Developer Kit (ADK)
+from google.adk.agents import LlmAgent
+from google.adk.sessions import InMemorySessionService, Session
+from google.adk.runners import Runner
+from google.genai.types import Content, Part
+
+# Definir um LlmAgent com um output_key.
+greeting_agent = LlmAgent(
+    name="Greeter",
+    model="gemini-2.0-flash",
+    instruction="Gere uma saudação curta e amigável.",
+    output_key="last_greeting"
+)
+
+# --- Configurar Runner e Session ---
+app_name, user_id, session_id = "state_app", "user1", "session1"
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=greeting_agent,
+    app_name=app_name,
+    session_service=session_service
+)
+
+session = session_service.create_session(
+    app_name=app_name,
+    user_id=user_id,
+    session_id=session_id
+)
+
+print(f"Estado inicial: {session.state}")
+
+# --- Executar o Agente ---
+user_message = Content(parts=[Part(text="Hello")])
+print("\n--- Executando o agente ---")
+
+for event in runner.run(
+    user_id=user_id,
+    session_id=session_id,
+    new_message=user_message
+):
+    if event.is_final_response():
+        print("Agente respondeu.")
+
+# --- Verificar Estado Atualizado ---
+# Verificar corretamente o estado *após* o runner ter terminado de processar todos os eventos.
+updated_session = session_service.get_session(app_name, user_id, session_id)
+print(f"\nEstado após execução do agente: {updated_session.state}")
+```
 
 Nos bastidores, o Runner vê seu output_key e automaticamente cria as ações necessárias com um state_delta quando ele chama append_event.
 
 2. **A Maneira Padrão: Usando EventActions.state_delta (para Atualizações Mais Complicadas):** Para momentos quando você precisa fazer coisas mais complexas – como atualizar várias chaves de uma vez, salvar coisas que não são apenas texto, direcionar escopos específicos como user: ou app:, ou fazer atualizações que não estão vinculadas à resposta final de texto do agente – você construirá manualmente um dicionário de suas mudanças de estado (o state_delta) e o incluirá dentro das EventActions do Event que você está anexando. Vamos ver um exemplo:
 
-| `import time from google.adk.tools.tool_context import ToolContext from google.adk.sessions import InMemorySessionService # --- Definir a Abordagem Recomendada Baseada em Ferramentas --- def log_user_login(tool_context: ToolContext) -> dict:    """    Atualiza o estado da sessão em um evento de login do usuário.    Esta ferramenta encapsula todas as mudanças de estado relacionadas a um login do usuário.    Args:        tool_context: Fornecido automaticamente pelo ADK, dá acesso ao estado da sessão.    Returns:        Um dicionário confirmando que a ação foi bem-sucedida.    """    # Acessar o estado diretamente através do contexto fornecido.    state = tool_context.state       # Obter valores atuais ou padrões, então atualizar o estado.    # Isso é muito mais limpo e co-localiza a lógica.    login_count = state.get("user:login_count", 0) + 1    state["user:login_count"] = login_count    state["task_status"] = "active"    state["user:last_login_ts"] = time.time()    state["temp:validation_needed"] = True       print("Estado atualizado de dentro da ferramenta `log_user_login`.")       return {        "status": "success",        "message": f"Login do usuário rastreado. Total de logins: {login_count}."    } # --- Demonstração de Uso --- # Em uma aplicação real, um Agente LLM decidiria chamar esta ferramenta. # Aqui, simulamos uma chamada direta para fins de demonstração. # 1. Configuração session_service = InMemorySessionService() app_name, user_id, session_id = "state_app_tool", "user3", "session3" session = session_service.create_session(    app_name=app_name,    user_id=user_id,    session_id=session_id,    state={"user:login_count": 0, "task_status": "idle"} ) print(f"Estado inicial: {session.state}") # 2. Simular uma chamada de ferramenta (em uma app real, o ADK Runner faz isso) # Criamos um ToolContext manualmente apenas para este exemplo independente. from google.adk.tools.tool_context import InvocationContext mock_context = ToolContext(    invocation_context=InvocationContext(        app_name=app_name, user_id=user_id, session_id=session_id,        session=session, session_service=session_service    ) ) # 3. Executar a ferramenta log_user_login(mock_context) # 4. Verificar o estado atualizado updated_session = session_service.get_session(app_name, user_id, session_id) print(f"Estado após execução da ferramenta: {updated_session.state}") # A saída esperada mostrará a mesma mudança de estado que o # caso "Antes", # mas a organização do código é significativamente mais limpa # e mais robusta.` |
-| :---- |
+```python
+
+import time 
+from google.adk.tools.tool_context 
+import ToolContext 
+from google.adk.sessions 
+import InMemorySessionService # --- Definir a Abordagem Recomendada Baseada em Ferramentas --- 
+def log_user_login(tool_context: ToolContext) -> dict: """ Atualiza o estado da sessão em um evento de login do usuário. Esta ferramenta encapsula todas as mudanças de estado relacionadas a um login do usuário. Args: tool_context: Fornecido automaticamente pelo ADK, dá acesso ao estado da sessão. Returns: Um dicionário confirmando que a ação foi bem-sucedida. """ # Acessar o estado diretamente através do contexto fornecido. state = tool_context.state # Obter valores atuais ou padrões, então atualizar o estado. # Isso é muito mais limpo e co-localiza a lógica. login_count = state.get("user:login_count", 0) + 1 state["user:login_count"] = login_count state["task_status"] = "active" state["user:last_login_ts"] = time.time() state["temp:validation_needed"] = True print("Estado atualizado de dentro da ferramenta `log_user_login`.") return  {
+"status": "success", "message": f"Login do usuário rastreado. Total de logins:  {
+login_count}
+." }
+# --- Demonstração de Uso --- # Em uma aplicação real, um Agente LLM decidiria chamar esta ferramenta. # Aqui, simulamos uma chamada direta para fins de demonstração. # 1. Configuração session_service = InMemorySessionService() app_name, user_id, session_id = "state_app_tool", "user3", "session3" session = session_service.create_session( app_name=app_name, user_id=user_id, session_id=session_id, state= {
+"user:login_count": 0, "task_status": "idle"}
+) print(f"Estado inicial:  {
+session.state}
+") # 2. Simular uma chamada de ferramenta (em uma app real, o ADK Runner faz isso) # Criamos um ToolContext manualmente apenas para este exemplo independente. 
+from google.adk.tools.tool_context 
+import InvocationContext mock_context = ToolContext( invocation_context=InvocationContext( app_name=app_name, user_id=user_id, session_id=session_id, session=session, session_service=session_service ) ) # 3. Executar a ferramenta log_user_login(mock_context) # 4. Verificar o estado atualizado updated_session = session_service.get_session(app_name, user_id, session_id) print(f"Estado após execução da ferramenta:  {
+updated_session.state}
+") # A saída esperada mostrará a mesma mudança de estado que o # caso "Antes", # mas a organização do código é significativamente mais limpa # e mais robusta.
+```
 
 Este código demonstra uma abordagem baseada em ferramentas para gerenciar estado de sessão do usuário em uma aplicação. Ele define uma função *log_user_login*, que atua como uma ferramenta. Esta ferramenta é responsável por atualizar o estado da sessão quando um usuário faz login.  
 A função toma um objeto ToolContext, fornecido pelo ADK, para acessar e modificar o dicionário de estado da sessão. Dentro da ferramenta, ela incrementa um *user:login_count*, define o *task_status* como "active", registra o *user:last_login_ts (timestamp)*, e adiciona uma flag temporária temp:validation_needed. 
@@ -98,15 +167,17 @@ Para recapitular, ao projetar seu estado, mantenha simples, use tipos de dados b
 
 Em sistemas de agentes, o componente Session mantém um registro do histórico de chat atual (eventos) e dados temporários (estado) específicos para uma única conversa. No entanto, para agentes reterem informações através de múltiplas interações ou acessarem dados externos, gerenciamento de conhecimento de longo prazo é necessário. Isso é facilitado pelo MemoryService.
 
-| `# Exemplo: Usando InMemoryMemoryService # Isso é adequado para desenvolvimento local e teste onde persistência # de dados através de reinicializações da aplicação não é requerida.  # Conteúdo de memória é perdido quando o app para. from google.adk.memory import InMemoryMemoryService memory_service = InMemoryMemoryService()` |
-| :---- |
+```python
+# Exemplo: Usando InMemoryMemoryService # Isso é adequado para desenvolvimento local e teste onde persistência # de dados através de reinicializações da aplicação não é requerida. # Conteúdo de memória é perdido quando o app para. from google.adk.memory import InMemoryMemoryService memory_service = InMemoryMemoryService()
+```
 
 Session e State podem ser conceitualizados como memória de curto prazo para uma única sessão de chat, enquanto o Conhecimento de Longo Prazo gerenciado pelo MemoryService funciona como um repositório persistente e pesquisável. Este repositório pode conter informações de múltiplas interações passadas ou fontes externas. O MemoryService, conforme definido pela interface BaseMemoryService, estabelece um padrão para gerenciar este conhecimento pesquisável de longo prazo. Suas funções principais incluem adicionar informações, que envolve extrair conteúdo de uma sessão e armazená-lo usando o método add_session_to_memory, e recuperar informações, que permite que um agente consulte o armazenamento e receba dados relevantes usando o método search_memory.
 
 O ADK oferece várias implementações para criar este armazenamento de conhecimento de longo prazo. O InMemoryMemoryService fornece uma solução de armazenamento temporário adequada para propósitos de teste, mas dados não são preservados através de reinicializações da aplicação. Para ambientes de produção, o VertexAiRagMemoryService é tipicamente utilizado. Este serviço aproveita o serviço de Geração Aumentada por Recuperação (RAG) do Google Cloud, permitindo capacidades de busca semântica escalável e persistente (Também, consulte o capítulo 14 sobre RAG).
 
-| `# Exemplo: Usando VertexAiRagMemoryService # Isso é adequado para produção escalável no GCP, aproveitando # Vertex AI RAG (Retrieval Augmented Generation) para memória persistente e  # pesquisável. # Requer: pip install google-adk[vertexai], configuração # GCP/autenticação, e um Corpus RAG Vertex AI. from google.adk.memory import VertexAiRagMemoryService # O nome do recurso do seu Corpus RAG Vertex AI RAG_CORPUS_RESOURCE_NAME = "projects/your-gcp-project-id/locations/us-central1/ragCorpora/your-corpus-id" # Substitua pelo nome do recurso do seu Corpus # Configuração opcional para comportamento de recuperação SIMILARITY_TOP_K = 5 # Número de resultados principais para recuperar VECTOR_DISTANCE_THRESHOLD = 0.7 # Limiar para similaridade vetorial memory_service = VertexAiRagMemoryService(    rag_corpus=RAG_CORPUS_RESOURCE_NAME,    similarity_top_k=SIMILARITY_TOP_K,    vector_distance_threshold=VECTOR_DISTANCE_THRESHOLD ) # Ao usar este serviço, métodos como add_session_to_memory  # e search_memory interagirão com o Corpus RAG Vertex AI especificado.` |
-| :---- |
+```python
+# Exemplo: Usando VertexAiRagMemoryService # Isso é adequado para produção escalável no GCP, aproveitando # Vertex AI RAG (Retrieval Augmented Generation) para memória persistente e # pesquisável. # Requer: pip install google-adk[vertexai], configuração # GCP/autenticação, e um Corpus RAG Vertex AI. from google.adk.memory import VertexAiRagMemoryService # O nome do recurso do seu Corpus RAG Vertex AI RAG_CORPUS_RESOURCE_NAME = "projects/your-gcp-project-id/locations/us-central1/ragCorpora/your-corpus-id" # Substitua pelo nome do recurso do seu Corpus # Configuração opcional para comportamento de recuperação SIMILARITY_TOP_K = 5 # Número de resultados principais para recuperar VECTOR_DISTANCE_THRESHOLD = 0.7 # Limiar para similaridade vetorial memory_service = VertexAiRagMemoryService( rag_corpus=RAG_CORPUS_RESOURCE_NAME, similarity_top_k=SIMILARITY_TOP_K, vector_distance_threshold=VECTOR_DISTANCE_THRESHOLD ) # Ao usar este serviço, métodos como add_session_to_memory # e search_memory interagirão com o Corpus RAG Vertex AI especificado.
+```
 
 # Código hands-on: Gerenciamento de Memória no LangChain e LangGraph
 
@@ -120,8 +191,9 @@ O LangChain fornece várias ferramentas para gerenciar histórico de conversa, v
 
 **ChatMessageHistory: Gerenciamento Manual de Memória.** Para controle direto e simples sobre o histórico de uma conversa fora de uma chain formal, a classe ChatMessageHistory é ideal. Isso permite o rastreamento manual de trocas de diálogo.
 
-| `from langchain.memory import ChatMessageHistory # Inicializar o objeto de histórico history = ChatMessageHistory() # Adicionar mensagens do usuário e IA history.add_user_message("Estou indo para Nova York na próxima semana.") history.add_ai_message("Ótimo! É uma cidade fantástica.") # Acessar a lista de mensagens print(history.messages)` |
-| :---- |
+```python
+from langchain.memory import ChatMessageHistory # Inicializar o objeto de histórico history = ChatMessageHistory() # Adicionar mensagens do usuário e IA history.add_user_message("Estou indo para Nova York na próxima semana.") history.add_ai_message("Ótimo! É uma cidade fantástica.") # Acessar a lista de mensagens print(history.messages)
+```
 
 **ConversationBufferMemory: Memória Automatizada para Chains**. Para integrar memória diretamente em chains, ConversationBufferMemory é uma escolha comum. Isso mantém um buffer da conversa e o disponibiliza para seu prompt. Seu comportamento pode ser customizado com dois parâmetros principais:
 
@@ -130,18 +202,33 @@ O LangChain fornece várias ferramentas para gerenciar histórico de conversa, v
   * Se False (o padrão), retorna uma única string formatada, que é ideal para LLMs padrão.  
   * Se True, retorna uma lista de objetos de mensagem, que é o formato recomendado para Chat Models.
 
-| `from langchain.memory import ConversationBufferMemory # Inicializar memória memory = ConversationBufferMemory() # Salvar um turno de conversa memory.save_context({"input": "Como está o clima?"}, {"output": "Está ensolarado hoje."}) # Carregar a memória como string print(memory.load_memory_variables({}))` |
-| :---- |
+```python
+from langchain.memory import ConversationBufferMemory # Inicializar memória memory = ConversationBufferMemory() # Salvar um turno de conversa memory.save_context( {
+"input": "Como está o clima?"}
+,  {
+"output": "Está ensolarado hoje."}
+) # Carregar a memória como string print(memory.load_memory_variables( {
+}
+))
+```
 
 Integrar esta memória em um LLMChain permite que o modelo acesse o histórico da conversa e forneça respostas contextualmente relevantes
 
-| `from langchain_openai import OpenAI from langchain.chains import LLMChain from langchain.prompts import PromptTemplate from langchain.memory import ConversationBufferMemory # 1. Definir LLM e Prompt llm = OpenAI(temperature=0) template = """Você é um agente de viagem útil. Conversa anterior: {history} Nova pergunta: {question} Resposta:""" prompt = PromptTemplate.from_template(template) # 2. Configurar Memória # A memory_key "history" corresponde à variável no prompt memory = ConversationBufferMemory(memory_key="history") # 3. Construir a Chain conversation = LLMChain(llm=llm, prompt=prompt, memory=memory) # 4. Executar a Conversa response = conversation.predict(question="Quero reservar um voo.") print(response) response = conversation.predict(question="Meu nome é Sam, a propósito.") print(response) response = conversation.predict(question="Qual era meu nome mesmo?") print(response)` |
-| :---- |
+```python
+from langchain_openai import OpenAI from langchain.chains import LLMChain from langchain.prompts import PromptTemplate from langchain.memory import ConversationBufferMemory # 1. Definir LLM e Prompt llm = OpenAI(temperature=0) template = """Você é um agente de viagem útil. Conversa anterior:  {
+history}
+Nova pergunta:  {
+question}
+Resposta:""" prompt = PromptTemplate.from_template(template) # 2. Configurar Memória # A memory_key "history" corresponde à variável no prompt memory = ConversationBufferMemory(memory_key="history") # 3. Construir a Chain conversation = LLMChain(llm=llm, prompt=prompt, memory=memory) # 4. Executar a Conversa response = conversation.predict(question="Quero reservar um voo.") print(response) response = conversation.predict(question="Meu nome é Sam, a propósito.") print(response) response = conversation.predict(question="Qual era meu nome mesmo?") print(response)
+```
 
 Para eficácia melhorada com modelos de chat, é recomendado usar uma lista estruturada de objetos de mensagem definindo `return_messages=True`.
 
-| `from langchain_openai import ChatOpenAI from langchain.chains import LLMChain from langchain.memory import ConversationBufferMemory from langchain_core.prompts import (    ChatPromptTemplate,    MessagesPlaceholder,    SystemMessagePromptTemplate,    HumanMessagePromptTemplate, ) # 1. Definir Chat Model e Prompt llm = ChatOpenAI() prompt = ChatPromptTemplate(    messages=[        SystemMessagePromptTemplate.from_template("Você é um assistente amigável."),        MessagesPlaceholder(variable_name="chat_history"),        HumanMessagePromptTemplate.from_template("{question}")    ] ) # 2. Configurar Memória # return_messages=True é essencial para modelos de chat memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True) # 3. Construir a Chain conversation = LLMChain(llm=llm, prompt=prompt, memory=memory) # 4. Executar a Conversa response = conversation.predict(question="Oi, eu sou Jane.") print(response) response = conversation.predict(question="Você lembra do meu nome?") print(response)` |
-| :---- |
+```python
+from langchain_openai import ChatOpenAI from langchain.chains import LLMChain from langchain.memory import ConversationBufferMemory from langchain_core.prompts import ( ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate, HumanMessagePromptTemplate, ) # 1. Definir Chat Model e Prompt llm = ChatOpenAI() prompt = ChatPromptTemplate( messages=[ SystemMessagePromptTemplate.from_template("Você é um assistente amigável."), MessagesPlaceholder(variable_name="chat_history"), HumanMessagePromptTemplate.from_template(" {
+question}
+") ] ) # 2. Configurar Memória # return_messages=True é essencial para modelos de chat memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True) # 3. Construir a Chain conversation = LLMChain(llm=llm, prompt=prompt, memory=memory) # 4. Executar a Conversa response = conversation.predict(question="Oi, eu sou Jane.") print(response) response = conversation.predict(question="Você lembra do meu nome?") print(response)
+```
 
 **Tipos de Memória de Longo Prazo**: A memória de longo prazo permite que sistemas retenham informações através de diferentes conversas, fornecendo um nível mais profundo de contexto e personalização. Isso pode ser dividido em três tipos análogos à memória humana:
 

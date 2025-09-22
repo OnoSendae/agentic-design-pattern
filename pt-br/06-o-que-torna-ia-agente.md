@@ -105,3 +105,11 @@ Em essência, um agente de IA representa um salto significativo dos modelos trad
 2. Agentes de IA generativa autônomos: [https://www.deloitte.com/us/en/insights/industry/technology/technology-media-and-telecom-predictions/2025/autonomous-generative-ai-agents-still-under-development.html](https://www.deloitte.com/us/en/insights/industry/technology/technology-media-and-telecom-predictions/2025/autonomous-generative-ai-agents-still-under-development.html)
 3. Market.us. Tamanho do Mercado Global de IA Agêntica, Tendências e Previsão 2025–2034. [https://market.us/report/agentic-ai-market/](https://market.us/report/agentic-ai-market/)
 
+
+[image1]: ../assets/06-what-makes-an-ai-system-an-agent-image-1-line-110.png
+
+[image2]: ../assets/06-what-makes-an-ai-system-an-agent-image-2-line-112.png
+
+[image3]: ../assets/06-what-makes-an-ai-system-an-agent-image-3-line-114.png
+
+[image4]: ../assets/06-what-makes-an-ai-system-an-agent-image-4-line-116.png

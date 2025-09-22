@@ -80,3 +80,5 @@ A visão final é uma convergência dessas capacidades digitais e físicas, cria
 7. Gemini Live, [https://gemini.google/overview/gemini-live/?hl=en](https://gemini.google/overview/gemini-live/?hl=en)   
 8. OpenAI's GPT-4,  [https://openai.com/index/gpt-4-research/](https://openai.com/index/gpt-4-research/)   
 9. Claude 4, [https://www.anthropic.com/news/claude-4](https://www.anthropic.com/news/claude-4)
+
+[image1]: ../assets/28-appendix-b-image-1-line-83.png

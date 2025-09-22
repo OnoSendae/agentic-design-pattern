@@ -107,8 +107,23 @@ Fig. 3: A arquitetura interna do OpenEvolve é gerenciada por um controlador. Es
 
 Este trecho de código usa a biblioteca OpenEvolve para realizar otimização evolutiva em um programa. Ele inicializa o sistema OpenEvolve com caminhos para um programa inicial, um arquivo de avaliação, e um arquivo de configuração. A linha evolve.run(iterations=1000) inicia o processo evolutivo, executando por 1000 iterações para encontrar uma versão melhorada do programa. Finalmente, ele imprime as métricas do melhor programa encontrado durante a evolução, formatadas para quatro casas decimais. 
 
-| `from openevolve import OpenEvolve # Inicializar o sistema evolve = OpenEvolve(    initial_program_path="path/to/initial_program.py",    evaluation_file="path/to/evaluator.py",    config_path="path/to/config.yaml" ) # Executar a evolução best_program = await evolve.run(iterations=1000) print(f"Métricas do melhor programa:") for name, value in best_program.metrics.items():    print(f"  {name}: {value:.4f}")` |
-| :---- |
+```python
+from openevolve import OpenEvolve
+
+# Inicializar o sistema
+evolve = OpenEvolve(
+    initial_program_path="path/to/initial_program.py",
+    evaluation_file="path/to/evaluator.py",
+    config_path="path/to/config.yaml"
+)
+
+# Executar a evolução
+best_program = await evolve.run(iterations=1000)
+
+print(f"Métricas do melhor programa:")
+for name, value in best_program.metrics.items():
+    print(f"  {name}: {value:.4f}")
+```
 
 # Em Resumo
 
@@ -151,3 +166,11 @@ Estes elementos contribuem para avanços significativos, como o AlphaEvolve do G
 3. Self-Improving Coding Agent (SICA), [https://github.com/MaximeRobeyns/self_improving_coding_agent/](https://github.com/MaximeRobeyns/self_improving_coding_agent/)   
 4. AlphaEvolve: Autonomous Discovery and Optimization of Algorithms, [https://arxiv.org/abs/2406.18588](https://arxiv.org/abs/2406.18588)   
 5. OpenEvolve: Evolutionary Coding Agent, [https://github.com/openevolve/openevolve](https://github.com/openevolve/openevolve)
+
+[image1]: ../assets/14-chapter-9-image-1-line-157.png
+
+[image2]: ../assets/14-chapter-9-image-2-line-159.png
+
+[image3]: ../assets/14-chapter-9-image-3-line-161.png
+
+[image4]: ../assets/14-chapter-9-image-4-line-163.png

@@ -26,8 +26,62 @@ Em essência, o padrão de Planejamento permite que um agente se mova além de a
 
 A seguinte seção demonstrará uma implementação do padrão Planner usando o framework Crew AI. Este padrão envolve um agente que primeiro formula um plano multi-passo para abordar uma consulta complexa e então executa esse plano sequencialmente.
 
-| `import os from dotenv import load_dotenv from crewai import Agent, Task, Crew, Process from langchain_openai import ChatOpenAI # Carregar variáveis de ambiente do arquivo .env para segurança load_dotenv() # 1. Definir explicitamente o modelo de linguagem para clareza llm = ChatOpenAI(model="gpt-4-turbo") # 2. Definir um agente claro e focado planner_writer_agent = Agent(    role='Article Planner and Writer',    goal='Planejar e então escrever um resumo conciso e envolvente sobre um tópico especificado.',    backstory=(        'Você é um escritor técnico experiente e estrategista de conteúdo. '        'Sua força está em criar um plano claro e acionável antes de escrever, '        'garantindo que o resumo final seja tanto informativo quanto fácil de digerir.'    ),    verbose=True,    allow_delegation=False,    llm=llm # Atribuir o LLM específico ao agente ) # 3. Definir uma tarefa com uma saída esperada mais estruturada e específica topic = "A importância do Reinforcement Learning na IA" high_level_task = Task(    description=(        f"1. Criar um plano de pontos para um resumo sobre o tópico: '{topic}'.\n"        f"2. Escrever o resumo baseado em seu plano, mantendo-o em torno de 200 palavras."    ),    expected_output=(        "Um relatório final contendo duas seções distintas:\n\n"        "### Plano\n"        "- Uma lista com marcadores delineando os pontos principais do resumo.\n\n"        "### Resumo\n"        "- Um resumo conciso e bem estruturado do tópico."    ),    agent=planner_writer_agent, ) # Criar o crew com um processo claro crew = Crew(    agents=[planner_writer_agent],    tasks=[high_level_task],    process=Process.sequential, ) # Executar a tarefa print("## Executando a tarefa de planejamento e escrita ##") result = crew.kickoff() print("\n\n---\n## Resultado da Tarefa ##\n---") print(result)` |
-| :---- |
+```python
+import os
+from dotenv import load_dotenv
+from crewai import Agent, Task, Crew, Process
+from langchain_openai import ChatOpenAI
+
+# Carregar variáveis de ambiente do arquivo .env para segurança
+load_dotenv()
+
+# 1. Definir explicitamente o modelo de linguagem para clareza
+llm = ChatOpenAI(model="gpt-4-turbo")
+
+# 2. Definir um agente claro e focado
+planner_writer_agent = Agent(
+    role='Article Planner and Writer',
+    goal='Planejar e então escrever um resumo conciso e envolvente sobre um tópico especificado.',
+    backstory=(
+        'Você é um escritor técnico experiente e estrategista de conteúdo. '
+        'Sua força está em criar um plano claro e acionável antes de escrever, '
+        'garantindo que o resumo final seja tanto informativo quanto fácil de digerir.'
+    ),
+    verbose=True,
+    allow_delegation=False,
+    llm=llm  # Atribuir o LLM específico ao agente
+)
+
+# 3. Definir uma tarefa com uma saída esperada mais estruturada e específica
+topic = "A importância do Reinforcement Learning na IA"
+high_level_task = Task(
+    description=(
+        f"1. Criar um plano de pontos para um resumo sobre o tópico: '{topic}'.\n"
+        f"2. Escrever o resumo baseado em seu plano, mantendo-o em torno de 200 palavras."
+    ),
+    expected_output=(
+        "Um relatório final contendo duas seções distintas:\n\n"
+        "### Plano\n"
+        "- Uma lista com marcadores delineando os pontos principais do resumo.\n\n"
+        "### Resumo\n"
+        "- Um resumo conciso e bem estruturado do tópico."
+    ),
+    agent=planner_writer_agent,
+)
+
+# Criar o crew com um processo claro
+crew = Crew(
+    agents=[planner_writer_agent],
+    tasks=[high_level_task],
+    process=Process.sequential,
+)
+
+# Executar a tarefa
+print("## Executando a tarefa de planejamento e escrita ##")
+result = crew.kickoff()
+print("\n\n---\n## Resultado da Tarefa ##\n---")
+print(result)
+```
 
 Este código usa a biblioteca CrewAI para criar um agente de IA que planeja e escreve um resumo sobre um tópico dado. Ele começa importando bibliotecas necessárias, incluindo Crew.ai e langchain_openai, e carregando variáveis de ambiente de um arquivo .env. Um modelo de linguagem ChatOpenAI é explicitamente definido para uso com o agente. Um Agente nomeado planner_writer_agent é criado com um papel e objetivo específicos: planejar e então escrever um resumo conciso. A história do agente enfatiza sua expertise em planejamento e escrita técnica. Uma Tarefa é definida com uma descrição clara para primeiro criar um plano e então escrever um resumo sobre o tópico "A importância do Reinforcement Learning na IA", com um formato específico para a saída esperada. Um Crew é montado com o agente e tarefa, configurado para processá-los sequencialmente. Finalmente, o método crew.kickoff() é chamado para executar a tarefa definida e o resultado é impresso.
 
@@ -68,8 +122,104 @@ A Deep Research API é útil porque automatiza o que seria de outra forma horas 
 
 Para usar a API, você envia uma solicitação ao endpoint client.responses.create, especificando um modelo, um prompt de entrada, e as ferramentas que o agente pode usar. A entrada tipicamente inclui uma system_message que define a persona do agente e formato de saída desejado, junto com a user_query. Você deve também incluir a ferramenta web_search_preview e pode opcionalmente adicionar outras como code_interpreter ou ferramentas MCP customizadas (ver Capítulo 10) para dados internos.
 
-| ````from openai import OpenAI # Inicializar o cliente com sua chave API client = OpenAI(api_key="YOUR_OPENAI_API_KEY") # Definir o papel do agente e a pergunta de pesquisa do usuário system_message = """Você é um pesquisador profissional preparando um relatório estruturado e baseado em dados. Foque em insights ricos em dados, use fontes confiáveis, e inclua citações inline.""" user_query = "Pesquise o impacto econômico da semaglutida nos sistemas globais de saúde." # Criar a chamada da Deep Research API response = client.responses.create(  model="o3-deep-research-2025-06-26",  input=[    {      "role": "developer",      "content": [{"type": "input_text", "text": system_message}]    },    {      "role": "user",      "content": [{"type": "input_text", "text": user_query}]    }  ],  reasoning={"summary": "auto"},  tools=[{"type": "web_search_preview"}] ) # Acessar e imprimir o relatório final da resposta final_report = response.output[-1].content[0].text print(final_report) # --- ACESSAR CITAÇÕES INLINE E METADADOS --- print("--- CITAÇÕES ---") annotations = response.output[-1].content[0].annotations if not annotations:    print("Nenhuma anotação encontrada no relatório.") else:    for i, citation in enumerate(annotations):        # O span de texto ao qual a citação se refere        cited_text = final_report[citation.start_index:citation.end_index]        print(f"Citação {i+1}:")        print(f"  Texto Citado: {cited_text}")        print(f"  Título: {citation.title}")        print(f"  URL: {citation.url}")        print(f"  Localização: chars {citation.start_index}–{citation.end_index}") print("\n" + "="*50 + "\n") # --- INSPECIONAR PASSOS INTERMEDIÁRIOS --- print("--- PASSOS INTERMEDIÁRIOS ---") # 1. Passos de Raciocínio: Planos internos e sumários gerados pelo modelo. try:    reasoning_step = next(item for item in response.output if item.type == "reasoning")    print("\n[Encontrado um Passo de Raciocínio]")    for summary_part in reasoning_step.summary:        print(f"  - {summary_part.text}") except StopIteration:    print("\nNenhum passo de raciocínio encontrado.") # 2. Chamadas de Busca Web: As consultas exatas que o agente executou. try:    search_step = next(item for item in response.output if item.type == "web_search_call")    print("\n[Encontrada uma Chamada de Busca Web]")    print(f"  Consulta Executada: '{search_step.action['query']}'")    print(f"  Status: {search_step.status}") except StopIteration:    print("\nNenhum passo de busca web encontrado.") # 3. Execução de Código: Qualquer código executado pelo agente usando o interpretador de código. try:    code_step = next(item for item in response.output if item.type == "code_interpreter_call")    print("\n[Encontrado um Passo de Execução de Código]")    print("  Entrada do Código:")    print(f"  ```python\n{code_step.input}\n  ```")    print("  Saída do Código:")    print(f"  {code_step.output}") except StopIteration:    print("\nNenhum passo de execução de código encontrado.")```` |
-| :---- |
+```python
+from openai import OpenAI
+
+# Inicializar o cliente com sua chave API
+client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
+
+# Definir o papel do agente e a pergunta de pesquisa do usuário
+system_message = """Você é um pesquisador profissional preparando um relatório estruturado e baseado em dados.
+Foque em insights ricos em dados, use fontes confiáveis, e inclua citações inline."""
+
+user_query = "Pesquise o impacto econômico da semaglutida nos sistemas globais de saúde."
+
+# Criar a chamada da Deep Research API
+response = client.responses.create(
+    model="o3-deep-research-2025-06-26",
+    input=[
+        {
+            "role": "developer",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": system_message
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": user_query
+                }
+            ]
+        }
+    ],
+    reasoning={
+        "summary": "auto"
+    },
+    tools=[
+        {
+            "type": "web_search_preview"
+        }
+    ]
+)
+
+# Acessar e imprimir o relatório final da resposta
+final_report = response.output[-1].content[0].text
+print(final_report)
+
+# --- ACESSAR CITAÇÕES INLINE E METADADOS ---
+print("--- CITAÇÕES ---")
+annotations = response.output[-1].content[0].annotations
+
+if not annotations:
+    print("Nenhuma anotação encontrada no relatório.")
+else:
+    for i, citation in enumerate(annotations):
+        # O span de texto ao qual a citação se refere
+        cited_text = final_report[citation.start_index:citation.end_index]
+        print(f"Citação {i+1}:")
+        print(f" Texto Citado: {cited_text}")
+        print(f" Título: {citation.title}")
+        print(f" URL: {citation.url}")
+        print(f" Localização: chars {citation.start_index}–{citation.end_index}")
+        print("\n" + "="*50 + "\n")
+
+# --- INSPECIONAR PASSOS INTERMEDIÁRIOS ---
+print("--- PASSOS INTERMEDIÁRIOS ---")
+
+# 1. Passos de Raciocínio: Planos internos e sumários gerados pelo modelo.
+try:
+    reasoning_step = next(item for item in response.output if item.type == "reasoning")
+    print("\n[Encontrado um Passo de Raciocínio]")
+    for summary_part in reasoning_step.summary:
+        print(f" - {summary_part.text}")
+except StopIteration:
+    print("\nNenhum passo de raciocínio encontrado.")
+
+# 2. Chamadas de Busca Web: As consultas exatas que o agente executou.
+try:
+    search_step = next(item for item in response.output if item.type == "web_search_call")
+    print("\n[Encontrada uma Chamada de Busca Web]")
+    print(f" Consulta Executada: '{search_step.action['query']}'")
+    print(f" Status: {search_step.status}")
+except StopIteration:
+    print("\nNenhum passo de busca web encontrado.")
+
+# 3. Execução de Código: Qualquer código executado pelo agente usando o interpretador de código.
+try:
+    code_step = next(item for item in response.output if item.type == "code_interpreter_call")
+    print("\n[Encontrado um Passo de Execução de Código]")
+    print(" Entrada do Código:")
+    print(f" ```python\n{code_step.input}\n ```")
+    print(" Saída do Código:")
+    print(f" {code_step.output}")
+except StopIteration:
+    print("\nNenhum passo de execução de código encontrado.")
+```
 
 Este snippet de código utiliza a API OpenAI para executar uma tarefa de "Deep Research". Ele começa inicializando o cliente OpenAI com sua chave API, que é crucial para autenticação. Então, ele define o papel do agente de IA como um pesquisador profissional e define a pergunta de pesquisa do usuário sobre o impacto econômico da semaglutida. O código constrói uma chamada de API para o modelo o3-deep-research-2025-06-26, fornecendo a mensagem de sistema definida e consulta do usuário como entrada. Ele também solicita um sumário automático do raciocínio e habilita capacidades de busca web. Após fazer a chamada da API, ele extrai e imprime o relatório final gerado. 
 
@@ -98,3 +248,11 @@ Fig.4; Padrão de design de planejamento
 # Conclusão
 
 O padrão de Planejamento representa uma evolução fundamental na capacidade dos agentes de IA para lidar com problemas complexos que requerem estratégia e coordenação. Através da decomposição de objetivos de alto nível em sequências estruturadas de ações, agentes podem transcender reações simples e desenvolver comportamentos orientados a objetivos que são tanto adaptativos quanto eficazes. Este padrão é essencial para qualquer sistema agêntico que aspira a lidar com desafios do mundo real que não podem ser resolvidos através de abordagens monolíticas ou reativas, estabelecendo a base para a próxima geração de aplicações de IA estratégicas e proativas.
+
+[image1]: ../assets/11-chapter-6-image-1-line-108.png
+
+[image2]: ../assets/11-chapter-6-image-2-line-110.png
+
+[image3]: ../assets/11-chapter-6-image-3-line-112.png
+
+[image4]: ../assets/11-chapter-6-image-4-line-114.png

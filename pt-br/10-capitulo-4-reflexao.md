@@ -87,13 +87,112 @@ Este exemplo implementa um loop de reflexão usando a biblioteca Langchain e o m
 
 Primeiro, certifique-se de ter as bibliotecas necessárias instaladas:
 
-| `pip install langchain langchain-community langchain-openai` |
-| :---- |
+```python
+pip install langchain langchain-community langchain-openai
+```
 
 Você também precisará configurar seu ambiente com sua chave API para o modelo de linguagem que escolher (ex., OpenAI, Google Gemini, Anthropic).
 
-| ``import os from dotenv import load_dotenv from langchain_openai import ChatOpenAI from langchain_core.prompts import ChatPromptTemplate from langchain_core.messages import SystemMessage, HumanMessage # --- Configuration --- # Carregar variáveis de ambiente do arquivo .env (para OPENAI_API_KEY) load_dotenv() # Verificar se a chave API está definida if not os.getenv("OPENAI_API_KEY"):    raise ValueError("OPENAI_API_KEY não encontrada no arquivo .env. Por favor, adicione-a.") # Inicializar o Chat LLM. Usamos gpt-4o para melhor raciocínio. # Uma temperatura mais baixa é usada para saídas mais determinísticas. llm = ChatOpenAI(model="gpt-4o", temperature=0.1) def run_reflection_loop():    """    Demonstra um loop de reflexão multi-passo de IA para melhorar progressivamente uma função Python.    """    # --- A Tarefa Principal ---    task_prompt = """    Sua tarefa é criar uma função Python nomeada `calculate_factorial`.    Esta função deve fazer o seguinte:    1.  Aceitar um único inteiro `n` como entrada.    2.  Calcular seu fatorial (n!).    3.  Incluir uma docstring clara explicando o que a função faz.    4.  Lidar com casos extremos: O fatorial de 0 é 1.    5.  Lidar com entrada inválida: Levantar um ValueError se a entrada for um número negativo.    """    # --- O Loop de Reflexão ---    max_iterations = 3    current_code = ""    # Construiremos uma história de conversa para fornecer contexto em cada passo.    message_history = [HumanMessage(content=task_prompt)]    for i in range(max_iterations):        print("\n" + "="*25 + f" LOOP DE REFLEXÃO: ITERAÇÃO {i + 1} " + "="*25)        # --- 1. ESTÁGIO DE GERAÇÃO / REFINAMENTO ---        # Na primeira iteração, gera. Em iterações subsequentes, refina.        if i == 0:            print("\n>>> ESTÁGIO 1: GERANDO código inicial...")            # A primeira mensagem é apenas o prompt da tarefa.            response = llm.invoke(message_history)            current_code = response.content        else:            print("\n>>> ESTÁGIO 1: REFINANDO código baseado na crítica anterior...")            # A história de mensagens agora contém a tarefa,             # o último código, e a última crítica.            # Instruímos o modelo a aplicar as críticas.            message_history.append(HumanMessage(content="Por favor, refine o código usando as críticas fornecidas."))            response = llm.invoke(message_history)            current_code = response.content        print("\n--- Código Gerado (v" + str(i + 1) + ") ---\n" + current_code)        message_history.append(response) # Adicionar o código gerado à história        # --- 2. ESTÁGIO DE REFLEXÃO ---        print("\n>>> ESTÁGIO 2: REFLETINDO sobre o código gerado...")        # Criar um prompt específico para o agente refletor.        # Isso pede ao modelo para atuar como um revisor de código sênior.        reflector_prompt = [            SystemMessage(content="""                Você é um engenheiro de software sênior e um especialista                 em Python.                Seu papel é realizar uma revisão de código meticulosa.                Avalie criticamente o código Python fornecido baseado                 nos requisitos originais da tarefa.                Procure por bugs, problemas de estilo, casos extremos faltantes,                 e áreas para melhoria.                Se o código é perfeito e atende a todos os requisitos,                responda com a frase única 'CODE_IS_PERFECT'.                Caso contrário, forneça uma lista com marcadores de suas críticas.            """),            HumanMessage(content=f"Tarefa Original:\n{task_prompt}\n\nCódigo para Revisar:\n{current_code}")        ]        critique_response = llm.invoke(reflector_prompt)        critique = critique_response.content        # --- 3. CONDIÇÃO DE PARADA ---        if "CODE_IS_PERFECT" in critique:            print("\n--- Crítica ---\nNenhuma crítica adicional encontrada. O código é satisfatório.")            break        print("\n--- Crítica ---\n" + critique)        # Adicionar a crítica à história para o próximo loop de refinamento.        message_history.append(HumanMessage(content=f"Crítica do código anterior:\n{critique}"))    print("\n" + "="*30 + " RESULTADO FINAL " + "="*30)    print("\nCódigo refinado final após o processo de reflexão:\n")    print(current_code) if __name__ == "__main__":    run_reflection_loop()`` |
-| :---- |
+```python
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage
+
+# --- Configuration ---
+# Carregar variáveis de ambiente do arquivo .env (para OPENAI_API_KEY)
+load_dotenv()
+
+# Verificar se a chave API está definida
+if not os.getenv("OPENAI_API_KEY"):
+    raise ValueError("OPENAI_API_KEY não encontrada no arquivo .env. Por favor, adicione-a.")
+
+# Inicializar o Chat LLM. Usamos gpt-4o para melhor raciocínio.
+# Uma temperatura mais baixa é usada para saídas mais determinísticas.
+llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
+
+def run_reflection_loop():
+    """
+    Demonstra um loop de reflexão multi-passo de IA para melhorar progressivamente uma função Python.
+    """
+    
+    # --- A Tarefa Principal ---
+    task_prompt = """
+    Sua tarefa é criar uma função Python nomeada `calculate_factorial`.
+    Esta função deve fazer o seguinte:
+    1. Aceitar um único inteiro `n` como entrada.
+    2. Calcular seu fatorial (n!).
+    3. Incluir uma docstring clara explicando o que a função faz.
+    4. Lidar com casos extremos: O fatorial de 0 é 1.
+    5. Lidar com entrada inválida: Levantar um ValueError se a entrada for um número negativo.
+    """
+    
+    # --- O Loop de Reflexão ---
+    max_iterations = 3
+    current_code = ""
+    
+    # Construiremos uma história de conversa para fornecer contexto em cada passo.
+    message_history = [HumanMessage(content=task_prompt)]
+    
+    for i in range(max_iterations):
+        print("\n" + "="*25 + f" LOOP DE REFLEXÃO: ITERAÇÃO {i + 1}" + "="*25)
+        
+        # --- 1. ESTÁGIO DE GERAÇÃO / REFINAMENTO ---
+        # Na primeira iteração, gera. Em iterações subsequentes, refina.
+        if i == 0:
+            print("\n>>> ESTÁGIO 1: GERANDO código inicial...")
+            # A primeira mensagem é apenas o prompt da tarefa.
+            response = llm.invoke(message_history)
+            current_code = response.content
+        else:
+            print("\n>>> ESTÁGIO 1: REFINANDO código baseado na crítica anterior...")
+            # A história de mensagens agora contém a tarefa,
+            # o último código, e a última crítica.
+            # Instruímos o modelo a aplicar as críticas.
+            message_history.append(HumanMessage(content="Por favor, refine o código usando as críticas fornecidas."))
+            response = llm.invoke(message_history)
+            current_code = response.content
+        
+        print("\n--- Código Gerado (v" + str(i + 1) + ") ---\n" + current_code)
+        message_history.append(response)  # Adicionar o código gerado à história
+        
+        # --- 2. ESTÁGIO DE REFLEXÃO ---
+        print("\n>>> ESTÁGIO 2: REFLETINDO sobre o código gerado...")
+        
+        # Criar um prompt específico para o agente refletor.
+        # Isso pede ao modelo para atuar como um revisor de código sênior.
+        reflector_prompt = [
+            SystemMessage(content="""Você é um engenheiro de software sênior e um especialista em Python.
+Seu papel é realizar uma revisão de código meticulosa.
+Avalie criticamente o código Python fornecido baseado nos requisitos originais da tarefa.
+Procure por bugs, problemas de estilo, casos extremos faltantes, e áreas para melhoria.
+
+Se o código é perfeito e atende a todos os requisitos, responda com a frase única 'CODE_IS_PERFECT'.
+Caso contrário, forneça uma lista com marcadores de suas críticas."""),
+            HumanMessage(content=f"Tarefa Original:\n{task_prompt}\n\nCódigo para Revisar:\n{current_code}")
+        ]
+        
+        critique_response = llm.invoke(reflector_prompt)
+        critique = critique_response.content
+        
+        # --- 3. CONDIÇÃO DE PARADA ---
+        if "CODE_IS_PERFECT" in critique:
+            print("\n--- Crítica ---\nNenhuma crítica adicional encontrada. O código é satisfatório.")
+            break
+        
+        print("\n--- Crítica ---\n" + critique)
+        
+        # Adicionar a crítica à história para o próximo loop de refinamento.
+        message_history.append(HumanMessage(content=f"Crítica do código anterior:\n{critique}"))
+    
+    print("\n" + "="*30 + " RESULTADO FINAL " + "="*30)
+    print("\nCódigo refinado final após o processo de reflexão:\n")
+    print(current_code)
+
+if __name__ == "__main__":
+    run_reflection_loop()
+```
 
 O código começa configurando o ambiente, carregando chaves API, e inicializando um modelo de linguagem poderoso como GPT-4o com uma temperatura baixa para saídas focadas. A tarefa principal é definida por um prompt pedindo uma função Python para calcular o fatorial de um número, incluindo requisitos específicos para docstrings, casos extremos (fatorial de 0), e tratamento de erro para entrada negativa. A função run_reflection_loop orquestra o processo de refinamento iterativo. Dentro do loop, na primeira iteração, o modelo de linguagem gera código inicial baseado no prompt da tarefa. Em iterações subsequentes, ele refina o código baseado em críticas do passo anterior. Um papel "refletor" separado, também desempenhado pelo modelo de linguagem mas com um prompt de sistema diferente, atua como um engenheiro de software sênior para criticar o código gerado contra os requisitos originais da tarefa. Esta crítica é fornecida como uma lista com marcadores de problemas ou a frase 'CODE_IS_PERFECT' se nenhum problema for encontrado. O loop continua até que a crítica indique que o código é perfeito ou um número máximo de iterações seja atingido. A história da conversa é mantida e passada ao modelo de linguagem em cada passo para fornecer contexto tanto para os estágios de geração/refinamento quanto de reflexão. Finalmente, o script imprime a última versão do código gerado após o loop concluir.
 
@@ -101,8 +200,40 @@ O código começa configurando o ambiente, carregando chaves API, e inicializand
 
 Vamos agora olhar para um exemplo de código conceitual implementado usando o Google ADK. Especificamente, o código mostra isso empregando uma estrutura Gerador-Crítico, onde um componente (o Gerador) produz um resultado ou plano inicial, e outro componente (o Crítico) fornece feedback crítico ou uma crítica, guiando o Gerador em direção a uma saída final mais refinada ou precisa.
 
-| `from google.adk.agents import SequentialAgent, LlmAgent # O primeiro agente gera o rascunho inicial. generator = LlmAgent(    name="DraftWriter",    description="Gera conteúdo de rascunho inicial sobre um assunto dado.",    instruction="Escreva um parágrafo curto e informativo sobre o assunto do usuário.",    output_key="draft_text" # A saída é salva nesta chave de estado. ) # O segundo agente critica o rascunho do primeiro agente. reviewer = LlmAgent(    name="FactChecker",    description="Revisa um texto dado para precisão factual e fornece uma crítica estruturada.",    instruction="""    Você é um verificador de fatos meticuloso.    1. Leia o texto fornecido na chave de estado 'draft_text'.    2. Verifique cuidadosamente a precisão factual de todas as afirmações.    3. Sua saída final deve ser um dicionário contendo duas chaves:       - "status": Uma string, seja "ACCURATE" ou "INACCURATE".       - "reasoning": Uma string fornecendo uma explicação clara para seu status, citando problemas específicos se algum for encontrado.    """,    output_key="review_output" # O dicionário estruturado é salvo aqui. ) # O SequentialAgent garante que o gerador execute antes do revisor. review_pipeline = SequentialAgent(    name="WriteAndReview_Pipeline",    sub_agents=[generator, reviewer] ) # Fluxo de Execução: # 1. gerador executa -> salva seu parágrafo em state['draft_text']. # 2. revisor executa -> lê state['draft_text'] e salva sua saída de dicionário em state['review_output'].` |
-| :---- |
+```python
+from google.adk.agents import SequentialAgent, LlmAgent
+
+# O primeiro agente gera o rascunho inicial.
+generator = LlmAgent(
+    name="DraftWriter",
+    description="Gera conteúdo de rascunho inicial sobre um assunto dado.",
+    instruction="Escreva um parágrafo curto e informativo sobre o assunto do usuário.",
+    output_key="draft_text"  # A saída é salva nesta chave de estado.
+)
+
+# O segundo agente critica o rascunho do primeiro agente.
+reviewer = LlmAgent(
+    name="FactChecker",
+    description="Revisa um texto dado para precisão factual e fornece uma crítica estruturada.",
+    instruction="""Você é um verificador de fatos meticuloso.
+1. Leia o texto fornecido na chave de estado 'draft_text'.
+2. Verifique cuidadosamente a precisão factual de todas as afirmações.
+3. Sua saída final deve ser um dicionário contendo duas chaves:
+   - "status": Uma string, seja "ACCURATE" ou "INACCURATE".
+   - "reasoning": Uma string fornecendo uma explicação clara para seu status, citando problemas específicos se algum for encontrado.""",
+    output_key="review_output"  # O dicionário estruturado é salvo aqui.
+)
+
+# O SequentialAgent garante que o gerador execute antes do revisor.
+review_pipeline = SequentialAgent(
+    name="WriteAndReview_Pipeline",
+    sub_agents=[generator, reviewer]
+)
+
+# Fluxo de Execução:
+# 1. gerador executa -> salva seu parágrafo em state['draft_text'].
+# 2. revisor executa -> lê state['draft_text'] e salva sua saída de dicionário em state['review_output'].
+```
 
 Este código demonstra o uso de um pipeline de agentes sequenciais no Google ADK para gerar e revisar texto. Ele define duas instâncias LlmAgent: generator e reviewer. O agente gerador é projetado para criar um parágrafo de rascunho inicial sobre um assunto dado. Ele é instruído a escrever uma peça curta e informativa e salva sua saída na chave de estado draft_text. O agente revisor atua como um verificador de fatos para o texto produzido pelo gerador. Ele é instruído a ler o texto de draft_text e verificar sua precisão factual. A saída do revisor é um dicionário estruturado com duas chaves: status e reasoning. status indica se o texto é "ACCURATE" ou "INACCURATE", enquanto reasoning fornece uma explicação para o status. Este dicionário é salvo na chave de estado review_output. Um SequentialAgent nomeado review_pipeline é criado para gerenciar a ordem de execução dos dois agentes. Ele garante que o gerador execute primeiro, seguido pelo revisor. O fluxo geral de execução é que o gerador produz texto, que é então salvo no estado. Subsequentemente, o revisor lê este texto do estado, executa sua verificação de fatos, e salva seus achados (o status e reasoning) de volta ao estado. Este pipeline permite um processo estruturado de criação e revisão de conteúdo usando agentes separados.**Nota:** Uma implementação alternativa utilizando o LoopAgent do ADK também está disponível para aqueles interessados.
 
@@ -150,3 +281,7 @@ Aqui estão alguns recursos para leitura adicional sobre o padrão de Reflexão 
 2. LangChain Expression Language (LCEL) Documentation: [https://python.langchain.com/docs/introduction/](https://python.langchain.com/docs/introduction/)   
 3. LangGraph Documentation:[https://www.langchain.com/langgraph](https://www.langchain.com/langgraph)   
 4. Google Agent Developer Kit (ADK) Documentation (Multi-Agent Systems): [https://google.github.io/adk-docs/agents/multi-agents/](https://google.github.io/adk-docs/agents/multi-agents/)
+
+[image1]: ../assets/09-chapter-4-image-1-line-154.png
+
+[image2]: ../assets/09-chapter-4-image-2-line-156.png

@@ -58,8 +58,9 @@ Esta comunicação contém atributos, que são metadados chave-valor descrevendo
 
 O Cartão de Agente especifica se um agente suporta capacidades de streaming ou notificação push. Além disso, A2A é agnóstico de modalidade, significando que pode facilitar estes padrões de interação não apenas para texto, mas também para outros tipos de dados como áudio e vídeo, permitindo aplicações de IA ricas e multimodais. Tanto capacidades de streaming quanto notificação push são especificadas dentro do Cartão de Agente.
 
-```text
-#Exemplo de Solicitação Síncrona  {
+#Exemplo de Solicitação Síncrona:
+```json
+{
 "jsonrpc": "2.0", "id": "1", "method": "sendTask", "params":  {
 "id": "task-001", "sessionId": "session-001", "message":  {
 "role": "user", "parts": [  {
@@ -71,8 +72,9 @@ O Cartão de Agente especifica se um agente suporta capacidades de streaming ou 
 
 A solicitação síncrona usa o método sendTask, onde o cliente pede e espera uma única resposta completa para sua consulta. Em contraste, a solicitação de streaming usa o método sendTaskSubscribe para estabelecer uma conexão persistente, permitindo que o agente envie de volta múltiplas atualizações incrementais ou resultados parciais ao longo do tempo.
 
-```text
-# Exemplo de Solicitação de Streaming  {
+# Exemplo de Solicitação de Streaming:
+```json
+{
 "jsonrpc": "2.0", "id": "2", "method": "sendTaskSubscribe", "params":  {
 "id": "task-002", "sessionId": "session-001", "message":  {
 "role": "user", "parts": [  {
@@ -142,11 +144,80 @@ Este código Python define uma função assíncrona `create_agent` que constrói
 O código abaixo mostra como o agente é definido com suas instruções específicas e ferramentas. Por favor, note que apenas o código necessário para explicar esta funcionalidade é mostrado; você pode acessar o arquivo completo aqui: [https://github.com/a2aproject/a2a-samples/blob/main/samples/python/agents/birthday_planner_adk/calendar_agent/__main__.py](https://github.com/a2aproject/a2a-samples/blob/main/samples/python/agents/birthday_planner_adk/calendar_agent/__main__.py)
 
 ```python
-def main(host: str, port: int): # Verificar se uma chave de API está definida. # Não necessário se usando APIs Vertex AI. if os.getenv('GOOGLE_GENAI_USE_VERTEXAI') != 'TRUE' and not os.getenv( 'GOOGLE_API_KEY' ): raise ValueError( 'Variável de ambiente GOOGLE_API_KEY não definida e ' 'GOOGLE_GENAI_USE_VERTEXAI não é TRUE.' ) skill = AgentSkill( id='check_availability', name='Verificar Disponibilidade', description="Verifica a disponibilidade de um usuário para um tempo usando seu Google Calendar", tags=['calendar'], examples=['Estou livre das 10h às 11h amanhã?'], ) agent_card = AgentCard( name='Agente de Calendário', description="Um agente que pode gerenciar o calendário de um usuário", url=f'http:// {
-host}
-: {
-port}
-/', version='1.0.0', defaultInputModes=['text'], defaultOutputModes=['text'], capabilities=AgentCapabilities(streaming=True), skills=[skill], ) adk_agent = asyncio.run(create_agent( client_id=os.getenv('GOOGLE_CLIENT_ID'), client_secret=os.getenv('GOOGLE_CLIENT_SECRET'), )) runner = Runner( app_name=agent_card.name, agent=adk_agent, artifact_service=InMemoryArtifactService(), session_service=InMemorySessionService(), memory_service=InMemoryMemoryService(), ) agent_executor = ADKAgentExecutor(runner, agent_card) async def handle_auth(request: Request) -> PlainTextResponse: await agent_executor.on_auth_callback( str(request.query_params.get('state')), str(request.url) ) return PlainTextResponse('Autenticação bem-sucedida.') request_handler = DefaultRequestHandler( agent_executor=agent_executor, task_store=InMemoryTaskStore() ) a2a_app = A2AStarletteApplication( agent_card=agent_card, http_handler=request_handler ) routes = a2a_app.routes() routes.append( Route( path='/authenticate', methods=['GET'], endpoint=handle_auth, ) ) app = Starlette(routes=routes) uvicorn.run(app, host=host, port=port) if __name__ == '__main__': main()
+def main(host: str, port: int):
+    # Verificar se uma chave de API está definida.
+    # Não necessário se usando APIs Vertex AI.
+    if os.getenv('GOOGLE_GENAI_USE_VERTEXAI') != 'TRUE' and not os.getenv('GOOGLE_API_KEY'):
+        raise ValueError(
+            'Variável de ambiente GOOGLE_API_KEY não definida e '
+            'GOOGLE_GENAI_USE_VERTEXAI não é TRUE.'
+        )
+    
+    skill = AgentSkill(
+        id='check_availability',
+        name='Verificar Disponibilidade',
+        description="Verifica a disponibilidade de um usuário para um tempo usando seu Google Calendar",
+        tags=['calendar'],
+        examples=['Estou livre das 10h às 11h amanhã?'],
+    )
+    
+    agent_card = AgentCard(
+        name='Agente de Calendário',
+        description="Um agente que pode gerenciar o calendário de um usuário",
+        url=f'http://{host}:{port}/',
+        version='1.0.0',
+        defaultInputModes=['text'],
+        defaultOutputModes=['text'],
+        capabilities=AgentCapabilities(streaming=True),
+        skills=[skill],
+    )
+    
+    adk_agent = asyncio.run(create_agent(
+        client_id=os.getenv('GOOGLE_CLIENT_ID'),
+        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    ))
+    
+    runner = Runner(
+        app_name=agent_card.name,
+        agent=adk_agent,
+        artifact_service=InMemoryArtifactService(),
+        session_service=InMemorySessionService(),
+        memory_service=InMemoryMemoryService(),
+    )
+    
+    agent_executor = ADKAgentExecutor(runner, agent_card)
+    
+    async def handle_auth(request: Request) -> PlainTextResponse:
+        await agent_executor.on_auth_callback(
+            str(request.query_params.get('state')),
+            str(request.url)
+        )
+        return PlainTextResponse('Autenticação bem-sucedida.')
+    
+    request_handler = DefaultRequestHandler(
+        agent_executor=agent_executor,
+        task_store=InMemoryTaskStore()
+    )
+    
+    a2a_app = A2AStarletteApplication(
+        agent_card=agent_card,
+        http_handler=request_handler
+    )
+    
+    routes = a2a_app.routes()
+    routes.append(
+        Route(
+            path='/authenticate',
+            methods=['GET'],
+            endpoint=handle_auth,
+        )
+    )
+    
+    app = Starlette(routes=routes)
+    uvicorn.run(app, host=host, port=port)
+
+if __name__ == '__main__':
+    main()
 ```
 
 Este código demonstra a configuração completa de um servidor A2A usando um agente ADK. Ele começa verificando as credenciais necessárias e então define um `AgentSkill` específico para verificação de disponibilidade de calendário. O `AgentCard` é criado com informações de identidade e capacidades do agente. O agente ADK é construído usando a função `create_agent` assíncrona, e um `Runner` é configurado com serviços de memória, sessão e artefatos. O `ADKAgentExecutor` conecta o runner ao cartão de agente, e um handler de solicitação é configurado para gerenciar comunicação A2A. A aplicação Starlette é criada com rotas A2A e um endpoint de autenticação, permitindo que o servidor seja executado na porta especificada.

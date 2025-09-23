@@ -154,23 +154,133 @@ Agora vamos nos aprofundar em exemplos adicionais dentro do framework Google ADK
 O seguinte exemplo de código demonstra o estabelecimento de uma estrutura de agente hierárquica dentro do Google ADK através da criação de uma relação pai-filho. O código define dois tipos de agentes: LlmAgent e um agente TaskExecutor customizado derivado de BaseAgent. O TaskExecutor é projetado para tarefas específicas e não-LLM e neste exemplo, ele simplesmente produz um evento "Task finished successfully". Um LlmAgent nomeado greeter é inicializado com um modelo especificado e instrução para atuar como um cumprimentador amigável. O TaskExecutor customizado é instanciado como task_doer. Um LlmAgent pai chamado coordinator é criado, também com um modelo e instruções. As instruções do coordinator o guiam a delegar cumprimentos ao greeter e execução de tarefas ao task_doer. O greeter e task_doer são adicionados como sub-agentes ao coordinator, estabelecendo uma relação pai-filho. O código então afirma que esta relação está configurada corretamente. Finalmente, ele imprime uma mensagem indicando que o agente foi criado com sucesso.
 
 ```python
-from google.adk.agents import LlmAgent, BaseAgent from google.adk.agents.invocation_context import InvocationContext from google.adk.events import Event from typing import AsyncGenerator # Corretamente implementar um agente customizado estendendo BaseAgent class TaskExecutor(BaseAgent): """Um agente especializado com comportamento customizado e não-LLM.""" name: str = "TaskExecutor" description: str = "Executa uma tarefa pré-definida." async def _run_async_impl(self, context: InvocationContext) -> AsyncGenerator[Event, None]: """Lógica de implementação customizada para a tarefa.""" # É aqui que sua lógica customizada iria. # Para este exemplo, vamos apenas produzir um evento simples. yield Event(author=self.name, content="Task finished successfully.") # Definir agentes individuais com inicialização adequada # LlmAgent requer que um modelo seja especificado. greeter = LlmAgent( name="Greeter", model="gemini-2.0-flash-exp", instruction="Você é um cumprimentador amigável." ) task_doer = TaskExecutor() # Criar o agente coordinator com sub-agentes coordinator = LlmAgent( name="Coordinator", model="gemini-2.0-flash-exp", instruction="Você coordena outros agentes. Delegue cumprimentos ao Greeter e tarefas ao TaskExecutor.", sub_agents=[greeter, task_doer] ) # Verificar se a relação pai-filho foi estabelecida corretamente assert greeter.parent_agent == coordinator assert task_doer.parent_agent == coordinator print("Agente hierárquico criado com sucesso!")
+from google.adk.agents import LlmAgent, BaseAgent
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events import Event
+from typing import AsyncGenerator
+
+# Corretamente implementar um agente customizado estendendo BaseAgent
+class TaskExecutor(BaseAgent):
+    """Um agente especializado com comportamento customizado e não-LLM."""
+    
+    name: str = "TaskExecutor"
+    description: str = "Executa uma tarefa pré-definida."
+    
+    async def _run_async_impl(self, context: InvocationContext) -> AsyncGenerator[Event, None]:
+        """Lógica de implementação customizada para a tarefa."""
+        # É aqui que sua lógica customizada iria.
+        # Para este exemplo, vamos apenas produzir um evento simples.
+        yield Event(author=self.name, content="Task finished successfully.")
+
+# Definir agentes individuais com inicialização adequada
+# LlmAgent requer que um modelo seja especificado.
+greeter = LlmAgent(
+    name="Greeter",
+    model="gemini-2.0-flash-exp",
+    instruction="Você é um cumprimentador amigável."
+)
+
+task_doer = TaskExecutor()
+
+# Criar o agente coordinator com sub-agentes
+coordinator = LlmAgent(
+    name="Coordinator",
+    model="gemini-2.0-flash-exp",
+    instruction="Você coordena outros agentes. Delegue cumprimentos ao Greeter e tarefas ao TaskExecutor.",
+    sub_agents=[greeter, task_doer]
+)
+
+# Verificar se a relação pai-filho foi estabelecida corretamente
+assert greeter.parent_agent == coordinator
+assert task_doer.parent_agent == coordinator
+
+print("Agente hierárquico criado com sucesso!")
 ```
 
 Este trecho de código ilustra o emprego do LoopAgent dentro do framework Google ADK para estabelecer fluxos de trabalho iterativos. O código define dois agentes: ConditionChecker e ProcessingStep. ConditionChecker é um agente customizado que verifica um valor "status" no estado da sessão. Se o "status" for "completed", ConditionChecker escala um evento para parar o loop. Caso contrário, ele produz um evento para continuar o loop. ProcessingStep é um LlmAgent usando o modelo "gemini-2.0-flash-exp". Sua instrução é executar uma tarefa e definir o "status" da sessão como "completed" se for o passo final. Um LoopAgent nomeado StatusPoller é criado. StatusPoller é configurado com max_iterations=10. StatusPoller inclui tanto ProcessingStep quanto uma instância de ConditionChecker como sub-agentes. O LoopAgent executará os sub-agentes sequencialmente por até 10 iterações, parando se ConditionChecker encontrar que o status é "completed".
 
 ```python
-import asyncio from typing import AsyncGenerator from google.adk.agents import LoopAgent, LlmAgent, BaseAgent from google.adk.events import Event, EventActions from google.adk.agents.invocation_context import InvocationContext # Melhor Prática: Definir agentes customizados como classes completas e auto-descritivas. class ConditionChecker(BaseAgent): """Um agente customizado que verifica por um status 'completed' no estado da sessão.""" name: str = "ConditionChecker" description: str = "Verifica se um processo está completo e sinaliza o loop para parar." async def _run_async_impl( self, context: InvocationContext ) -> AsyncGenerator[Event, None]: """Verifica estado e produz um evento para continuar ou parar o loop.""" status = context.session.state.get("status", "pending") is_done = (status == "completed") if is_done: # Escalar para terminar o loop quando a condição for atendida. yield Event(author=self.name, actions=EventActions(escalate=True)) else: # Continuar o loop se a condição não for atendida. yield Event(author=self.name, content="Continuando loop...") # Definir o agente de processamento ProcessingStep = LlmAgent( name="ProcessingStep", model="gemini-2.0-flash-exp", instruction="Execute uma tarefa e defina session.state['status'] como 'completed' se este for o passo final." ) # Criar o LoopAgent com sub-agentes StatusPoller = LoopAgent( name="StatusPoller", max_iterations=10, sub_agents=[ProcessingStep, ConditionChecker()] ) # Exemplo de uso: async def main(): # Inicializar o estado da sessão initial_state =  {
-"status": "pending"}
-# Executar o loop async for event in StatusPoller.run_async(input_data="Dados de entrada", session_state=initial_state): print(f"Evento:  {
-event.content}
-") # Executar o exemplo if __name__ == "__main__": asyncio.run(main())
+import asyncio
+from typing import AsyncGenerator
+from google.adk.agents import LoopAgent, LlmAgent, BaseAgent
+from google.adk.events import Event, EventActions
+from google.adk.agents.invocation_context import InvocationContext
+
+# Melhor Prática: Definir agentes customizados como classes completas e auto-descritivas.
+class ConditionChecker(BaseAgent):
+    """Um agente customizado que verifica por um status 'completed' no estado da sessão."""
+    
+    name: str = "ConditionChecker"
+    description: str = "Verifica se um processo está completo e sinaliza o loop para parar."
+    
+    async def _run_async_impl(
+        self, context: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Verifica estado e produz um evento para continuar ou parar o loop."""
+        status = context.session.state.get("status", "pending")
+        is_done = (status == "completed")
+        
+        if is_done:
+            # Escalar para terminar o loop quando a condição for atendida.
+            yield Event(author=self.name, actions=EventActions(escalate=True))
+        else:
+            # Continuar o loop se a condição não for atendida.
+            yield Event(author=self.name, content="Continuando loop...")
+
+# Definir o agente de processamento
+ProcessingStep = LlmAgent(
+    name="ProcessingStep",
+    model="gemini-2.0-flash-exp",
+    instruction="Execute uma tarefa e defina session.state['status'] como 'completed' se este for o passo final."
+)
+
+# Criar o LoopAgent com sub-agentes
+StatusPoller = LoopAgent(
+    name="StatusPoller",
+    max_iterations=10,
+    sub_agents=[ProcessingStep, ConditionChecker()]
+)
+
+# Exemplo de uso:
+async def main():
+    # Inicializar o estado da sessão
+    initial_state = {"status": "pending"}
+    
+    # Executar o loop
+    async for event in StatusPoller.run_async(
+        input_data="Dados de entrada", 
+        session_state=initial_state
+    ):
+        print(f"Evento: {event.content}")
+
+# Executar o exemplo
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 Este trecho de código esclarece o padrão SequentialAgent dentro do Google ADK, projetado para a construção de fluxos de trabalho lineares. Este código define um pipeline de agente sequencial usando a biblioteca google.adk.agents. O pipeline consiste em dois agentes, step1 e step2. step1 é nomeado "Step1_Fetch" e sua saída será armazenada no estado da sessão sob a chave "data". step2 é nomeado "Step2_Process" e é instruído a analisar a informação armazenada em session.state["data"] e fornecer um resumo. O SequentialAgent nomeado "MyPipeline" orquestra a execução destes sub-agentes. Quando o pipeline é executado com uma entrada inicial, step1 executará primeiro. A resposta de step1 será salva no estado da sessão sob a chave "data". Subsequentemente, step2 executará, utilizando a informação que step1 colocou no estado conforme sua instrução. Esta estrutura permite construir fluxos de trabalho onde a saída de um agente se torna a entrada para o próximo. Este é um padrão comum para pipelines de processamento de dados.
 
 ```python
-from google.adk.agents import SequentialAgent, Agent # A saída deste agente será salva em session.state["data"] step1 = Agent(name="Step1_Fetch", output_key="data") # Este agente usará os dados do passo anterior. # Instruímos ele sobre como encontrar e usar estes dados. step2 = Agent( name="Step2_Process", instruction="Analise a informação encontrada em state['data'] e forneça um resumo." ) pipeline = SequentialAgent( name="MyPipeline", sub_agents=[step1, step2] ) # Quando o pipeline é executado com uma entrada inicial, Step1 executará, # sua resposta será armazenada em session.state["data"], e então # Step2 executará, usando a informação do estado conforme instruído.
+from google.adk.agents import SequentialAgent, Agent
+
+# A saída deste agente será salva em session.state["data"]
+step1 = Agent(name="Step1_Fetch", output_key="data")
+
+# Este agente usará os dados do passo anterior.
+# Instruímos ele sobre como encontrar e usar estes dados.
+step2 = Agent(
+    name="Step2_Process",
+    instruction="Analise a informação encontrada em state['data'] e forneça um resumo."
+)
+
+pipeline = SequentialAgent(
+    name="MyPipeline",
+    sub_agents=[step1, step2]
+)
+
+# Quando o pipeline é executado com uma entrada inicial, Step1 executará,
+# sua resposta será armazenada em session.state["data"], e então
+# Step2 executará, usando a informação do estado conforme instruído.
 ```
 
 O seguinte exemplo de código ilustra o padrão ParallelAgent dentro do Google ADK, que facilita a execução concorrente de múltiplas tarefas de agente. O data_gatherer é projetado para executar dois sub-agentes concorrentemente: weather_fetcher e news_fetcher. O agente weather_fetcher é instruído a obter o clima para uma localização dada e armazenar o resultado em session.state["weather_data"]. Similarmente, o agente news_fetcher é instruído a recuperar a principal notícia para um tópico dado e armazená-la em session.state["news_data"]. Cada sub-agente é configurado para usar o modelo "gemini-2.0-flash-exp". O ParallelAgent orquestra a execução destes sub-agentes, permitindo que trabalhem em paralelo. Os resultados de ambos weather_fetcher e news_fetcher seriam coletados e armazenados no estado da sessão. Finalmente, o exemplo mostra como acessar os dados coletados de clima e notícias do final_state após a execução do agente estar completa.
@@ -178,15 +288,43 @@ O seguinte exemplo de código ilustra o padrão ParallelAgent dentro do Google A
 ```python
 from google.adk.agents import Agent, ParallelAgent
 
-# É melhor definir a lógica de busca como ferramentas para os agentes # Para simplicidade neste exemplo, vamos incorporar a lógica na instrução do agente. # Em um cenário do mundo real, você usaria ferramentas. # Definir os agentes individuais que executarão em paralelo
+# É melhor definir a lógica de busca como ferramentas para os agentes
+# Para simplicidade neste exemplo, vamos incorporar a lógica na instrução do agente.
+# Em um cenário do mundo real, você usaria ferramentas.
 
-weather_fetcher = Agent( name="weather_fetcher", model="gemini-2.0-flash-exp", instruction="Busque o clima para a localização dada e retorne apenas o relatório do clima.", output_key="weather_data" # O resultado será armazenado em
+# Definir os agentes individuais que executarão em paralelo
+weather_fetcher = Agent(
+    name="weather_fetcher",
+    model="gemini-2.0-flash-exp",
+    instruction="Busque o clima para a localização dada e retorne apenas o relatório do clima.",
+    output_key="weather_data"  # O resultado será armazenado em session.state["weather_data"]
+)
 
-session.state["weather_data"] ) news_fetcher = Agent( name="news_fetcher", model="gemini-2.0-flash-exp", instruction="Busque a principal notícia para o tópico dado e retorne apenas essa história.", output_key="news_data" # O resultado será armazenado em session.state["news_data"] ) # Criar o ParallelAgent para orquestrar os sub-agentes data_gatherer = ParallelAgent( name="data_gatherer", sub_agents=[ weather_fetcher, news_fetcher ] ) # Executar o agente e coletar resultados result = await data_gatherer.run_async("Buscar dados para Nova York e tecnologia") # Acessar os dados coletados weather_data = result.final_state["weather_data"] news_data = result.final_state["news_data"] print(f"Dados do clima:  {
-weather_data}
-") print(f"Dados de notícias:  {
-news_data}
-")
+news_fetcher = Agent(
+    name="news_fetcher",
+    model="gemini-2.0-flash-exp",
+    instruction="Busque a principal notícia para o tópico dado e retorne apenas essa história.",
+    output_key="news_data"  # O resultado será armazenado em session.state["news_data"]
+)
+
+# Criar o ParallelAgent para orquestrar os sub-agentes
+data_gatherer = ParallelAgent(
+    name="data_gatherer",
+    sub_agents=[
+        weather_fetcher,
+        news_fetcher
+    ]
+)
+
+# Executar o agente e coletar resultados
+result = await data_gatherer.run_async("Buscar dados para Nova York e tecnologia")
+
+# Acessar os dados coletados
+weather_data = result.final_state["weather_data"]
+news_data = result.final_state["news_data"]
+
+print(f"Dados do clima: {weather_data}")
+print(f"Dados de notícias: {news_data}")
 ```
 
 

@@ -54,15 +54,30 @@ Um Agente Roteador pode direcionar consultas baseadas em métricas simples como 
 Técnicas de otimização podem aprimorar ainda mais a efetividade do roteador LLM. Ajuste de prompt envolve criar prompts para guiar o roteador LLM para melhores decisões de roteamento. O fine-tuning do roteador LLM em um conjunto de dados de consultas e suas escolhas de modelo ótimas melhora sua precisão e eficiência. Esta capacidade de roteamento dinâmico equilibra qualidade de resposta com custo-efetividade.
 
 ```python
-# Estrutura conceitual tipo Python, não código executável from google.adk.agents import Agent, BaseAgent from google.adk.events import Event from google.adk.agents.invocation_context import InvocationContext import asyncio class QueryRouterAgent(BaseAgent): name: str = "QueryRouter" description: str = "Roteia consultas de usuários para o agente LLM apropriado baseado em complexidade." async def _run_async_impl(self, context: InvocationContext) -> AsyncGenerator[Event, None]: user_query = context.current_message.text # Assumindo entrada de texto query_length = len(user_query.split()) # Métrica simples: número de palavras if query_length < 20: # Exemplo de threshold para simplicidade vs. complexidade print(f"Roteando para Agente Gemini Flash para consulta curta (comprimento:  {
-query_length}
-)") # Em uma configuração ADK real, você 'transferiria_para_agente' ou invocaria diretamente # Para demonstração, simularemos uma chamada e retornaremos sua resposta response = await gemini_flash_agent.run_async(context.current_message) yield Event(author=self.name, content=f"Agente Flash processou:  {
-response}
-") else: print(f"Roteando para Agente Gemini Pro para consulta longa (comprimento:  {
-query_length}
-)") response = await gemini_pro_agent.run_async(context.current_message) yield Event(author=self.name, content=f"Agente Pro processou:  {
-response}
-")
+# Estrutura conceitual tipo Python, não código executável
+from google.adk.agents import Agent, BaseAgent
+from google.adk.events import Event
+from google.adk.agents.invocation_context import InvocationContext
+import asyncio
+
+class QueryRouterAgent(BaseAgent):
+    name: str = "QueryRouter"
+    description: str = "Roteia consultas de usuários para o agente LLM apropriado baseado em complexidade."
+    
+    async def _run_async_impl(self, context: InvocationContext) -> AsyncGenerator[Event, None]:
+        user_query = context.current_message.text  # Assumindo entrada de texto
+        query_length = len(user_query.split())  # Métrica simples: número de palavras
+        
+        if query_length < 20:  # Exemplo de threshold para simplicidade vs. complexidade
+            print(f"Roteando para Agente Gemini Flash para consulta curta (comprimento: {query_length})")
+            # Em uma configuração ADK real, você 'transferiria_para_agente' ou invocaria diretamente
+            # Para demonstração, simularemos uma chamada e retornaremos sua resposta
+            response = await gemini_flash_agent.run_async(context.current_message)
+            yield Event(author=self.name, content=f"Agente Flash processou: {response}")
+        else:
+            print(f"Roteando para Agente Gemini Pro para consulta longa (comprimento: {query_length})")
+            response = await gemini_pro_agent.run_async(context.current_message)
+            yield Event(author=self.name, content=f"Agente Pro processou: {response}")
 ```
 
 O Agente Crítico avalia respostas de modelos de linguagem, fornecendo feedback que serve várias funções. Para auto-correção, identifica erros ou inconsistências, solicitando que o agente respondente refine sua saída para qualidade aprimorada. Também avalia sistematicamente respostas para monitoramento de desempenho, rastreando métricas como precisão e relevância, que são usadas para otimização.
@@ -72,7 +87,31 @@ Além disso, seu feedback pode sinalizar aprendizado por reforço ou fine-tuning
 O Agente Crítico pode ser configurado para revisar apenas o texto gerado do agente respondente ou tanto a consulta original quanto o texto gerado, permitindo uma avaliação abrangente do alinhamento da resposta com a pergunta inicial.
 
 ```text
-CRITIC_SYSTEM_PROMPT = """ Você é o **Agente Crítico**, servindo como o braço de garantia de qualidade de nosso sistema assistente de pesquisa colaborativo. Sua função primária é **revisar e desafiar meticulosamente** informação do Agente Pesquisador, garantindo **precisão, completude e apresentação imparcial**. Seus deveres abrangem: * **Avaliar descobertas de pesquisa** para correção factual, minuciosidade e possíveis tendências. * **Identificar qualquer dado ausente** ou inconsistências no raciocínio. * **Levantar questões críticas** que poderiam refinar ou expandir o entendimento atual. * **Oferecer sugestões construtivas** para aprimoramento ou explorar diferentes ângulos. * **Validar que a saída final é abrangente** e equilibrada. Toda crítica deve ser construtiva. Seu objetivo é fortificar a pesquisa, não invalidá-la. Estruture seu feedback claramente, chamando atenção para pontos específicos para revisão. Seu objetivo geral é garantir que o produto de pesquisa final atenda aos mais altos padrões de qualidade possíveis. """
+CRITIC_SYSTEM_PROMPT = """
+Você é o **Agente Crítico**, servindo como o braço de garantia de qualidade de nosso sistema 
+assistente de pesquisa colaborativo. 
+
+Sua função primária é **revisar e desafiar meticulosamente** informação do Agente Pesquisador, 
+garantindo **precisão, completude e apresentação imparcial**.
+
+Seus deveres abrangem:
+
+* **Avaliar descobertas de pesquisa** para correção factual, minuciosidade e possíveis tendências.
+
+* **Identificar qualquer dado ausente** ou inconsistências no raciocínio.
+
+* **Levantar questões críticas** que poderiam refinar ou expandir o entendimento atual.
+
+* **Oferecer sugestões construtivas** para aprimoramento ou explorar diferentes ângulos.
+
+* **Validar que a saída final é abrangente** e equilibrada.
+
+Toda crítica deve ser construtiva. Seu objetivo é fortificar a pesquisa, não invalidá-la. 
+Estruture seu feedback claramente, chamando atenção para pontos específicos para revisão. 
+
+Seu objetivo geral é garantir que o produto de pesquisa final atenda aos mais altos padrões 
+de qualidade possíveis.
+"""
 ```
 
 O Agente Crítico opera baseado em um prompt de sistema pré-definido que delineia seu papel, responsabilidades e abordagem de feedback. Um prompt bem projetado para este agente deve estabelecer claramente sua função como avaliador. Deve especificar as áreas para foco crítico e enfatizar fornecer feedback construtivo ao invés de mera rejeição. O prompt também deve encorajar a identificação de tanto pontos fortes quanto fracos, e deve guiar o agente sobre como estruturar e apresentar seu feedback.
@@ -88,33 +127,159 @@ Este sistema usa uma estratégia de otimização consciente de recursos para lid
 O código está sob licença MIT e disponível no Github: ([https://github.com/mahtabsyed/21-Agentic-Patterns/blob/main/16_Resource_Aware_Opt_LLM_Reflection_v2.ipynb](https://github.com/mahtabsyed/21-Agentic-Patterns/blob/main/16_Resource_Aware_Opt_LLM_Reflection_v2.ipynb))
 
 ```python
-# Licença MIT # Copyright (c) 2025 Mahtab Syed # https://www.linkedin.com/in/mahtabsyed/ import os import requests import json from dotenv import load_dotenv from openai import OpenAI # Carregar variáveis de ambiente load_dotenv() OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") GOOGLE_CUSTOM_SEARCH_API_KEY = os.getenv("GOOGLE_CUSTOM_SEARCH_API_KEY") GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID") if not OPENAI_API_KEY or not GOOGLE_CUSTOM_SEARCH_API_KEY or not GOOGLE_CSE_ID: raise ValueError( "Por favor, defina OPENAI_API_KEY, GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CSE_ID em seu arquivo .env." ) client = OpenAI(api_key=OPENAI_API_KEY) # --- Passo 1: Classificar o Prompt --- def classify_prompt(prompt: str) -> dict: system_message =  {
-"role": "system", "content": ( "Você é um classificador que analisa prompts de usuários e retorna uma de três categorias APENAS:\n\n" "- simple\n" "- reasoning\n" "- internet_search\n\n" "Regras:\n" "- Use 'simple' para questões factuais diretas que não precisam de raciocínio ou eventos atuais.\n" "- Use 'reasoning' para questões de lógica, matemática ou inferência multi-passo.\n" "- Use 'internet_search' se o prompt se refere a eventos atuais, dados recentes ou coisas não em seus dados de treinamento.\n\n" "Responda APENAS com JSON como:\n" ' {
-"classification": "simple" }
-' ), }
-user_message =  {
-"role": "user", "content": prompt}
-response = client.chat.completions.create( model="gpt-4o", messages=[system_message, user_message], temperature=1 ) reply = response.choices[0].message.content return json.loads(reply) # --- Passo 2: Busca Google --- def google_search(query: str, num_results=1) -> list: url = "https://www.googleapis.com/customsearch/v1" params =  {
-"key": GOOGLE_CUSTOM_SEARCH_API_KEY, "cx": GOOGLE_CSE_ID, "q": query, "num": num_results, }
-try: response = requests.get(url, params=params) response.raise_for_status() results = response.json() if "items" in results and results["items"]: return [  {
-"title": item.get("title"), "snippet": item.get("snippet"), "link": item.get("link"), }
-for item in results["items"] ] else: return [] except requests.exceptions.RequestException as e: return  {
-"error": str(e)}
-# --- Passo 3: Gerar Resposta --- def generate_response(prompt: str, classification: str, search_results=None) -> str: if classification == "simple": model = "gpt-4o-mini" full_prompt = prompt elif classification == "reasoning": model = "o4-mini" full_prompt = prompt elif classification == "internet_search": model = "gpt-4o" # Converter cada resultado de busca dict para uma string legível if search_results: search_context = "\n".join( [ f"Título:  {
-item.get('title')}
-\nSnippet:  {
-item.get('snippet')}
-\nLink:  {
-item.get('link')}
-" for item in search_results ] ) else: search_context = "Nenhum resultado de busca encontrado." full_prompt = f"""Use os seguintes resultados da web para responder à consulta do usuário:  {
-search_context}
-Consulta:  {
-prompt}
-""" response = client.chat.completions.create( model=model, messages=[ {
-"role": "user", "content": full_prompt}
-], temperature=1, ) return response.choices[0].message.content, model # --- Passo 4: Roteador Combinado --- def handle_prompt(prompt: str) -> dict: classification_result = classify_prompt(prompt) # Remover ou comentar a próxima linha para evitar impressão duplicada # print("\n🔍 Resultado da Classificação:", classification_result) classification = classification_result["classification"] search_results = None if classification == "internet_search": search_results = google_search(prompt) # print("\n🔍 Resultados da Busca:", search_results) answer, model = generate_response(prompt, classification, search_results) return  {
-"classification": classification, "response": answer, "model": model}
-test_prompt = "Qual é a capital da Austrália?" # test_prompt = "Explique o impacto da computação quântica na criptografia." # test_prompt = "Quando começa o Australian Open 2026, me dê a data completa?" result = handle_prompt(test_prompt) print("🔍 Classificação:", result["classification"]) print("🧠 Modelo Usado:", result["model"]) print("🧠 Resposta:\n", result["response"])
+# Licença MIT
+# Copyright (c) 2025 Mahtab Syed
+# https://www.linkedin.com/in/mahtabsyed/
+
+import os
+import requests
+import json
+from dotenv import load_dotenv
+from openai import OpenAI
+
+# Carregar variáveis de ambiente
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GOOGLE_CUSTOM_SEARCH_API_KEY = os.getenv("GOOGLE_CUSTOM_SEARCH_API_KEY")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
+
+if not OPENAI_API_KEY or not GOOGLE_CUSTOM_SEARCH_API_KEY or not GOOGLE_CSE_ID:
+    raise ValueError(
+        "Por favor, defina OPENAI_API_KEY, GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CSE_ID em seu arquivo .env."
+    )
+
+client = OpenAI(api_key=OPENAI_API_KEY) # --- Passo 1: Classificar o Prompt ---
+def classify_prompt(prompt: str) -> dict:
+    system_message = {
+        "role": "system", 
+        "content": (
+            "Você é um classificador que analisa prompts de usuários e retorna uma de três categorias APENAS:\n\n"
+            "- simple\n"
+            "- reasoning\n"
+            "- internet_search\n\n"
+            "Regras:\n"
+            "- Use 'simple' para questões factuais diretas que não precisam de raciocínio ou eventos atuais.\n"
+            "- Use 'reasoning' para questões de lógica, matemática ou inferência multi-passo.\n"
+            "- Use 'internet_search' se o prompt se refere a eventos atuais, dados recentes ou coisas não em seus dados de treinamento.\n\n"
+            "Responda APENAS com JSON como:\n"
+            '{"classification": "simple"}'
+        ),
+    }
+    
+    user_message = {
+        "role": "user", 
+        "content": prompt
+    }
+    
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[system_message, user_message],
+        temperature=1
+    )
+    
+    reply = response.choices[0].message.content
+    return json.loads(reply)
+
+# --- Passo 2: Busca Google ---
+def google_search(query: str, num_results=1) -> list:
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": GOOGLE_CUSTOM_SEARCH_API_KEY,
+        "cx": GOOGLE_CSE_ID,
+        "q": query,
+        "num": num_results,
+    }
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        results = response.json()
+        
+        if "items" in results and results["items"]:
+            return [
+                {
+                    "title": item.get("title"),
+                    "snippet": item.get("snippet"),
+                    "link": item.get("link"),
+                }
+                for item in results["items"]
+            ]
+        else:
+            return []
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+
+# --- Passo 3: Gerar Resposta ---
+def generate_response(prompt: str, classification: str, search_results=None) -> str:
+    if classification == "simple":
+        model = "gpt-4o-mini"
+        full_prompt = prompt
+    elif classification == "reasoning":
+        model = "o4-mini"
+        full_prompt = prompt
+    elif classification == "internet_search":
+        model = "gpt-4o"
+        
+        # Converter cada resultado de busca dict para uma string legível
+        if search_results:
+            search_context = "\n".join(
+                [
+                    f"Título: {item.get('title')}\n"
+                    f"Snippet: {item.get('snippet')}\n"
+                    f"Link: {item.get('link')}\n"
+                    for item in search_results
+                ]
+            )
+        else:
+            search_context = "Nenhum resultado de busca encontrado."
+        
+        full_prompt = f"""Use os seguintes resultados da web para responder à consulta do usuário:
+{search_context}
+
+Consulta: {prompt}
+"""
+    
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "user", "content": full_prompt}
+        ],
+        temperature=1,
+    )
+    
+    return response.choices[0].message.content, model
+
+# --- Passo 4: Roteador Combinado ---
+def handle_prompt(prompt: str) -> dict:
+    classification_result = classify_prompt(prompt)
+    # Remover ou comentar a próxima linha para evitar impressão duplicada
+    # print("\n🔍 Resultado da Classificação:", classification_result)
+    
+    classification = classification_result["classification"]
+    search_results = None
+    
+    if classification == "internet_search":
+        search_results = google_search(prompt)
+        # print("\n🔍 Resultados da Busca:", search_results)
+    
+    answer, model = generate_response(prompt, classification, search_results)
+    
+    return {
+        "classification": classification,
+        "response": answer,
+        "model": model
+    }
+
+# Teste do sistema
+test_prompt = "Qual é a capital da Austrália?"
+# test_prompt = "Explique o impacto da computação quântica na criptografia."
+# test_prompt = "Quando começa o Australian Open 2026, me dê a data completa?"
+
+result = handle_prompt(test_prompt)
+print("🔍 Classificação:", result["classification"])
+print("🧠 Modelo Usado:", result["model"])
+print("🧠 Resposta:\n", result["response"])
 ```
 
 Este código Python implementa um sistema de roteamento de prompt para responder perguntas de usuários. Começa carregando chaves de API necessárias de um arquivo .env para OpenAI e Google Custom Search. A funcionalidade central está em classificar o prompt do usuário em três categorias: simple, reasoning ou internet search. Uma função dedicada utiliza um modelo OpenAI para este passo de classificação. Se o prompt requer informação atual, uma busca Google é realizada usando a API Google Custom Search. Outra função então gera a resposta final, selecionando um modelo OpenAI apropriado baseado na classificação. Para consultas de internet search, os resultados da busca são fornecidos como contexto ao modelo. A função principal handle_prompt orquestra este fluxo de trabalho, chamando as funções de classificação e busca (se necessário) antes de gerar a resposta. Retorna a classificação, o modelo usado e a resposta gerada. Este sistema direciona eficientemente diferentes tipos de consultas para métodos otimizados para uma melhor resposta.
@@ -124,13 +289,26 @@ Este código Python implementa um sistema de roteamento de prompt para responder
 OpenRouter oferece uma interface unificada para centenas de modelos de IA via um único endpoint de API. Fornece failover automatizado e otimização de custos, com integração fácil através de seu SDK ou framework preferido.
 
 ```python
-import requests import json response = requests.post( url="https://openrouter.ai/api/v1/chat/completions", headers= {
-"Authorization": "Bearer <OPENROUTER_API_KEY>", "HTTP-Referer": "<YOUR_SITE_URL>", # Opcional. URL do site para rankings no openrouter.ai. "X-Title": "<YOUR_SITE_NAME>", # Opcional. Título do site para rankings no openrouter.ai. }
-, data=json.dumps( {
-"model": "openai/gpt-4o", # Opcional "messages": [  {
-"role": "user", "content": "Qual é o significado da vida?" }
-] }
-) )
+import requests
+import json
+
+response = requests.post(
+    url="https://openrouter.ai/api/v1/chat/completions",
+    headers={
+        "Authorization": "Bearer <OPENROUTER_API_KEY>",
+        "HTTP-Referer": "<YOUR_SITE_URL>",  # Opcional. URL do site para rankings no openrouter.ai.
+        "X-Title": "<YOUR_SITE_NAME>",      # Opcional. Título do site para rankings no openrouter.ai.
+    },
+    data=json.dumps({
+        "model": "openai/gpt-4o",  # Opcional
+        "messages": [
+            {
+                "role": "user",
+                "content": "Qual é o significado da vida?"
+            }
+        ]
+    })
+)
 ```
 
 Este trecho de código usa a biblioteca requests para interagir com a API OpenRouter. Envia uma requisição POST para o endpoint de conclusão de chat com uma mensagem de usuário. A requisição inclui headers de autorização com uma chave de API e informação opcional do site. O objetivo é obter uma resposta de um modelo de linguagem especificado, neste caso, "openai/gpt-4o".

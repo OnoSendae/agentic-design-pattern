@@ -131,26 +131,37 @@ root_agent = LlmAgent(
 Criar um arquivo `__init__.py` é necessário para garantir que o arquivo agent.py seja reconhecido como parte de um pacote Python descobrível para o Agent Development Kit (ADK). Este arquivo deve residir no mesmo diretório que agent.py.
 
 ```python
-# ./adk_agent_samples/mcp_agent/__init__.py from . import agent
+# ./adk_agent_samples/mcp_agent/__init__.py
+from . import agent
 ```
 
 Certamente, outros comandos suportados estão disponíveis para uso. Por exemplo, conectar ao python3 pode ser alcançado da seguinte forma:
 
 ```python
-connection_params = StdioConnectionParams( server_params= {
-"command": "python3", "args": ["./agent/mcp_server.py"], "env":  {
-"SERVICE_ACCOUNT_PATH":SERVICE_ACCOUNT_PATH, "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID }
-}
+connection_params = StdioConnectionParams(
+    server_params={
+        "command": "python3",
+        "args": ["./agent/mcp_server.py"],
+        "env": {
+            "SERVICE_ACCOUNT_PATH": SERVICE_ACCOUNT_PATH,
+            "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID
+        }
+    }
 )
 ```
 
 UVX, no contexto de Python, refere-se a uma ferramenta de linha de comando que utiliza uv para executar comandos em um ambiente Python temporário e isolado. Essencialmente, permite que você execute ferramentas e pacotes Python sem precisar instalá-los globalmente ou dentro do ambiente do seu projeto. Você pode executá-lo via servidor MCP.
 
-```text
-connection_params = StdioConnectionParams( server_params= {
-"command": "uvx", "args": ["mcp-google-sheets@latest"], "env":  {
-"SERVICE_ACCOUNT_PATH":SERVICE_ACCOUNT_PATH, "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID }
-}
+```python
+connection_params = StdioConnectionParams(
+    server_params={
+        "command": "uvx",
+        "args": ["mcp-google-sheets@latest"],
+        "env": {
+            "SERVICE_ACCOUNT_PATH": SERVICE_ACCOUNT_PATH,
+            "DRIVE_FOLDER_ID": DRIVE_FOLDER_ID
+        }
+    }
 )
 ```
 
@@ -183,9 +194,40 @@ Além da criação básica de ferramentas, FastMCP facilita padrões arquitetura
 ## Para ilustrar, considere uma ferramenta básica "greet" fornecida pelo servidor. Agentes ADK e outros clientes MCP podem interagir com esta ferramenta usando HTTP uma vez que ela esteja ativa.
 
 ```python
-# fastmcp_server.py # Este script demonstra como criar um servidor MCP simples usando FastMCP. # Ele expõe uma única ferramenta que gera uma saudação. # 1. Certifique-se de ter o FastMCP instalado: # pip install fastmcp from fastmcp import FastMCP, Client # Inicializar o servidor FastMCP. mcp_server = FastMCP() # Definir uma função de ferramenta simples. # O decorador `@mcp_server.tool` registra esta função Python como uma ferramenta MCP. # A docstring torna-se a descrição da ferramenta para o LLM. @mcp_server.tool def greet(name: str) -> str: """ Gera uma saudação personalizada. Args: name: O nome da pessoa a cumprimentar. Returns: Uma string de saudação. """ return f"Olá,  {
-name}
-! Prazer em conhecê-lo." # Ou se você quiser executá-lo a partir do script: if __name__ == "__main__": mcp_server.run( transport="http", host="127.0.0.1", port=8000 )
+# fastmcp_server.py
+# Este script demonstra como criar um servidor MCP simples usando FastMCP.
+# Ele expõe uma única ferramenta que gera uma saudação.
+
+# 1. Certifique-se de ter o FastMCP instalado:
+# pip install fastmcp
+from fastmcp import FastMCP, Client
+
+# Inicializar o servidor FastMCP.
+mcp_server = FastMCP()
+
+# Definir uma função de ferramenta simples.
+# O decorador `@mcp_server.tool` registra esta função Python como uma ferramenta MCP.
+# A docstring torna-se a descrição da ferramenta para o LLM.
+@mcp_server.tool
+def greet(name: str) -> str:
+    """
+    Gera uma saudação personalizada.
+    
+    Args:
+        name: O nome da pessoa a cumprimentar.
+    
+    Returns:
+        Uma string de saudação.
+    """
+    return f"Olá, {name}! Prazer em conhecê-lo."
+
+# Ou se você quiser executá-lo a partir do script:
+if __name__ == "__main__":
+    mcp_server.run(
+        transport="http",
+        host="127.0.0.1",
+        port=8000
+    )
 ```
 
 Este script Python define uma única função chamada greet, que toma o nome de uma pessoa e retorna uma saudação personalizada. O decorador @tool() acima desta função automaticamente a registra como uma ferramenta que uma IA ou outro programa pode usar. A string de documentação da função e dicas de tipo são usadas pelo FastMCP para dizer ao Agente como a ferramenta funciona, que entradas ela precisa e o que retornará.
@@ -201,7 +243,30 @@ Um parâmetro tool_filter pode ser incluído para restringir o uso de ferramenta
 Para estabelecer esta configuração, um arquivo de agente (ex., agent.py localizado em ./adk_agent_samples/fastmcp_client_agent/) é requerido. Este arquivo instanciará um agente ADK e usará HttpServerParameters para estabelecer uma conexão com o servidor FastMCP operacional.
 
 ```python
-# ./adk_agent_samples/fastmcp_client_agent/agent.py import os from google.adk.agents import LlmAgent from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, HttpServerParameters # Definir o endereço do servidor FastMCP. # Certifique-se de que seu fastmcp_server.py (definido anteriormente) esteja executando nesta porta. FASTMCP_SERVER_URL = "http://localhost:8000" root_agent = LlmAgent( model='gemini-2.0-flash', # Ou seu modelo preferido name='fastmcp_greeter_agent', instruction='Você é um assistente amigável que pode cumprimentar pessoas pelo nome. Use a ferramenta "greet".', tools=[ MCPToolset( connection_params=HttpServerParameters( url=FASTMCP_SERVER_URL, ), # Opcional: Filtrar quais ferramentas do servidor MCP são expostas # Para este exemplo, esperamos apenas 'greet' tool_filter=['greet'] ) ], )
+# ./adk_agent_samples/fastmcp_client_agent/agent.py
+import os
+from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, HttpServerParameters
+
+# Definir o endereço do servidor FastMCP.
+# Certifique-se de que seu fastmcp_server.py (definido anteriormente) esteja executando nesta porta.
+FASTMCP_SERVER_URL = "http://localhost:8000"
+
+root_agent = LlmAgent(
+    model='gemini-2.0-flash',  # Ou seu modelo preferido
+    name='fastmcp_greeter_agent',
+    instruction='Você é um assistente amigável que pode cumprimentar pessoas pelo nome. Use a ferramenta "greet".',
+    tools=[
+        MCPToolset(
+            connection_params=HttpServerParameters(
+                url=FASTMCP_SERVER_URL,
+            ),
+            # Opcional: Filtrar quais ferramentas do servidor MCP são expostas
+            # Para este exemplo, esperamos apenas 'greet'
+            tool_filter=['greet']
+        )
+    ],
+)
 ```
 
 O script define um Agente nomeado fastmcp_greeter_agent que usa um modelo de linguagem Gemini. Ele recebe uma instrução específica para atuar como um assistente amigável cujo propósito é cumprimentar pessoas. Crucialmente, o código equipa este agente com uma ferramenta para executar sua tarefa. Ele configura um MCPToolset para conectar a um servidor separado executando em localhost:8000, que espera ser o servidor FastMCP do exemplo anterior. O agente é especificamente concedido acesso à ferramenta greet hospedada naquele servidor. Em essência, este código configura o lado cliente do sistema, criando um agente inteligente que entende que seu objetivo é cumprimentar pessoas e sabe exatamente qual ferramenta externa usar para realizá-lo.

@@ -26,7 +26,83 @@ Vamos ver um exemplo. Ele começa com um conjunto de instruções que dizem à I
 Seguindo isso, o exemplo mostra o processo CoT em ação. A seção rotulada "Processo de Pensamento do Agente" é o monólogo interno onde o modelo executa os passos instruídos. Esta é a literal "cadeia de pensamento." Finalmente, a "Resposta Final do Agente" é a saída polida e abrangente gerada como resultado daquele processo de raciocínio cuidadoso e passo-a-passo
 
 ```text
-Você é um Agente de Recuperação de Informação. Seu objetivo é responder à pergunta do usuário de forma abrangente e precisa pensando passo-a-passo. Aqui está o processo que você deve seguir: 1. **Analisar a Consulta:** Entender o assunto central e requisitos específicos da pergunta do usuário. Identificar entidades chave, palavras-chave e o tipo de informação sendo procurada. 2. **Formular Consultas de Busca (para Base de Conhecimento):** Baseado em sua análise, gerar uma lista de consultas de busca precisas que você usaria para recuperar informação relevante de uma base de conhecimento ou ferramentas externas. 3. **Simular Recuperação de Informação (Auto-Correção/Raciocínio):** Para cada consulta de busca, considerar mentalmente que tipo de informação você espera encontrar. Se você fosse recuperar o conteúdo, quais seriam os snippets mais relevantes? Pense sobre ambiguidades potenciais ou peças ausentes. 4. **Sintetizar Informação:** Baseado na recuperação simulada e seu entendimento da consulta original do usuário, sintetizar a informação reunida em uma resposta coerente e completa. Garantir que todos os aspectos da consulta sejam abordados. 5. **Revisar e Refinar:** Antes de finalizar, avaliar criticamente sua resposta. É precisa? É abrangente? É fácil de entender? É concisa? Se não, identificar o que precisa ser melhorado e como. **Consulta do Usuário:** "Explique as principais diferenças entre computadores clássicos e computadores quânticos, e descreva brevemente uma aplicação potencial da computação quântica." **Processo de Pensamento do Agente (Saída CoT Interna - encorajada pelo prompt):** **Pensamento 1 (Analisar Consulta):** O usuário quer duas coisas: 1. Principais diferenças entre computadores clássicos e quânticos. 2. Uma aplicação potencial da computação quântica. Palavras-chave: computadores clássicos, computadores quânticos, diferenças, aplicação potencial. **Pensamento 2 (Formular Consultas de Busca):** - "diferenças clássicos vs quânticos" - "como computadores quânticos funcionam" - "como computadores clássicos funcionam" - "aplicações da computação quântica" **Pensamento 3 (Simular Recuperação de Informação & Identificar Conceitos Chave):** - De "diferenças": Esperar conceitos como bits vs. qubits, superposição, entrelaçamento, natureza probabilística, poder computacional para problemas específicos. - De "como funcionam": Clássicos usam transistores/binário. Quânticos usam mecânica quântica. - De "aplicações": Esperar descoberta de drogas, ciência de materiais, criptografia, otimização. **Pensamento 4 (Sintetizar Informação):** Computadores clássicos usam bits (0 ou 1), processando informação sequencialmente. Computadores quânticos usam qubits, que podem ser 0, 1, ou ambos simultaneamente (superposição), e podem ser entrelaçados, permitindo abordagens computacionais vastamente diferentes. Isto permite que resolvam certos problemas (como fatorar números grandes ou simular moléculas complexas) muito mais eficientemente que computadores clássicos. Uma aplicação potencial é na descoberta de drogas, onde computadores quânticos poderiam simular interações moleculares com precisão sem precedentes, acelerando o desenvolvimento de novos medicamentos. **Pensamento 5 (Revisar e Refinar):** - Diferenças estão cobertas (bits vs qubits, superposição, entrelaçamento, processamento). - Aplicação é dada (descoberta de drogas). - É breve? Sim. - É claro? Sim. - Parece bom. **Resposta Final do Agente (Saída para Usuário):** Computadores clássicos processam informação usando bits, que podem ser 0 ou 1 a qualquer momento dado, realizando operações sequencialmente. Em contraste, computadores quânticos utilizam qubits, que podem existir em múltiplos estados simultaneamente através de superposição e podem ser ligados através de entrelaçamento, permitindo computações exponencialmente mais complexas. Esta diferença fundamental permite que máquinas quânticas lidem com certos problemas, como simular estruturas moleculares ou quebrar criptografia complexa, que são intratáveis mesmo para os supercomputadores clássicos mais poderosos. Uma aplicação significativa potencial da computação quântica está na descoberta de drogas, onde sua capacidade de modelar precisamente o comportamento molecular poderia revolucionar o desenvolvimento de novos produtos farmacêuticos.
+Você é um Agente de Recuperação de Informação.
+
+Seu objetivo é responder à pergunta do usuário de forma abrangente e precisa pensando passo-a-passo. 
+Aqui está o processo que você deve seguir:
+
+1. **Analisar a Consulta:** 
+   Entender o assunto central e requisitos específicos da pergunta do usuário. 
+   Identificar entidades chave, palavras-chave e o tipo de informação sendo procurada.
+
+2. **Formular Consultas de Busca (para Base de Conhecimento):** 
+   Baseado em sua análise, gerar uma lista de consultas de busca precisas que você usaria 
+   para recuperar informação relevante de uma base de conhecimento ou ferramentas externas.
+
+3. **Simular Recuperação de Informação (Auto-Correção/Raciocínio):** 
+   Para cada consulta de busca, considerar mentalmente que tipo de informação você espera encontrar. 
+   Se você fosse recuperar o conteúdo, quais seriam os snippets mais relevantes? 
+   Pense sobre ambiguidades potenciais ou peças ausentes.
+
+4. **Sintetizar Informação:** 
+   Baseado na recuperação simulada e seu entendimento da consulta original do usuário, 
+   sintetizar a informação reunida em uma resposta coerente e completa. 
+   Garantir que todos os aspectos da consulta sejam abordados.
+
+5. **Revisar e Refinar:** 
+   Antes de finalizar, avaliar criticamente sua resposta. É precisa? É abrangente? É fácil de entender? 
+   É concisa? Se não, identificar o que precisa ser melhorado e como.
+
+**Consulta do Usuário:** 
+"Explique as principais diferenças entre computadores clássicos e computadores quânticos, 
+e descreva brevemente uma aplicação potencial da computação quântica."
+
+**Processo de Pensamento do Agente (Saída CoT Interna - encorajada pelo prompt):**
+
+**Pensamento 1 (Analisar Consulta):** 
+O usuário quer duas coisas: 
+1. Principais diferenças entre computadores clássicos e quânticos. 
+2. Uma aplicação potencial da computação quântica. 
+Palavras-chave: computadores clássicos, computadores quânticos, diferenças, aplicação potencial.
+
+**Pensamento 2 (Formular Consultas de Busca):** 
+- "diferenças clássicos vs quânticos" 
+- "como computadores quânticos funcionam" 
+- "como computadores clássicos funcionam" 
+- "aplicações da computação quântica"
+
+**Pensamento 3 (Simular Recuperação de Informação & Identificar Conceitos Chave):** 
+- De "diferenças": Esperar conceitos como bits vs. qubits, superposição, entrelaçamento, 
+  natureza probabilística, poder computacional para problemas específicos. 
+- De "como funcionam": Clássicos usam transistores/binário. Quânticos usam mecânica quântica. 
+- De "aplicações": Esperar descoberta de drogas, ciência de materiais, criptografia, otimização.
+
+**Pensamento 4 (Sintetizar Informação):** 
+Computadores clássicos usam bits (0 ou 1), processando informação sequencialmente. 
+Computadores quânticos usam qubits, que podem ser 0, 1, ou ambos simultaneamente (superposição), 
+e podem ser entrelaçados, permitindo abordagens computacionais vastamente diferentes. 
+Isto permite que resolvam certos problemas (como fatorar números grandes ou simular moléculas complexas) 
+muito mais eficientemente que computadores clássicos. Uma aplicação potencial é na descoberta de drogas, 
+onde computadores quânticos poderiam simular interações moleculares com precisão sem precedentes, 
+acelerando o desenvolvimento de novos medicamentos.
+
+**Pensamento 5 (Revisar e Refinar):** 
+- Diferenças estão cobertas (bits vs qubits, superposição, entrelaçamento, processamento). 
+- Aplicação é dada (descoberta de drogas). 
+- É breve? Sim. 
+- É claro? Sim. 
+- Parece bom.
+
+**Resposta Final do Agente (Saída para Usuário):** 
+Computadores clássicos processam informação usando bits, que podem ser 0 ou 1 a qualquer momento dado, 
+realizando operações sequencialmente. Em contraste, computadores quânticos utilizam qubits, 
+que podem existir em múltiplos estados simultaneamente através de superposição e podem ser ligados 
+através de entrelaçamento, permitindo computações exponencialmente mais complexas. 
+Esta diferença fundamental permite que máquinas quânticas lidem com certos problemas, 
+como simular estruturas moleculares ou quebrar criptografia complexa, que são intratáveis mesmo 
+para os supercomputadores clássicos mais poderosos. Uma aplicação significativa potencial da 
+computação quântica está na descoberta de drogas, onde sua capacidade de modelar precisamente 
+o comportamento molecular poderia revolucionar o desenvolvimento de novos produtos farmacêuticos.
 ```
 
 **Tree-of-Thought (ToT)** é uma técnica de raciocínio que constrói sobre Chain-of-Thought (CoT). Ela permite que grandes modelos de linguagem explorem múltiplos caminhos de raciocínio ramificando em diferentes passos intermediários, formando uma estrutura de árvore (veja Fig. 2) Esta abordagem suporta resolução de problemas complexos permitindo backtracking, auto-correção e exploração de soluções alternativas. Manter uma árvore de possibilidades permite que o modelo avalie várias trajetórias de raciocínio antes de finalizar uma resposta. Este processo iterativo aprimora a capacidade do modelo de lidar com tarefas desafiadoras que requerem planejamento estratégico e tomada de decisão.  
@@ -38,8 +114,84 @@ Fig.2: Exemplo de Árvore de Pensamentos
 Este exemplo demonstra um processo sistemático de auto-correção, crucial para refinar conteúdo gerado por IA. Envolve um loop iterativo de rascunho, revisão contra requisitos originais e implementação de melhorias específicas. A ilustração começa delineando a função da IA como um "Agente de Auto-Correção" com um fluxo de trabalho analítico e de revisão de cinco passos definido. Seguindo isso, um "Rascunho Inicial" subpar de um post de mídia social é apresentado. O "Processo de Pensamento do Agente de Auto-Correção" forma o núcleo da demonstração. Aqui, o Agente avalia criticamente o rascunho de acordo com suas instruções, identificando fraquezas como baixo engajamento e uma chamada para ação vaga. Ele então sugere melhorias concretas, incluindo o uso de verbos mais impactantes e emojis. O processo conclui com o "Conteúdo Final Revisado," uma versão polida e notavelmente melhorada que integra os ajustes auto-identificados.
 
 ```text
-Você é um Agente de Auto-Correção altamente crítico e orientado a detalhes. Sua tarefa é revisar uma peça de conteúdo previamente gerada contra seus requisitos originais e identificar áreas para melhoria. Seu objetivo é refinar o conteúdo para ser mais preciso, abrangente, envolvente e alinhado com o prompt. Aqui está o processo que você deve seguir para auto-correção: 1. **Entender Requisitos Originais:** Revisar o prompt/requisitos iniciais que levaram à criação do conteúdo. Qual era a *intenção original*? Quais eram as principais restrições ou objetivos? 2. **Analisar Conteúdo Atual:** Ler o conteúdo fornecido cuidadosamente. 3. **Identificar Discrepâncias/Fraquezas:** Comparar o conteúdo atual contra os requisitos originais. Procurar por: * **Problemas de Precisão:** Há erros factuais ou declarações enganosas? * **Lacunas de Completude:** Aborda completamente todos os aspectos do prompt original? Há algo faltando? * **Clareza & Coerência:** A linguagem é clara, concisa e fácil de entender? Flui logicamente? * **Tom & Estilo:** Combina com o tom e estilo desejados (ex., profissional, envolvente, conciso)? * **Engajamento:** É cativante? Mantém a atenção do leitor? * **Redundância/Verbosidade:** Algumas partes podem ser condensadas ou removidas sem perder significado? 4. **Propor Melhorias Específicas:** Para cada fraqueza identificada, sugerir mudanças concretas e acionáveis. Não apenas declarar o problema;
-propor uma solução. 5. **Gerar Conteúdo Revisado:** Baseado em suas melhorias propostas, reescrever o conteúdo original para incorporar todas as mudanças necessárias. Garantir que o conteúdo revisado seja polido e pronto para uso final. **Prompt/Requisitos Originais:** "Escreva um post curto e envolvente de mídia social (máx 150 caracteres) anunciando uma nova linha de produtos eco-friendly: 'GreenTech Gadgets'." **Rascunho Inicial (Conteúdo a ser corrigido):** "Temos novos produtos. Eles são verdes e tecnológicos. Compre GreenTech Gadgets agora!" **Processo de Pensamento do Agente de Auto-Correção (Saída CoT Interna - encorajada pelo prompt):** **Pensamento 1 (Entender Requisitos Originais):** - Post curto e envolvente de mídia social. - Máx 150 caracteres. - Anunciar "GreenTech Gadgets" - uma nova linha de produtos eco-friendly. **Pensamento 2 (Analisar Conteúdo Atual):** "Temos novos produtos. Eles são verdes e tecnológicos. Compre GreenTech Gadgets agora!" (64 caracteres) **Pensamento 3 (Identificar Discrepâncias/Fraquezas):** - **Envolvente:** Não muito envolvente. Soa genérico. - **Eco-friendly:** Implícito por "verde," mas não destacado explicitamente como benefício. - **Chamada para Ação:** "Compre agora!" está ok, mas poderia ser mais convincente. - **Concisão:** É curto, mas poderia usar verbos/frases mais fortes. - **Impacto:** Falta emoção para um lançamento de novo produto. **Pensamento 4 (Propor Melhorias Específicas):** - Tornar mais dinâmico e emocionante. - Enfatizar "eco-friendly" e "inovação." - Usar verbos mais fortes e voz mais ativa. - Adicionar uma chamada para ação clara e envolvente. - Garantir que permaneça sob 150 caracteres. **Pensamento 5 (Gerar Conteúdo Revisado):** Original: "Temos novos produtos. Eles são verdes e tecnológicos. Compre GreenTech Gadgets agora!" Ideia revisada 1: "🌱 Descubra GreenTech Gadgets! Nossa nova linha eco-friendly combina inovação com sustentabilidade. Seja verde, seja inteligente! Compre agora! #EcoFriendly #GreenTech" (148 caracteres) Esta revisão aborda diretamente eco-friendliness, usa emojis para engajamento, adiciona uma chamada para ação mais forte e inclui hashtags relevantes enquanto permanece dentro do limite de caracteres. **Conteúdo Final Revisado do Agente de Auto-Correção (Saída para Usuário):** 🌱 Descubra GreenTech Gadgets! Nossa nova linha eco-friendly combina inovação com sustentabilidade. Seja verde, seja inteligente! Compre agora! #EcoFriendly #GreenTech
+Você é um Agente de Auto-Correção altamente crítico e orientado a detalhes. 
+
+Sua tarefa é revisar uma peça de conteúdo previamente gerada contra seus requisitos originais 
+e identificar áreas para melhoria. Seu objetivo é refinar o conteúdo para ser mais preciso, 
+abrangente, envolvente e alinhado com o prompt. 
+
+Aqui está o processo que você deve seguir para auto-correção:
+
+1. **Entender Requisitos Originais:** 
+   Revisar o prompt/requisitos iniciais que levaram à criação do conteúdo. 
+   Qual era a *intenção original*? Quais eram as principais restrições ou objetivos?
+
+2. **Analisar Conteúdo Atual:** 
+   Ler o conteúdo fornecido cuidadosamente.
+
+3. **Identificar Discrepâncias/Fraquezas:** 
+   Comparar o conteúdo atual contra os requisitos originais. Procurar por:
+   * **Problemas de Precisão:** Há erros factuais ou declarações enganosas?
+   * **Lacunas de Completude:** Aborda completamente todos os aspectos do prompt original? 
+     Há algo faltando?
+   * **Clareza & Coerência:** A linguagem é clara, concisa e fácil de entender? Flui logicamente?
+   * **Tom & Estilo:** Combina com o tom e estilo desejados (ex., profissional, envolvente, conciso)?
+   * **Engajamento:** É cativante? Mantém a atenção do leitor?
+   * **Redundância/Verbosidade:** Algumas partes podem ser condensadas ou removidas sem perder significado?
+
+4. **Propor Melhorias Específicas:** 
+   Para cada fraqueza identificada, sugerir mudanças concretas e acionáveis. 
+   Não apenas declarar o problema; propor uma solução.
+
+5. **Gerar Conteúdo Revisado:** 
+   Baseado em suas melhorias propostas, reescrever o conteúdo original para incorporar 
+   todas as mudanças necessárias. Garantir que o conteúdo revisado seja polido e pronto para uso final.
+
+**Prompt/Requisitos Originais:** 
+"Escreva um post curto e envolvente de mídia social (máx 150 caracteres) anunciando 
+uma nova linha de produtos eco-friendly: 'GreenTech Gadgets'."
+
+**Rascunho Inicial (Conteúdo a ser corrigido):** 
+"Temos novos produtos. Eles são verdes e tecnológicos. Compre GreenTech Gadgets agora!"
+
+**Processo de Pensamento do Agente de Auto-Correção (Saída CoT Interna - encorajada pelo prompt):**
+
+**Pensamento 1 (Entender Requisitos Originais):** 
+- Post curto e envolvente de mídia social.
+- Máx 150 caracteres.
+- Anunciar "GreenTech Gadgets" - uma nova linha de produtos eco-friendly.
+
+**Pensamento 2 (Analisar Conteúdo Atual):** 
+"Temos novos produtos. Eles são verdes e tecnológicos. Compre GreenTech Gadgets agora!" 
+(64 caracteres)
+
+**Pensamento 3 (Identificar Discrepâncias/Fraquezas):** 
+- **Envolvente:** Não muito envolvente. Soa genérico.
+- **Eco-friendly:** Implícito por "verde," mas não destacado explicitamente como benefício.
+- **Chamada para Ação:** "Compre agora!" está ok, mas poderia ser mais convincente.
+- **Concisão:** É curto, mas poderia usar verbos/frases mais fortes.
+- **Impacto:** Falta emoção para um lançamento de novo produto.
+
+**Pensamento 4 (Propor Melhorias Específicas):** 
+- Tornar mais dinâmico e emocionante.
+- Enfatizar "eco-friendly" e "inovação."
+- Usar verbos mais fortes e voz mais ativa.
+- Adicionar uma chamada para ação clara e envolvente.
+- Garantir que permaneça sob 150 caracteres.
+
+**Pensamento 5 (Gerar Conteúdo Revisado):** 
+Original: "Temos novos produtos. Eles são verdes e tecnológicos. Compre GreenTech Gadgets agora!"
+
+Ideia revisada 1: "🌱 Descubra GreenTech Gadgets! Nossa nova linha eco-friendly combina inovação 
+com sustentabilidade. Seja verde, seja inteligente! Compre agora! #EcoFriendly #GreenTech" 
+(148 caracteres)
+
+Esta revisão aborda diretamente eco-friendliness, usa emojis para engajamento, adiciona uma 
+chamada para ação mais forte e inclui hashtags relevantes enquanto permanece dentro do limite de caracteres.
+
+**Conteúdo Final Revisado do Agente de Auto-Correção (Saída para Usuário):** 
+🌱 Descubra GreenTech Gadgets! Nossa nova linha eco-friendly combina inovação com sustentabilidade. 
+Seja verde, seja inteligente! Compre agora! #EcoFriendly #GreenTech
 ```
 
 Fundamentalmente, esta técnica integra uma medida de controle de qualidade diretamente na geração de conteúdo do Agente, produzindo resultados mais refinados, precisos e superiores que atendem mais efetivamente demandas intrincadas do usuário.
@@ -95,17 +247,22 @@ ReAct opera de forma intercalada: o agente executa uma ação, observa o resulta
 
 MASS emprega uma estratégia de otimização multi-estágio que navega sistematicamente o espaço de design complexo intercalando otimização de prompt e topologia (veja Fig. 4)
 
-#### **1. Otimização de Prompt Nível de Bloco:** O processo começa com uma otimização local de prompts para tipos de agentes individuais, ou "blocos," para garantir que cada componente execute seu papel efetivamente antes de ser integrado em um sistema maior. Este passo inicial é crucial pois garante que a otimização de topologia subsequente construa sobre agentes bem performantes, ao invés de sofrer do impacto composto de agentes mal configurados. Por exemplo, ao otimizar para o dataset HotpotQA, o prompt para um agente "Debator" é criativamente enquadrado para instruí-lo a agir como um "verificador de fatos especialista para uma publicação major." Sua tarefa otimizada é revisar meticulosamente respostas propostas de outros agentes, fazer referência cruzada com passagens de contexto fornecidas e identificar qualquer inconsistência ou declaração não apoiada. Este prompt de role-playing especializado, descoberto durante otimização nível de bloco, visa tornar o agente debator altamente efetivo em sintetizar informação antes mesmo de ser colocado em um fluxo de trabalho maior.
+#### **1. Otimização de Prompt Nível de Bloco:**
+O processo começa com uma otimização local de prompts para tipos de agentes individuais, ou "blocos," para garantir que cada componente execute seu papel efetivamente antes de ser integrado em um sistema maior. Este passo inicial é crucial pois garante que a otimização de topologia subsequente construa sobre agentes bem performantes, ao invés de sofrer do impacto composto de agentes mal configurados. Por exemplo, ao otimizar para o dataset HotpotQA, o prompt para um agente "Debator" é criativamente enquadrado para instruí-lo a agir como um "verificador de fatos especialista para uma publicação major." Sua tarefa otimizada é revisar meticulosamente respostas propostas de outros agentes, fazer referência cruzada com passagens de contexto fornecidas e identificar qualquer inconsistência ou declaração não apoiada. Este prompt de role-playing especializado, descoberto durante otimização nível de bloco, visa tornar o agente debator altamente efetivo em sintetizar informação antes mesmo de ser colocado em um fluxo de trabalho maior.
 
-#### **2. Otimização de Topologia de Fluxo de Trabalho:** Seguindo otimização local, MASS otimiza a topologia de fluxo de trabalho selecionando e organizando diferentes interações de agentes de um espaço de design customizável. Para tornar esta busca eficiente, MASS emprega um método ponderado por influência. Este método calcula a "influência incremental" de cada topologia medindo seu ganho de desempenho relativo a um agente baseline e usa estas pontuações para guiar a busca em direção a combinações mais promissoras. Por exemplo, ao otimizar para a tarefa de codificação MBPP, a busca de topologia descobre que um fluxo de trabalho híbrido específico é mais efetivo. A topologia melhor encontrada não é uma estrutura simples mas uma combinação de um processo de refinamento iterativo com uso de ferramenta externa. Especificamente, consiste de um agente preditor que se envolve em várias rodadas de reflexão, com seu código sendo verificado por um agente executor que executa o código contra casos de teste. Este fluxo de trabalho descoberto mostra que para codificação, uma estrutura que combina auto-correção iterativa com verificação externa é superior a designs MAS mais simples.
+#### **2. Otimização de Topologia de Fluxo de Trabalho:**
+Seguindo otimização local, MASS otimiza a topologia de fluxo de trabalho selecionando e organizando diferentes interações de agentes de um espaço de design customizável. Para tornar esta busca eficiente, MASS emprega um método ponderado por influência. Este método calcula a "influência incremental" de cada topologia medindo seu ganho de desempenho relativo a um agente baseline e usa estas pontuações para guiar a busca em direção a combinações mais promissoras. Por exemplo, ao otimizar para a tarefa de codificação MBPP, a busca de topologia descobre que um fluxo de trabalho híbrido específico é mais efetivo. A topologia melhor encontrada não é uma estrutura simples mas uma combinação de um processo de refinamento iterativo com uso de ferramenta externa. Especificamente, consiste de um agente preditor que se envolve em várias rodadas de reflexão, com seu código sendo verificado por um agente executor que executa o código contra casos de teste. Este fluxo de trabalho descoberto mostra que para codificação, uma estrutura que combina auto-correção iterativa com verificação externa é superior a designs MAS mais simples.
 
 ![][image4]
 
-#### Fig. 4: (Cortesia dos Autores): O Framework Multi-Agent System Search (MASS) é um processo de otimização de três estágios que navega um espaço de busca abrangendo prompts otimizáveis (instruções e demonstrações) e blocos de construção de agentes configuráveis (Aggregate, Reflect, Debate, Summarize e Tool-use). O primeiro estágio, Otimização de Prompt Nível de Bloco, otimiza independentemente prompts para cada módulo de agente. Estágio dois, Otimização de Topologia de Fluxo de Trabalho, amostra configurações de sistema válidas de um espaço de design ponderado por influência, integrando os prompts otimizados. O estágio final, Otimização de Prompt Nível de Fluxo de Trabalho, envolve uma segunda rodada de otimização de prompt para todo o sistema multi-agente após a topologia de fluxo de trabalho ótima do Estágio dois ter sido identificada.
+#### Fig. 4: (Cortesia dos Autores):
+O Framework Multi-Agent System Search (MASS) é um processo de otimização de três estágios que navega um espaço de busca abrangendo prompts otimizáveis (instruções e demonstrações) e blocos de construção de agentes configuráveis (Aggregate, Reflect, Debate, Summarize e Tool-use). O primeiro estágio, Otimização de Prompt Nível de Bloco, otimiza independentemente prompts para cada módulo de agente. Estágio dois, Otimização de Topologia de Fluxo de Trabalho, amostra configurações de sistema válidas de um espaço de design ponderado por influência, integrando os prompts otimizados. O estágio final, Otimização de Prompt Nível de Fluxo de Trabalho, envolve uma segunda rodada de otimização de prompt para todo o sistema multi-agente após a topologia de fluxo de trabalho ótima do Estágio dois ter sido identificada.
 
-#### **3. Otimização de Prompt Nível de Fluxo de Trabalho:** O estágio final envolve uma otimização global dos prompts de todo o sistema. Após identificar a topologia de melhor desempenho, os prompts são fine-tuned como uma única entidade integrada para garantir que sejam adaptados para orquestração e que interdependências de agentes sejam otimizadas. Como exemplo, após encontrar a melhor topologia para o dataset DROP, o estágio de otimização final refina o prompt do agente "Preditor." O prompt final otimizado é altamente detalhado, começando fornecendo ao agente um resumo do próprio dataset, notando seu foco em "resposta a questões extrativas" e "informação numérica." Ele então inclui exemplos few-shot de comportamento correto de resposta a questões e enquadra a instrução central como um cenário de alto risco: "Você é uma IA altamente especializada encarregada de extrair informação numérica crítica para um relatório de notícias urgente. Uma transmissão ao vivo está dependendo de sua precisão e velocidade." Este prompt multi-facetado, combinando meta-conhecimento, exemplos e role-playing, é ajustado especificamente para o fluxo de trabalho final para maximizar precisão.
+#### **3. Otimização de Prompt Nível de Fluxo de Trabalho:**
+O estágio final envolve uma otimização global dos prompts de todo o sistema. Após identificar a topologia de melhor desempenho, os prompts são fine-tuned como uma única entidade integrada para garantir que sejam adaptados para orquestração e que interdependências de agentes sejam otimizadas. Como exemplo, após encontrar a melhor topologia para o dataset DROP, o estágio de otimização final refina o prompt do agente "Preditor." O prompt final otimizado é altamente detalhado, começando fornecendo ao agente um resumo do próprio dataset, notando seu foco em "resposta a questões extrativas" e "informação numérica." Ele então inclui exemplos few-shot de comportamento correto de resposta a questões e enquadra a instrução central como um cenário de alto risco: "Você é uma IA altamente especializada encarregada de extrair informação numérica crítica para um relatório de notícias urgente. Uma transmissão ao vivo está dependendo de sua precisão e velocidade." Este prompt multi-facetado, combinando meta-conhecimento, exemplos e role-playing, é ajustado especificamente para o fluxo de trabalho final para maximizar precisão.
 
-#### Descobertas e Princípios Chave: Experimentos demonstram que MAS otimizados por MASS superam significativamente sistemas manualmente projetados existentes e outros métodos de design automatizado através de uma gama de tarefas. Os princípios de design chave para MAS efetivos, como derivado desta pesquisa, são triplos:
+#### Descobertas e Princípios Chave:
+Experimentos demonstram que MAS otimizados por MASS superam significativamente sistemas manualmente projetados existentes e outros métodos de design automatizado através de uma gama de tarefas. Os princípios de design chave para MAS efetivos, como derivado desta pesquisa, são triplos:
 
 * Otimizar agentes individuais com prompts de alta qualidade antes de compô-los.  
 * Construir MAS compondo topologias influentes ao invés de explorar um espaço de busca não restrito.  

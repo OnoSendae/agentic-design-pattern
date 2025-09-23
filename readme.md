@@ -84,14 +84,6 @@ Este projeto inclui:
 
 Você pode navegar pelos capítulos do livro nos diretórios `original` (inglês) e `pt-br` (português).
 
-### Códigos
-
-Os códigos de exemplo estão no diretório `codes`. Para executá-los, você precisará ter o Python instalado, bem como as bibliotecas listadas nos arquivos. Você pode instalar as dependências com:
-
-```bash
-pip install langchain langchain-community langchain-openai langgraph python-dotenv
-```
-
 ### Podcasts
 
 Os podcasts estão no diretório `podcasts` e podem ser ouvidos com qualquer player de áudio.

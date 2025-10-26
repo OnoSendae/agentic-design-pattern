@@ -1,0 +1,1170 @@
+{
+  "show_metadata": {
+    "title": "Padrões de Design Agênticos: Guia Completo em Português",
+    "description": "🤖 **Sobre a Série:**\n\nEsta série de podcasts é uma tradução completa e adaptação do livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli, traduzida para português brasileiro.\n\n🧠 **O que são Agentes de IA?**\nUm agente de IA é um sistema projetado para perceber seu ambiente e tomar ações para alcançar um objetivo específico. É uma evolução de um Grande Modelo de Linguagem (LLM) padrão, aprimorado com as habilidades de planejar, usar ferramentas e interagir com seus arredores.\n\n📚 **Conteúdo da Série:**\n• 21 episódios cobrindo padrões fundamentais de design agêntico\n• 7 episódios especiais sobre frameworks e aplicações práticas\n• Exemplos de código executáveis\n• Casos de uso do mundo real\n• Técnicas avançadas de implementação\n\n🎯 **Para quem é esta série:**\n• Desenvolvedores de software interessados em IA\n• Engenheiros de Machine Learning\n• Arquitetos de sistemas inteligentes\n• Estudantes e profissionais de tecnologia\n• Qualquer pessoa curiosa sobre o futuro da IA\n\n⚖️ **Direitos Autorais:**\nEsta série é baseada no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original. Esta é uma tradução e adaptação para fins educacionais.\n\n📖 **Material Completo:**\nAcesse o livro completo, códigos e recursos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli\n• LinkedIn: https://www.linkedin.com/in/searchguy/\n• Twitter: https://x.com/antoniogulli\n• Livro Original: https://docs.google.com/document/d/1rsaK53T3Lg5KoGwvf8ukOUvbELRtH-V0LnOIFDxBryE/preview?tab=t.0\n\n🎧 **Episódios:**\nEsta série contém 28 episódios completos cobrindo todos os aspectos dos padrões de design agênticos, desde conceitos fundamentais até implementações avançadas.",
+    "category": "Technology",
+    "subcategory": "Education",
+    "language": "Portuguese (Brazil)",
+    "keywords": [
+      "Inteligência Artificial",
+      "Agentes de IA",
+      "Machine Learning",
+      "Desenvolvimento de Software",
+      "LLM",
+      "Padrões de Design",
+      "Programação",
+      "Tecnologia"
+    ],
+    "author": "Antonio Gulli",
+    "author_links": {
+      "linkedin": "https://www.linkedin.com/in/searchguy/",
+      "twitter": "https://x.com/antoniogulli",
+      "original_book": "https://docs.google.com/document/d/1rsaK53T3Lg5KoGwvf8ukOUvbELRtH-V0LnOIFDxBryE/preview?tab=t.0",
+      "code_repository": "https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV"
+    }
+  },
+  "episodes": [
+    {
+      "episode_number": "01",
+      "episode_type": "main",
+      "title": "[Episódio 01] Prompt Chaining - Como Encadear Prompts para IA",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra o poder do Prompt Chaining, um dos padrões mais fundamentais para construir sistemas de IA inteligentes. Explore como quebrar tarefas complexas em sequências de prompts menores e mais gerenciáveis.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Prompt Chaining, Sequential Processing, Workflow Decomposition\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain, LangGraph\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain, LangGraph, Google ADK\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "01-Prompt_Chaining__Como_o_Encadeamento_de_Prompts_e_a_Engenharia_.mp3",
+      "chapter_file": "07-capitulo-1-prompt-chaining.md",
+      "duration": "00:20:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "LLM",
+        "Prompt Engineering",
+        "LangChain",
+        "Workflows"
+      ],
+      "publish_date": "2024-01-15",
+      "show_notes": {
+        "key_concepts": [
+          "Prompt Chaining",
+          "Sequential Processing",
+          "Workflow Decomposition",
+          "Structured Output"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain",
+          "LangGraph",
+          "Google ADK"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "02",
+      "episode_type": "main",
+      "title": "[Episódio 02] Roteamento em IA - O Segredo dos Agentes Inteligentes",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore o padrão de Roteamento, o mecanismo que permite aos agentes de IA tomar decisões dinâmicas e adaptar seu comportamento baseado no contexto.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Conditional Logic, Intent Classification, Dynamic Routing\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangGraph, Google ADK\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangGraph, Google ADK, Embedding Models\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "02-Roteamento_em_IA__O_Segredo_para_Agentes_Inteligentes_que_Decid.mp3",
+      "chapter_file": "08-capitulo-2-roteamento.md",
+      "duration": "00:19:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Roteamento",
+        "Classificação",
+        "LangGraph",
+        "Decision Making"
+      ],
+      "publish_date": "2024-01-16",
+      "show_notes": {
+        "key_concepts": [
+          "Conditional Logic",
+          "Intent Classification",
+          "Dynamic Routing",
+          "Multi-Agent Coordination"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangGraph",
+          "Google ADK",
+          "Embedding Models"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "03",
+      "episode_type": "main",
+      "title": "[Episódio 03] Paralelização em Agentes de IA - Sistemas Mais Rápidos",
+      "description": "🎯 **Sobre este episódio:**\n\nAprenda como implementar paralelização em agentes de IA para criar sistemas mais rápidos e eficientes, executando múltiplas tarefas simultaneamente.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Parallel Processing, Concurrent Execution, Performance Optimization\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain, AsyncIO\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain, AsyncIO, Concurrent Processing\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "03-Paralelização_em_Agentes_de_IA__O_Segredo_para_Sistemas_Mais_Rá.mp3",
+      "chapter_file": "09-capitulo-3-paralelizacao.md",
+      "duration": "00:16:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Paralelização",
+        "Performance",
+        "Async",
+        "Concurrency"
+      ],
+      "publish_date": "2024-01-17",
+      "show_notes": {
+        "key_concepts": [
+          "Parallel Processing",
+          "Concurrent Execution",
+          "Performance Optimization",
+          "Async Operations"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain",
+          "AsyncIO",
+          "Concurrent Processing"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "04",
+      "episode_type": "main",
+      "title": "[Episódio 04] Reflexão em Agentes de IA - Autoavaliação e Melhoria",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra como implementar reflexão em agentes de IA, permitindo que eles se autoavaliem e melhorem continuamente seu desempenho.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Self-Reflection, Self-Evaluation, Continuous Improvement\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain, Self-Correction Patterns\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain, Self-Correction Patterns\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "04-Reflexão_em_Agentes_de_IA__Autoavaliação_e_o_Poder_do_Padrão_Pr.mp3",
+      "chapter_file": "10-capitulo-4-reflexao.md",
+      "duration": "00:19:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Reflexão",
+        "Autoavaliação",
+        "Melhoria Contínua",
+        "Self-Correction"
+      ],
+      "publish_date": "2024-01-18",
+      "show_notes": {
+        "key_concepts": [
+          "Self-Reflection",
+          "Self-Evaluation",
+          "Continuous Improvement",
+          "Error Correction"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain",
+          "Self-Correction Patterns"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "05",
+      "episode_type": "main",
+      "title": "[Episódio 05] Uso de Ferramentas - Como IA Conecta LLMs ao Mundo Real",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore como agentes de IA podem usar ferramentas externas e APIs para interagir com o mundo real, expandindo suas capacidades além do texto.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Function Calling, Tool Integration, API Integration\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain Tools, OpenAI Functions\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain Tools, OpenAI Functions, Google ADK\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "05-Uso_de_Ferramentas_(Function_Calling)__Como_a_IA_Conecta_LLMs_a.mp3",
+      "chapter_file": "11-capitulo-5-uso-de-ferramentas.md",
+      "duration": "00:17:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Function Calling",
+        "APIs",
+        "Ferramentas",
+        "Integração"
+      ],
+      "publish_date": "2024-01-19",
+      "show_notes": {
+        "key_concepts": [
+          "Function Calling",
+          "Tool Integration",
+          "API Integration",
+          "External Services"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain Tools",
+          "OpenAI Functions",
+          "Google ADK"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "06",
+      "episode_type": "main",
+      "title": "[Episódio 06] Planejamento na IA - De Reativo a Estrategista Autônomo",
+      "description": "🎯 **Sobre este episódio:**\n\nAprenda como implementar planejamento em agentes de IA, transformando-os de ferramentas reativas em estrategistas autônomos capazes de decompor tarefas complexas.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Task Planning, Goal Decomposition, Strategic Thinking\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangGraph, Planning Algorithms\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangGraph, Planning Algorithms, Goal-Oriented Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "06-Planejamento_na_IA__De_Ferramenta_Reativa_a_Estrategista_Autôno.mp3",
+      "chapter_file": "12-capitulo-6-planejamento.md",
+      "duration": "00:20:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Planejamento",
+        "Estratégia",
+        "Autonomia",
+        "Goal Decomposition"
+      ],
+      "publish_date": "2024-01-20",
+      "show_notes": {
+        "key_concepts": [
+          "Task Planning",
+          "Goal Decomposition",
+          "Strategic Thinking",
+          "Autonomous Planning"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangGraph",
+          "Planning Algorithms",
+          "Goal-Oriented Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "07",
+      "episode_type": "main",
+      "title": "[Episódio 07] Colaboração Multiagente - Equipes de IA Trabalhando Juntas",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra como criar sistemas multiagente onde diferentes agentes de IA colaboram para resolver problemas complexos de forma coordenada.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Multi-Agent Systems, Agent Coordination, Collaborative AI\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com CrewAI, LangGraph\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• CrewAI, LangGraph, Multi-Agent Frameworks\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "07-Colaboração_Multiagente_em_IA__Por_Que_e_Como_Juntar_Equipes_de.mp3",
+      "chapter_file": "13-capitulo-7-colaboracao-multiagente.md",
+      "duration": "00:19:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Multiagente",
+        "Colaboração",
+        "Coordenação",
+        "CrewAI"
+      ],
+      "publish_date": "2024-01-21",
+      "show_notes": {
+        "key_concepts": [
+          "Multi-Agent Systems",
+          "Agent Coordination",
+          "Collaborative AI",
+          "Distributed Intelligence"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "CrewAI",
+          "LangGraph",
+          "Multi-Agent Frameworks"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "08",
+      "episode_type": "main",
+      "title": "[Episódio 08] Memória de Agentes de IA - Do Contexto Volátil à Profundidade",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore técnicas avançadas de gerenciamento de memória em agentes de IA, desde contexto volátil até sistemas de memória persistente e estruturada.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Memory Management, Context Persistence, Long-term Memory\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain Memory, Vector Databases\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain Memory, Vector Databases, Memory Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "08-Memória_de_Agentes_de_IA__Do_Contexto_Volátil_à_Profundidade_do.mp3",
+      "chapter_file": "14-capitulo-8-gerenciamento-de-memoria.md",
+      "duration": "00:20:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Memória",
+        "Contexto",
+        "Persistência",
+        "Vector DB"
+      ],
+      "publish_date": "2024-01-22",
+      "show_notes": {
+        "key_concepts": [
+          "Memory Management",
+          "Context Persistence",
+          "Long-term Memory",
+          "Memory Retrieval"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain Memory",
+          "Vector Databases",
+          "Memory Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "09",
+      "episode_type": "main",
+      "title": "[Episódio 09] Aprendizado e Auto-Evolução - PPO, DPO e Adaptação Contínua",
+      "description": "🎯 **Sobre este episódio:**\n\nAprenda sobre técnicas de aprendizado e adaptação em agentes de IA, incluindo PPO, DPO e outros métodos de auto-evolução.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Reinforcement Learning, PPO, DPO\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com RL Frameworks, Learning Algorithms\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• RL Frameworks, Learning Algorithms, Adaptation Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "09-Agentes_de_IA__Do_Aprendizado_à_Auto-Evolução_–_Como_PPO,_DPO_e.mp3",
+      "chapter_file": "15-capitulo-9-aprendizado-e-adaptacao.md",
+      "duration": "00:23:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Aprendizado",
+        "PPO",
+        "DPO",
+        "Reinforcement Learning"
+      ],
+      "publish_date": "2024-01-23",
+      "show_notes": {
+        "key_concepts": [
+          "Reinforcement Learning",
+          "PPO",
+          "DPO",
+          "Continuous Learning",
+          "Self-Improvement"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "RL Frameworks",
+          "Learning Algorithms",
+          "Adaptation Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "10",
+      "episode_type": "main",
+      "title": "[Episódio 10] MCP - O Adaptador Universal que Transforma LLMs em Agentes",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra o Model Context Protocol (MCP), o protocolo que permite comunicação padronizada entre LLMs e ferramentas externas.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Model Context Protocol, Standardized Communication, Tool Integration\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com MCP, Protocol Standards\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• MCP, Protocol Standards, Communication Frameworks\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "10-MCP__O_Adaptador_Universal_que_Transforma_LLMs_em_Agentes_de_IA.mp3",
+      "chapter_file": "16-capitulo-10-protocolo-de-contexto-do-modelo.md",
+      "duration": "00:19:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "MCP",
+        "Protocolo",
+        "Comunicação",
+        "Padronização"
+      ],
+      "publish_date": "2024-01-24",
+      "show_notes": {
+        "key_concepts": [
+          "Model Context Protocol",
+          "Standardized Communication",
+          "Tool Integration",
+          "Protocol Design"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "MCP",
+          "Protocol Standards",
+          "Communication Frameworks"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "11",
+      "episode_type": "main",
+      "title": "[Episódio 11] IA Proativa vs. Reativa - Transformando Comportamento",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore a diferença entre IA proativa e reativa, e como implementar sistemas que antecipam necessidades e tomam iniciativas.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Proactive AI, Reactive AI, Initiative Taking\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Goal-Oriented Systems, Proactive Frameworks\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Goal-Oriented Systems, Proactive Frameworks\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "11-IA_Proativa_vs.mp3",
+      "chapter_file": "17-capitulo-11-definicao-de-objetivos-e-monitoramento.md",
+      "duration": "00:23:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Proativo",
+        "Reativo",
+        "Iniciativa",
+        "Antecipação"
+      ],
+      "publish_date": "2024-01-25",
+      "show_notes": {
+        "key_concepts": [
+          "Proactive AI",
+          "Reactive AI",
+          "Initiative Taking",
+          "Anticipatory Systems"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Goal-Oriented Systems",
+          "Proactive Frameworks"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "12",
+      "episode_type": "main",
+      "title": "[Episódio 12] Tratamento de Exceções - Agentes Imbatíveis",
+      "description": "🎯 **Sobre este episódio:**\n\nAprenda como implementar tratamento robusto de exceções em agentes de IA, criando sistemas resilientes e confiáveis.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Exception Handling, Error Recovery, Resilient Systems\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Error Handling Patterns, Recovery Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Error Handling Patterns, Recovery Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "12-IA_Imbatível__Como_o_Tratamento_de_Exceções_Transforma_Agentes_.mp3",
+      "chapter_file": "18-capitulo-12-tratamento-de-excecoes-e-recuperacao.md",
+      "duration": "00:15:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Exceções",
+        "Recuperação",
+        "Resiliência",
+        "Error Handling"
+      ],
+      "publish_date": "2024-01-26",
+      "show_notes": {
+        "key_concepts": [
+          "Exception Handling",
+          "Error Recovery",
+          "Resilient Systems",
+          "Fault Tolerance"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Error Handling Patterns",
+          "Recovery Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "13",
+      "episode_type": "main",
+      "title": "[Episódio 13] Human-in-the-Loop - O Segredo da IA Responsável",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra como implementar Human-in-the-Loop (HITL) em agentes de IA para garantir supervisão humana e responsabilidade.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Human-in-the-Loop, Human Oversight, Responsible AI\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com HITL Frameworks, Supervision Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• HITL Frameworks, Supervision Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "13-Human-in-the-Loop_(HITL)__O_Segredo_da_IA_Responsável_–_Estraté.mp3",
+      "chapter_file": "19-capitulo-13-human-in-the-loop.md",
+      "duration": "00:18:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "HITL",
+        "Supervisão",
+        "Responsabilidade",
+        "Human Oversight"
+      ],
+      "publish_date": "2024-01-27",
+      "show_notes": {
+        "key_concepts": [
+          "Human-in-the-Loop",
+          "Human Oversight",
+          "Responsible AI",
+          "Supervision Systems"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "HITL Frameworks",
+          "Supervision Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "14",
+      "episode_type": "main",
+      "title": "[Episódio 14] RAG Desvendado - Conectando LLMs ao Conhecimento Atual",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore Retrieval-Augmented Generation (RAG), a técnica que permite aos LLMs acessar conhecimento atual e específico.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de RAG, Retrieval-Augmented Generation, Knowledge Integration\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain RAG, Vector Databases\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain RAG, Vector Databases, Embedding Models\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "14-RAG_Desvendado__Como_Conectar_LLMs_ao_Conhecimento_Atual_e_Acab.mp3",
+      "chapter_file": "20-capitulo-14-recuperacao-de-conhecimento-rag.md",
+      "duration": "00:22:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "RAG",
+        "Retrieval",
+        "Conhecimento",
+        "Vector Search"
+      ],
+      "publish_date": "2024-01-28",
+      "show_notes": {
+        "key_concepts": [
+          "RAG",
+          "Retrieval-Augmented Generation",
+          "Knowledge Integration",
+          "Vector Search"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain RAG",
+          "Vector Databases",
+          "Embedding Models"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "15",
+      "episode_type": "main",
+      "title": "[Episódio 15] A2A do Google - Protocolo que Une Agentes de IA",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra o Agent-to-Agent (A2A) protocol do Google, que permite comunicação padronizada entre diferentes agentes de IA.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Agent-to-Agent, A2A Protocol, Inter-Agent Communication\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Google A2A, Communication Protocols\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Google A2A, Communication Protocols\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "15-A2A_do_Google__O_Protocolo_Que_Une_Agentes_de_IA_de_Diferentes_.mp3",
+      "chapter_file": "21-capitulo-15-comunicacao-inter-agente-a2a.md",
+      "duration": "00:26:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "A2A",
+        "Protocolo",
+        "Comunicação",
+        "Google"
+      ],
+      "publish_date": "2024-01-29",
+      "show_notes": {
+        "key_concepts": [
+          "Agent-to-Agent",
+          "A2A Protocol",
+          "Inter-Agent Communication",
+          "Protocol Standards"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Google A2A",
+          "Communication Protocols"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "16",
+      "episode_type": "main",
+      "title": "[Episódio 16] Otimização Consciente de Recursos - O Malabarismo Dinâmico",
+      "description": "🎯 **Sobre este episódio:**\n\nAprenda sobre otimização consciente de recursos em agentes de IA, balanceando eficiência, custo e performance.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Resource Optimization, Cost Management, Performance Balancing\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Resource Management, Optimization Algorithms\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Resource Management, Optimization Algorithms\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "16-Otimização_Consciente_de_Recursos_na_IA__O_Malabarismo_Dinâmico.mp3",
+      "chapter_file": "22-capitulo-16-otimizacao-consciente-de-recursos.md",
+      "duration": "00:20:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Otimização",
+        "Recursos",
+        "Eficiência",
+        "Performance"
+      ],
+      "publish_date": "2024-01-30",
+      "show_notes": {
+        "key_concepts": [
+          "Resource Optimization",
+          "Cost Management",
+          "Performance Balancing",
+          "Efficiency"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Resource Management",
+          "Optimization Algorithms"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "17",
+      "episode_type": "main",
+      "title": "[Episódio 17] Agentes Autônomos - Chain-of-Thought, ReAct e Lei de Escala",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore técnicas avançadas de raciocínio em agentes autônomos, incluindo Chain-of-Thought e ReAct.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Chain-of-Thought, ReAct, Autonomous Reasoning\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Reasoning Frameworks, Autonomous Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Reasoning Frameworks, Autonomous Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "17-Agentes_Autônomos__Chain-of-Thought,_ReAct_e_a_Lei_de_Escala_da.mp3",
+      "chapter_file": "23-capitulo-17-tecnicas-de-racionio.md",
+      "duration": "00:19:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Chain-of-Thought",
+        "ReAct",
+        "Raciocínio",
+        "Autonomia"
+      ],
+      "publish_date": "2024-01-31",
+      "show_notes": {
+        "key_concepts": [
+          "Chain-of-Thought",
+          "ReAct",
+          "Autonomous Reasoning",
+          "Scaling Laws"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Reasoning Frameworks",
+          "Autonomous Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "18",
+      "episode_type": "main",
+      "title": "[Episódio 18] Guardrails em IA - Engenharia de Confiança e Defesa em Camadas",
+      "description": "🎯 **Sobre este episódio:**\n\nAprenda sobre guardrails em IA, implementando múltiplas camadas de segurança e controle para sistemas confiáveis.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Guardrails, AI Safety, Defense in Depth\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Safety Frameworks, Guardrail Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Safety Frameworks, Guardrail Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "18-Guardrails_em_IA__Engenharia_de_Confiança,_Defesa_em_Camadas_e_.mp3",
+      "chapter_file": "24-capitulo-18-padroes-de-seguranca-guardrails.md",
+      "duration": "00:16:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Guardrails",
+        "Segurança",
+        "Confiança",
+        "AI Safety"
+      ],
+      "publish_date": "2024-02-01",
+      "show_notes": {
+        "key_concepts": [
+          "Guardrails",
+          "AI Safety",
+          "Defense in Depth",
+          "Trust Engineering"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Safety Frameworks",
+          "Guardrail Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "19",
+      "episode_type": "main",
+      "title": "[Episódio 19] Avaliação e Monitoramento - Do Teste AB ao LLM-as-a-Judge",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore técnicas de avaliação e monitoramento de agentes de IA, desde testes A/B tradicionais até LLM-as-a-Judge.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Evaluation Methods, A/B Testing, LLM-as-a-Judge\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Evaluation Frameworks, Monitoring Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Evaluation Frameworks, Monitoring Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "19-Avaliação_e_Monitoramento_de_Agentes_de_IA__Do_Teste_AB_ao_LLM-.mp3",
+      "chapter_file": "25-capitulo-19-avaliacao-e-monitoramento.md",
+      "duration": "00:25:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Avaliação",
+        "Monitoramento",
+        "A/B Testing",
+        "LLM Judge"
+      ],
+      "publish_date": "2024-02-02",
+      "show_notes": {
+        "key_concepts": [
+          "Evaluation Methods",
+          "A/B Testing",
+          "LLM-as-a-Judge",
+          "Performance Monitoring"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Evaluation Frameworks",
+          "Monitoring Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "20",
+      "episode_type": "main",
+      "title": "[Episódio 20] Priorização em IA - A Bússola Interna da Automação",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra como implementar sistemas de priorização em agentes de IA para otimizar a tomada de decisões.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Priority Systems, Decision Optimization, Resource Allocation\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Priority Frameworks, Decision Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Priority Frameworks, Decision Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "20-Priorização_em_IA__A_Bússola_Interna_que_Transforma_Automação_e.mp3",
+      "chapter_file": "26-capitulo-20-priorizacao.md",
+      "duration": "00:13:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Priorização",
+        "Decisões",
+        "Otimização",
+        "Alocação"
+      ],
+      "publish_date": "2024-02-03",
+      "show_notes": {
+        "key_concepts": [
+          "Priority Systems",
+          "Decision Optimization",
+          "Resource Allocation",
+          "Task Prioritization"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Priority Frameworks",
+          "Decision Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "21",
+      "episode_type": "main",
+      "title": "[Episódio 21] Exploração e Descoberta - Caça aos Desconhecidos Desconhecidos",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore como agentes de IA podem descobrir conhecimento novo e lidar com situações não previstas.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Exploration, Discovery, Unknown Unknowns\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Exploration Frameworks, Discovery Systems\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Exploration Frameworks, Discovery Systems\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "21-IA_Colaboradora_e_a_Caça_aos__Desconhecidos_Desconhecidos__Como.mp3",
+      "chapter_file": "27-capitulo-21-exploracao-e-descoberta.md",
+      "duration": "00:17:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Exploração",
+        "Descoberta",
+        "Novidade",
+        "Unknown Unknowns"
+      ],
+      "publish_date": "2024-02-04",
+      "show_notes": {
+        "key_concepts": [
+          "Exploration",
+          "Discovery",
+          "Unknown Unknowns",
+          "Novelty Detection"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Exploration Frameworks",
+          "Discovery Systems"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "A",
+      "episode_type": "special",
+      "title": "[Episódio A] Engenharia de Prompt - O Segredo de Conversar com IA",
+      "description": "🎯 **Sobre este episódio:**\n\nMergulhe nas técnicas avançadas de engenharia de prompts que formam a base de toda interação efetiva com modelos de linguagem.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Prompt Engineering, Chain-of-Thought, Few-Shot Learning\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain, OpenAI\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain, OpenAI, Google Gemini\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "a-Engenharia_de_Prompt__O_Segredo_de_Como_Conversar_com_a_IA_para.mp3",
+      "chapter_file": "28-apendice-a-tecnicas-avancadas-de-prompting.md",
+      "duration": "00:19:00",
+      "tags": [
+        "IA",
+        "Prompt Engineering",
+        "LLM",
+        "Chain-of-Thought",
+        "Few-Shot Learning"
+      ],
+      "publish_date": "2024-02-05",
+      "show_notes": {
+        "key_concepts": [
+          "Prompt Engineering",
+          "Chain-of-Thought",
+          "Few-Shot Learning",
+          "Zero-Shot Prompting"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain",
+          "OpenAI",
+          "Google Gemini"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "B",
+      "episode_type": "special",
+      "title": "[Episódio B] Agentes de IA - Do Clique Humano à Ação no Mundo Real",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore como agentes de IA podem interagir com interfaces gráficas e executar ações no mundo real.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de GUI Interaction, Real-world Actions, Human-Computer Interaction\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com GUI Automation, Real-world Integration\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• GUI Automation, Real-world Integration\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "b-Agentes_de_IA__Do_Clique_Humano_(GUI)_à_Ação_no_Mundo_Real_e_o_.mp3",
+      "chapter_file": "29-apendice-b-interacoes-agentivas-de-ia.md",
+      "duration": "00:26:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "GUI",
+        "Automação",
+        "Mundo Real",
+        "Interação"
+      ],
+      "publish_date": "2024-02-06",
+      "show_notes": {
+        "key_concepts": [
+          "GUI Interaction",
+          "Real-world Actions",
+          "Human-Computer Interaction",
+          "Automation"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "GUI Automation",
+          "Real-world Integration"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "C",
+      "episode_type": "special",
+      "title": "[Episódio C] LangChain, LangGraph e CrewAI - Frameworks Essenciais",
+      "description": "🎯 **Sobre este episódio:**\n\nCompare e analise os principais frameworks para desenvolvimento de agentes de IA: LangChain, LangGraph e CrewAI.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de LangChain, LangGraph, CrewAI\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com LangChain, LangGraph\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• LangChain, LangGraph, CrewAI\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "c-LangChain,_LangGraph_e_CrewAI__Decifrando_os_Frameworks_Essenci.mp3",
+      "chapter_file": "30-apendice-c-visao-geral-rapida-de-frameworks-agentivos.md",
+      "duration": "00:21:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "LangChain",
+        "LangGraph",
+        "CrewAI",
+        "Frameworks"
+      ],
+      "publish_date": "2024-02-07",
+      "show_notes": {
+        "key_concepts": [
+          "LangChain",
+          "LangGraph",
+          "CrewAI",
+          "Framework Comparison",
+          "Development Tools"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "LangChain",
+          "LangGraph",
+          "CrewAI"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "D",
+      "episode_type": "special",
+      "title": "[Episódio D] Google AgentSpace - Plataforma que Transforma Empresas",
+      "description": "🎯 **Sobre este episódio:**\n\nDescubra o Google AgentSpace, a plataforma empresarial para construção e deploy de agentes de IA em escala.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Google AgentSpace, Enterprise AI, Scalable Deployment\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Google AgentSpace, Enterprise Platforms\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Google AgentSpace, Enterprise Platforms\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "d-Google_AgentSpace__Desvendando_a_Plataforma_que_Transforma_Empr.mp3",
+      "chapter_file": "31-apendice-d-construindo-um-agente-com-agentspace.md",
+      "duration": "00:13:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Google AgentSpace",
+        "Empresarial",
+        "Escala",
+        "Deploy"
+      ],
+      "publish_date": "2024-02-08",
+      "show_notes": {
+        "key_concepts": [
+          "Google AgentSpace",
+          "Enterprise AI",
+          "Scalable Deployment",
+          "Business Integration"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Google AgentSpace",
+          "Enterprise Platforms"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "E",
+      "episode_type": "special",
+      "title": "[Episódio E] Agentes de IA na CLI - Claude, Gemini, Aider e Copilot",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore como usar agentes de IA diretamente na linha de comando para desenvolvimento e automação.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de CLI Integration, Command Line AI, Development Tools\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Claude CLI, Gemini CLI\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Claude CLI, Gemini CLI, Aider, Copilot CLI\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "e-Agentes_de_IA_na_Linha_de_Comando__Claude,_Gemini,_Aider_e_Copi.mp3",
+      "chapter_file": "32-apendice-e-agentes-de-ia-na-cli.md",
+      "duration": "00:20:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "CLI",
+        "Linha de Comando",
+        "Desenvolvimento",
+        "Automação"
+      ],
+      "publish_date": "2024-02-09",
+      "show_notes": {
+        "key_concepts": [
+          "CLI Integration",
+          "Command Line AI",
+          "Development Tools",
+          "Automation"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Claude CLI",
+          "Gemini CLI",
+          "Aider",
+          "Copilot CLI"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "F",
+      "episode_type": "special",
+      "title": "[Episódio F] Anatomia da Razão - Como LLMs Explicam seu Raciocínio",
+      "description": "🎯 **Sobre este episódio:**\n\nMergulhe na anatomia interna dos motores de raciocínio dos agentes de IA e como eles explicam seu processo de pensamento.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Reasoning Engines, Explanation Generation, Internal Processes\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Reasoning Systems, Explanation Frameworks\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Reasoning Systems, Explanation Frameworks\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "f-Anatomia_da_Razão__Como_Gemini,_ChatGPT_e_Outros_LLMs_Explicam_.mp3",
+      "chapter_file": "33-apendice-f-sob-o-capo-uma-visao-interna-dos-motores-de-racionio-dos-agentes.md",
+      "duration": "00:18:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Raciocínio",
+        "Explicação",
+        "Transparência",
+        "Motores"
+      ],
+      "publish_date": "2024-02-10",
+      "show_notes": {
+        "key_concepts": [
+          "Reasoning Engines",
+          "Explanation Generation",
+          "Internal Processes",
+          "Transparency"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Reasoning Systems",
+          "Explanation Frameworks"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    },
+    {
+      "episode_number": "G",
+      "episode_type": "special",
+      "title": "[Episódio G] Agentes de Codificação - Do Clique à Ação no Mundo Real",
+      "description": "🎯 **Sobre este episódio:**\n\nExplore agentes especializados em codificação e como eles podem auxiliar no desenvolvimento de software.\n\n🔍 **O que você vai aprender:**\n• Conceitos fundamentais de Coding Agents, Software Development, Code Generation\n• Implementação prática com frameworks modernos\n• Casos de uso reais e aplicações empresariais\n• Técnicas avançadas de otimização\n\n💻 **Conteúdo prático:**\n• Exemplos de código executáveis\n• Demonstrações hands-on\n• Integração com Coding Frameworks, Development Tools\n• Melhores práticas de implementação\n\n📚 **Recursos mencionados:**\n• Coding Frameworks, Development Tools\n• Documentação técnica detalhada\n• Exemplos de código no repositório\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+      "audio_file": "g-Agentes_de_IA__Do_Clique_Humano_(GUI)_à_Ação_no_Mundo_Real_e_o_.mp3",
+      "chapter_file": "34-apendice-g-agentes-de-codificacao.md",
+      "duration": "00:26:00",
+      "tags": [
+        "IA",
+        "Agentes",
+        "Codificação",
+        "Desenvolvimento",
+        "Programação",
+        "Assistência"
+      ],
+      "publish_date": "2024-02-11",
+      "show_notes": {
+        "key_concepts": [
+          "Coding Agents",
+          "Software Development",
+          "Code Generation",
+          "Programming Assistance"
+        ],
+        "practical_examples": [
+          "Code examples",
+          "Use cases",
+          "Implementation guides"
+        ],
+        "frameworks_mentioned": [
+          "Coding Frameworks",
+          "Development Tools"
+        ],
+        "external_links": [
+          "Drive link",
+          "Author LinkedIn",
+          "Original Book"
+        ]
+      }
+    }
+  ],
+  "generation_info": {
+    "generated_at": "2025-09-23T17:50:52.169622",
+    "total_episodes": 28,
+    "main_episodes": 21,
+    "special_episodes": 7,
+    "based_on": "Agentic Design Patterns: A Practical Guide to Building Intelligent Systems by Antonio Gulli"
+  }
+}

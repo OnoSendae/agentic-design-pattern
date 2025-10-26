@@ -1,0 +1,150 @@
+{
+    "show_metadata": {
+        "title": "Padrões de Design Agênticos: Guia Completo em Português",
+        "description": "🤖 **Sobre a Série:**\n\nEsta série de podcasts é uma tradução completa e adaptação do livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli, traduzida para português brasileiro.\n\n🧠 **O que são Agentes de IA?**\nUm agente de IA é um sistema projetado para perceber seu ambiente e tomar ações para alcançar um objetivo específico. É uma evolução de um Grande Modelo de Linguagem (LLM) padrão, aprimorado com as habilidades de planejar, usar ferramentas e interagir com seus arredores.\n\n📚 **Conteúdo da Série:**\n• 21 episódios cobrindo padrões fundamentais de design agêntico\n• 7 episódios especiais sobre frameworks e aplicações práticas\n• Exemplos de código executáveis\n• Casos de uso do mundo real\n• Técnicas avançadas de implementação\n\n🎯 **Para quem é esta série:**\n• Desenvolvedores de software interessados em IA\n• Engenheiros de Machine Learning\n• Arquitetos de sistemas inteligentes\n• Estudantes e profissionais de tecnologia\n• Qualquer pessoa curiosa sobre o futuro da IA\n\n⚖️ **Direitos Autorais:**\nEsta série é baseada no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original. Esta é uma tradução e adaptação para fins educacionais.\n\n📖 **Material Completo:**\nAcesse o livro completo, códigos e recursos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli\n• LinkedIn: https://www.linkedin.com/in/searchguy/\n• Twitter: https://x.com/antoniogulli\n• Livro Original: https://docs.google.com/document/d/1rsaK53T3Lg5KoGwvf8ukOUvbELRtH-V0LnOIFDxBryE/preview?tab=t.0",
+        "category": "Technology",
+        "subcategory": "Education",
+        "language": "Portuguese (Brazil)",
+        "keywords": [
+            "Inteligência Artificial",
+            "Agentes de IA",
+            "Machine Learning",
+            "Desenvolvimento de Software",
+            "LLM",
+            "Padrões de Design",
+            "Programação",
+            "Tecnologia"
+        ],
+        "author": "Antonio Gulli",
+        "author_links": {
+            "linkedin": "https://www.linkedin.com/in/searchguy/",
+            "twitter": "https://x.com/antoniogulli",
+            "original_book": "https://docs.google.com/document/d/1rsaK53T3Lg5KoGwvf8ukOUvbELRtH-V0LnOIFDxBryE/preview?tab=t.0",
+            "code_repository": "https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV"
+        }
+    },
+    "episodes": [
+        {
+            "episode_number": "01",
+            "episode_type": "main",
+            "title": "[Episódio 01] Prompt Chaining - Como Encadear Prompts para IA",
+            "description": "🎯 **Sobre este episódio:**\n\nDescubra o poder do Prompt Chaining, um dos padrões mais fundamentais para construir sistemas de IA inteligentes. Neste episódio, exploramos como quebrar tarefas complexas em sequências de prompts menores e mais gerenciáveis, criando workflows robustos e interpretáveis.\n\nO encadeamento de prompts representa um paradigma poderoso para lidar com tarefas intrincadas ao aproveitar grandes modelos de linguagem (LLMs). Em vez de esperar que um LLM resolva um problema complexo em uma única etapa monolítica, esta técnica defende uma estratégia de dividir e conquistar.\n\n🔍 **O que você vai aprender:**\n• Como decompor problemas complexos em sub-problemas gerenciáveis\n• Técnicas para estruturar saídas entre etapas sequenciais\n• Implementação de workflows de processamento de informação\n• Integração de conhecimento e ferramentas externas\n• Construção de agentes de IA sofisticados\n\n💻 **Conteúdo prático:**\n• Exemplos de código com LangChain e LangGraph\n• Casos de uso reais: análise de relatórios, processamento de documentos\n• Técnicas de formatação estruturada (JSON/XML)\n• Implementação de pipelines de transformação de dados\n\n📚 **Recursos mencionados:**\n• LangChain Framework\n• LangGraph para workflows complexos\n• Google Agent Developer Kit (ADK)\n• Técnicas de formatação estruturada\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+            "audio_file": "01-Prompt_Chaining__Como_o_Encadeamento_de_Prompts_e_a_Engenharia_.mp3",
+            "chapter_file": "07-capitulo-1-prompt-chaining.md",
+            "duration": "00:20:00",
+            "tags": [
+                "IA",
+                "Agentes",
+                "LLM",
+                "Prompt Engineering",
+                "LangChain",
+                "Workflows"
+            ],
+            "publish_date": "2024-01-15",
+            "show_notes": {
+                "key_concepts": [
+                    "Prompt Chaining",
+                    "Sequential Processing",
+                    "Workflow Decomposition",
+                    "Structured Output"
+                ],
+                "practical_examples": [
+                    "Document Analysis",
+                    "Report Processing",
+                    "Data Transformation Pipelines"
+                ],
+                "frameworks_mentioned": [
+                    "LangChain",
+                    "LangGraph",
+                    "Google ADK"
+                ],
+                "external_links": [
+                    "Drive link",
+                    "Author LinkedIn",
+                    "Original Book"
+                ]
+            }
+        },
+        {
+            "episode_number": "02",
+            "episode_type": "main",
+            "title": "[Episódio 02] Roteamento em IA - O Segredo dos Agentes Inteligentes",
+            "description": "🎯 **Sobre este episódio:**\n\nExplore o padrão de Roteamento, o mecanismo que permite aos agentes de IA tomar decisões dinâmicas e adaptar seu comportamento baseado no contexto. Descubra como transformar sistemas estáticos em entidades inteligentes que respondem apropriadamente a diferentes situações.\n\nO roteamento introduz lógica condicional no framework operacional de um agente, permitindo uma mudança de um caminho de execução fixo para um modelo onde o agente avalia dinamicamente critérios específicos para selecionar de um conjunto de ações subsequentes possíveis.\n\n🔍 **O que você vai aprender:**\n• Implementação de lógica condicional em agentes\n• Técnicas de classificação de intenções\n• Roteamento baseado em LLM, embeddings e regras\n• Integração com sistemas multi-agente\n• Casos de uso em assistentes virtuais e chatbots\n\n💻 **Conteúdo prático:**\n• Exemplos de código com LangChain e LangGraph\n• Implementação de sistemas de classificação\n• Roteamento semântico com embeddings\n• Coordenação entre agentes especializados\n\n📚 **Recursos mencionados:**\n• LangGraph para grafos de estado\n• Google Agent Developer Kit\n• Técnicas de embedding vetorial\n• Sistemas de classificação de intenções\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+            "audio_file": "02-Roteamento_em_IA__O_Segredo_para_Agentes_Inteligentes_que_Decid.mp3",
+            "chapter_file": "08-capitulo-2-roteamento.md",
+            "duration": "00:19:00",
+            "tags": [
+                "IA",
+                "Agentes",
+                "Roteamento",
+                "Classificação",
+                "LangGraph",
+                "Decision Making"
+            ],
+            "publish_date": "2024-01-16",
+            "show_notes": {
+                "key_concepts": [
+                    "Conditional Logic",
+                    "Intent Classification",
+                    "Dynamic Routing",
+                    "Multi-Agent Coordination"
+                ],
+                "practical_examples": [
+                    "Virtual Assistants",
+                    "Customer Service Bots",
+                    "Document Processing"
+                ],
+                "frameworks_mentioned": [
+                    "LangGraph",
+                    "Google ADK",
+                    "Embedding Models"
+                ],
+                "external_links": [
+                    "Drive link",
+                    "Author LinkedIn",
+                    "Original Book"
+                ]
+            }
+        },
+        {
+            "episode_number": "A",
+            "episode_type": "special",
+            "title": "[Episódio A] Engenharia de Prompt - O Segredo de Conversar com IA",
+            "description": "🎯 **Sobre este episódio:**\n\nMergulhe nas técnicas avançadas de engenharia de prompts que formam a base de toda interação efetiva com modelos de linguagem. Este episódio especial explora desde princípios fundamentais até técnicas sofisticadas como Chain-of-Thought e Few-Shot Learning.\n\nA engenharia de prompts é a interface principal para interagir com modelos de linguagem, envolvendo a elaboração de entradas para orientar o modelo na geração de uma saída desejada. Prompts bem projetados podem maximizar o potencial dos modelos, resultando em respostas precisas, relevantes e criativas.\n\n🔍 **O que você vai aprender:**\n• Princípios fundamentais do prompting efetivo\n• Técnicas Zero-Shot, One-Shot e Few-Shot\n• Chain-of-Thought e raciocínio passo a passo\n• Técnicas de formatação e estruturação\n• Integração com sistemas agênticos\n\n💻 **Conteúdo prático:**\n• Exemplos práticos de diferentes técnicas\n• Templates de prompts para casos comuns\n• Estratégias de iteração e refinamento\n• Integração com frameworks de desenvolvimento\n\n📚 **Recursos mencionados:**\n• Técnicas de Chain-of-Thought\n• Few-Shot Learning\n• Prompt Templates\n• Modelos de Linguagem Avançados\n\n⚖️ **Direitos Autorais:**\nEste episódio é baseado no livro \"Agentic Design Patterns: A Practical Guide to Building Intelligent Systems\" de Antonio Gulli. Todos os direitos reservados ao autor original.\n\n📖 **Material Completo:**\nAcesse o livro completo e códigos em: https://drive.google.com/drive/u/0/folders/1Y3U3IrYCiJ3E45Z8okR5eCg7OPnWQtPV\n\n👤 **Autor Original:**\nAntonio Gulli - LinkedIn: https://www.linkedin.com/in/searchguy/",
+            "audio_file": "a-Engenharia_de_Prompt__O_Segredo_de_Como_Conversar_com_a_IA_para.mp3",
+            "chapter_file": "28-apendice-a-tecnicas-avancadas-de-prompting.md",
+            "duration": "00:19:00",
+            "tags": [
+                "IA",
+                "Prompt Engineering",
+                "LLM",
+                "Chain-of-Thought",
+                "Few-Shot Learning"
+            ],
+            "publish_date": "2024-01-17",
+            "show_notes": {
+                "key_concepts": [
+                    "Prompt Engineering",
+                    "Chain-of-Thought",
+                    "Few-Shot Learning",
+                    "Zero-Shot Prompting"
+                ],
+                "practical_examples": [
+                    "Prompt Templates",
+                    "Reasoning Techniques",
+                    "Format Specification"
+                ],
+                "frameworks_mentioned": [
+                    "LangChain",
+                    "OpenAI",
+                    "Google Gemini"
+                ],
+                "external_links": [
+                    "Drive link",
+                    "Author LinkedIn",
+                    "Original Book"
+                ]
+            }
+        }
+    ]
+}

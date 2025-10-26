@@ -1,0 +1,37 @@
+{
+    "name": "youtube-podcast-uploader",
+    "version": "1.0.0",
+    "description": "Scripts para gerar vídeos de podcast e fazer upload automático para YouTube",
+    "main": "generate_youtube_videos.js",
+    "scripts": {
+        "test": "node test_single_video.js",
+        "generate": "node generate_youtube_videos.js",
+        "upload": "node youtube_uploader.js",
+        "full-process": "npm run generate && npm run upload",
+        "install-deps": "npm install"
+    },
+    "keywords": [
+        "youtube",
+        "podcast",
+        "video",
+        "upload",
+        "automation",
+        "ffmpeg"
+    ],
+    "author": "Cleber da Silva Hensel",
+    "license": "MIT",
+    "dependencies": {
+        "googleapis": "^128.0.0"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "local"
+    },
+    "bugs": {
+        "url": "local"
+    },
+    "homepage": "local"
+}

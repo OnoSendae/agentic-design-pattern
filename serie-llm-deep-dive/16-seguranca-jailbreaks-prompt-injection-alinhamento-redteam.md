@@ -671,7 +671,7 @@ flowchart TB
 |---|---|---|---|
 | **Interno manual** | Equipe de safety da empresa | Salário | Sempre |
 | **Interno automated** | PAIR/Crescendo no CI | Compute | Cada release |
-| **Bug bounty** | Anthropic ($25k–$50k), OpenAI ($20k+), Google AI VRP | Pago por ataque | Contínuo |
+| **Bug bounty** | Anthropic (\$25k–\$50k), OpenAI (\$20k+), Google AI VRP | Pago por ataque | Contínuo |
 | **AI Safety Institutes** | UK AISI, US AISI (NIST AISI), Singapore IMDA | Estado | Pre-deployment de frontier |
 | **Empresas externas** | Apollo Research, METR, Pattern Labs, Pattern AI, HiddenLayer | Contrato | Pre/post deploy |
 | **Forum** | **Frontier Model Forum** (OpenAI, Anthropic, Google, Microsoft, Meta) | Voluntary commitments | Frontier |
@@ -862,7 +862,7 @@ Modelo confia no `transformers`, que confia em `tokenizers`, que confia em pacot
 | **UK** | **AI Safety Institute (AISI)** | Operacional | Evals pre-deploy, reportes |
 | **EUA** | **NIST AISI** + **AI Safety Consortium** | Operacional | Equivalente UK AISI |
 | **Coreia do Sul** | **AI Basic Act** | Aprovado 12/2024, vigência gradual 2025–2026 | High-impact AI obligations |
-| **Brasil** | **PL 2338/2023** | **Aprovado Senado 12/2024**; em comissão na Câmara desde 03/2025 | Risk-based (risco excessivo, alto, baixo); SIA coordenado por ANPD; multas até R$ 50M ou 2% faturamento |
+| **Brasil** | **PL 2338/2023** | **Aprovado Senado 12/2024**; em comissão na Câmara desde 03/2025 | Risk-based (risco excessivo, alto, baixo); SIA coordenado por ANPD; multas até R\$ 50M ou 2% faturamento |
 | **Brasil** | **LGPD + ANPD** | Vigente; ANPD emitindo guias IA | Aplicação de proteção de dados a IA |
 | **G7** | **Hiroshima Process** | Voluntary code | Transparência, safety |
 | **Multi** | **AI Seoul Summit** (2024), **Bletchley** (2023), **Paris AI Action Summit** (fev/2025) | Compromissos voluntários | Frontier safety |
@@ -881,7 +881,7 @@ Modelo confia no `transformers`, que confia em `tokenizers`, que confia em pacot
 - **Risco excessivo**: proibido (manipulação comportamental, social scoring estatal).
 - **Alto risco**: avaliação de impacto algorítmico (AIA), supervisão humana, documentação técnica, responsabilidade civil **objetiva**.
 - **Governança**: SIA coordenado pela ANPD.
-- **Sanções**: multas até **R$ 50M ou 2% do faturamento**.
+- **Sanções**: multas até **R\$ 50M ou 2% do faturamento**.
 - **Status (2026)**: aprovado no Senado (dez/2024), na Câmara dos Deputados desde mar/2025, em comissão especial. Empresas devem **antecipar** mapeamento de risco e AIA mesmo antes da vigência.
 
 > **Implicação prática.** Se sua app LLM toca **emprego, crédito, saúde, justiça, biometria** — você está em **rota de high-risk** EU + alto risco BR. Comece **agora** a documentar: dataset, treino, eval, monitoramento, AIA. **Em 2027, exigem.**

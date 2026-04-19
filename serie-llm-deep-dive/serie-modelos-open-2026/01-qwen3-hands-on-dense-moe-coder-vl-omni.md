@@ -891,12 +891,12 @@ Fine-tune resolve **estilo persistente, jargão fechado e formato estrito** — 
 
 | Cenário | Custo aprox. | Latência típica |
 |---|---|---|
-| Qwen3-32B FP8 self-host 1× H100 (sat) | $0.20 – $0.40 | 30–60 ms TTFT |
-| Qwen3-235B-A22B FP8 self-host 4× H100 | $0.80 – $1.50 | 60–120 ms TTFT |
-| DashScope `qwen-max` (Alibaba) | varia (~$2–8) | ~40 ms TTFT |
-| OpenRouter (`qwen/qwen3-32b`) | ~$0.30 – $0.80 | depende do provider |
-| Together (`Qwen/Qwen3-235B-A22B`) | ~$0.40 – $0.90 | médio |
-| Fireworks (`accounts/fireworks/models/qwen3-coder`) | ~$0.50 – $1.20 | baixo |
+| Qwen3-32B FP8 self-host 1× H100 (sat) | \$0.20 – \$0.40 | 30–60 ms TTFT |
+| Qwen3-235B-A22B FP8 self-host 4× H100 | \$0.80 – \$1.50 | 60–120 ms TTFT |
+| DashScope `qwen-max` (Alibaba) | varia (~\$2–8) | ~40 ms TTFT |
+| OpenRouter (`qwen/qwen3-32b`) | ~\$0.30 – \$0.80 | depende do provider |
+| Together (`Qwen/Qwen3-235B-A22B`) | ~\$0.40 – \$0.90 | médio |
+| Fireworks (`accounts/fireworks/models/qwen3-coder`) | ~\$0.50 – \$1.20 | baixo |
 
 > Regra de bolso: **abaixo de ~5 M tokens/dia, hosted ganha**; acima disso, self-host num H100 com APC e batching costuma vencer.
 
@@ -904,12 +904,12 @@ Fine-tune resolve **estilo persistente, jargão fechado e formato estrito** — 
 
 | Workload | Setup recomendado | Throughput agg | Custo/1M out |
 |---|---|---|---|
-| Chat interno time pequeno | DashScope ou Together hosted | infinito | $1–3 |
-| RAG médio empresa | Qwen3-32B FP8 + Embedding self-host 1× H100 | ~2000 tok/s | ~$0.30 |
-| Agente coding equipe dev | Qwen3-Coder Next 80B-A3B 2× H100 | ~3000 tok/s | ~$0.50 |
-| Pipeline batch (resumo, classif.) | Qwen3-30B-A3B FP8 + KV FP8 | ~5000 tok/s | ~$0.15 |
-| Frontier reasoning casual | Qwen3.5-397B FP8 8× H100 | ~4000 tok/s | ~$1.20 |
-| On-device privacy-first | Qwen3-4B 4bit MLX/GGUF | local | $0 |
+| Chat interno time pequeno | DashScope ou Together hosted | infinito | \$1–3 |
+| RAG médio empresa | Qwen3-32B FP8 + Embedding self-host 1× H100 | ~2000 tok/s | ~\$0.30 |
+| Agente coding equipe dev | Qwen3-Coder Next 80B-A3B 2× H100 | ~3000 tok/s | ~\$0.50 |
+| Pipeline batch (resumo, classif.) | Qwen3-30B-A3B FP8 + KV FP8 | ~5000 tok/s | ~\$0.15 |
+| Frontier reasoning casual | Qwen3.5-397B FP8 8× H100 | ~4000 tok/s | ~\$1.20 |
+| On-device privacy-first | Qwen3-4B 4bit MLX/GGUF | local | \$0 |
 
 ---
 

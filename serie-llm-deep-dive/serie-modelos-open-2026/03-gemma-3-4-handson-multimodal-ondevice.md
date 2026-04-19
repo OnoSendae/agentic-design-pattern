@@ -737,11 +737,11 @@ proc = PaliGemmaProcessor.from_pretrained("google/paligemma2-3b-mix-448")
 
 | Opção | Custo fixo | Custo variável | Total estimado/mês | Pros | Cons |
 |---|---|---|---|---|---|
-| **Mac Mini M4 16GB + Ollama** | $599 (1x) | $5 luz | ~$5/mês após 1º | Privado, $0 marginal | Throughput baixo |
-| **RTX 4090 self-host** | $1.800 (1x) | $40 luz | ~$40/mês após 1º | Performance boa, privado | OPEX elétrico |
-| **Vertex AI (Gemma 3 27B)** | $0 | ~$0.20/M in + $0.40/M out | ~$15-25 | Zero ops | Dado sai |
-| **OpenRouter (Gemma 3 27B)** | $0 | ~$0.10-0.30/M | ~$10-20 | Multi-provider | Latência variável |
-| **AWS g5.2xlarge (A10G)** | $0 | ~$1.20/h on-demand | ~$870 | AWS familiar | Caro pra always-on |
+| **Mac Mini M4 16GB + Ollama** | \$599 (1x) | \$5 luz | ~\$5/mês após 1º | Privado, \$0 marginal | Throughput baixo |
+| **RTX 4090 self-host** | \$1.800 (1x) | \$40 luz | ~\$40/mês após 1º | Performance boa, privado | OPEX elétrico |
+| **Vertex AI (Gemma 3 27B)** | \$0 | ~\$0.20/M in + \$0.40/M out | ~\$15-25 | Zero ops | Dado sai |
+| **OpenRouter (Gemma 3 27B)** | \$0 | ~\$0.10-0.30/M | ~\$10-20 | Multi-provider | Latência variável |
+| **AWS g5.2xlarge (A10G)** | \$0 | ~\$1.20/h on-demand | ~\$870 | AWS familiar | Caro pra always-on |
 
 > Self-host paga em ~3-4 meses se uso é constante. Cloud ganha se uso é spiky/baixo.
 
@@ -800,14 +800,14 @@ ollama pull bge-m3   # ou nomic-embed-text
 
 | Item | Custo |
 |---|---|
-| Mac Mini M4 16GB | $599 (uma vez) |
-| Energia (8h/dia) | ~$5/mês |
-| Software | $0 |
-| Cloud APIs | $0 |
-| **Total ano 1** | **~$659** |
-| **Total ano 2+** | **~$60/ano** |
+| Mac Mini M4 16GB | \$599 (uma vez) |
+| Energia (8h/dia) | ~\$5/mês |
+| Software | \$0 |
+| Cloud APIs | \$0 |
+| **Total ano 1** | **~\$659** |
+| **Total ano 2+** | **~\$60/ano** |
 
-> Compare com $20-100/mês de Cursor/Copilot/Claude Pro = $240-1200/ano. Em ~3 meses o agente local se paga.
+> Compare com \$20-100/mês de Cursor/Copilot/Claude Pro = \$240-1200/ano. Em ~3 meses o agente local se paga.
 
 ---
 

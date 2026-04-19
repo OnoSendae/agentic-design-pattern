@@ -55,7 +55,7 @@ A jornada parte da **arquitetura básica** de uma LLM, passa pelos **gargalos de
 | 03 | [💾 KV cache: anatomia, custos e PagedAttention/vLLM](./03-kv-cache-anatomia-pagedattention-vllm.md) | Por que existe, fórmula de tamanho, fragmentação, vLLM | 01, 02 |
 | 04 | [⚖️ Quantização de pesos: GPTQ, AWQ, GGUF, bitsandbytes](./04-quantizacao-pesos-gptq-awq-gguf-bitsandbytes.md) | INT8, INT4, NF4, formatos GGUF/EXL2, calibração | 01 |
 | 05 | [🗜️ Quantização de KV cache: KIVI, KVQuant, CacheGen](./05-quantizacao-kv-cache-kivi-kvquant-cachegen.md) | Por que KV é difícil; outliers; per-channel/per-token | 03, 04 |
-| 06 | [📐 TurboQuant em profundidade: polar, JL e Lloyd–Max](./06-turboquant-deep-dive-polar-jl-lloydmax.md) | Quantização não-enviesada, MSE/IP, two-stage IP, cota \(4^{-b}\) | 04, 05 |
+| 06 | [📐 TurboQuant em profundidade: polar, JL e Lloyd–Max](./06-turboquant-deep-dive-polar-jl-lloydmax.md) | Quantização não-enviesada, MSE/IP, two-stage IP, cota $4^{-b}$ | 04, 05 |
 | 07 | [📏 Contexto longo: RoPE, YaRN, Ring/StreamingLLM, Mamba](./07-contexto-longo-rope-yarn-ring-streaming.md) | Estender janela, escalar atenção, alternativas ao Transformer | 02, 03 |
 | 08 | [🚀 Além da quantização: sparsity, speculative decoding, MoE, distillation](./08-alem-quantizacao-sparsity-speculative-moe-distillation.md) | Outras alavancas para acelerar/reduzir custo | 01–06 |
 | 09 | [🎓 Treinamento de LLMs: pretraining, SFT, DPO, GRPO, RLHF](./09-treinamento-pretraining-sft-dpo-grpo-rlhf.md) | Pipeline completo de treino: do next-token-prediction ao alinhamento por RL | 01, 04 |
@@ -103,7 +103,7 @@ A jornada parte da **arquitetura básica** de uma LLM, passa pelos **gargalos de
 | 01 | [llama.cpp deep workflow: imatrix, quantize, serve](./serie-inferencia-local/01-llamacpp-deep-workflow-imatrix-quantize-serve.md) | Pipeline ponta-a-ponta: build → HF → GGUF → imatrix → quantize → bench → llama-server |
 | 02 | [MLX no Mac Apple Silicon: mlx-lm, mlx-vlm, fine-tune, distributed](./serie-inferencia-local/02-mlx-mac-silicon-mlx-lm-mlx-vlm-fine-tune.md) | UMA, mlx-lm/mlx-vlm/mlx-audio, LoRA local, cluster Thunderbolt 5 |
 | 03 | [Ollama, LM Studio, Open WebUI, Jan, Msty, AnythingLLM](./serie-inferencia-local/03-ollama-lmstudio-openwebui-jan-msty.md) | UX-first: Modelfile, GUI, RAG built-in, MCP, multi-user, voice |
-| 04 | [Hardware builds: Mac, PC DDR5, RTX 3090/4090/5090, Pro 6000, MI300X](./serie-inferencia-local/04-hardware-builds-mac-pc-ddr5-rtx-3090-4090-mi300x-amador.md) | 10 builds R$ 5k → R$ 400k, ROI vs API hosted, energia/ruído BR |
+| 04 | [Hardware builds: Mac, PC DDR5, RTX 3090/4090/5090, Pro 6000, MI300X](./serie-inferencia-local/04-hardware-builds-mac-pc-ddr5-rtx-3090-4090-mi300x-amador.md) | 10 builds R\$ 5k → R\$ 400k, ROI vs API hosted, energia/ruído BR |
 
 ### 📐 [`serie-llm-math/`](./serie-llm-math/) — Matemática essencial para entender LLMs
 
@@ -220,8 +220,22 @@ flowchart LR
 - **Comparações**: tabelas com colunas claras (técnica, custo, quando usar, *trade-off*).
 - **Referências**: cada post tem seção final com links oficiais (arXiv, docs, repositórios, blogs canônicos).
 - **Idioma**: Português (BR), com termos técnicos preservados em inglês quando padrão da área.
-- **Matemática**: LaTeX inline (`\(...\)`) e *display* (`\[...\]`); provas formais nos apêndices DEEP e na série [`turboquant/`](./turboquant/).
+- **Matemática**: LaTeX com delimitadores **compatíveis com GitHub MathJax** — `$...$` para inline e `$$...$$` para display (em parágrafo próprio, com linhas em branco antes/depois). Provas formais nos apêndices DEEP e na série [`turboquant/`](./turboquant/).
 - **Código**: blocos com linguagem, comandos reproduzíveis e *flags* explicadas; preferência por exemplos `bash`/`python`/`C++`/`Swift`/`Mojo` conforme contexto.
+
+> ℹ️ **Nota sobre fórmulas no GitHub**: o renderer Markdown do GitHub usa **MathJax apenas com cifrões** (`$...$` e `$$...$$`), **não** com os delimitadores LaTeX puros (`\(...\)` / `\[...\]`) que costumam vir do Pandoc/Quarto. Além disso, qualquer `$` solto (ex.: `R$ 5k`, `$60 M`) precisa ser **escapado como `\$`**, senão o GitHub interpreta pares de cifrões como fórmula e quebra o texto. Há dois scripts utilitários em `scripts/`:
+>
+> - [`fix-math-delimiters.py`](./scripts/fix-math-delimiters.py) — converte `\(...\)` → `$...$` e `\[...\]` → `$$...$$` (preservando blocos de código fenced).
+> - [`escape-currency.py`](./scripts/escape-currency.py) — escapa cifrões de moeda (`R$`, `US$`, `AU$`, etc.); com `--loose-dollars` também escapa USD soltos (`$60 M`), protegendo automaticamente pares de math válidos.
+>
+> Uso típico (idempotente, seguro re-rodar):
+>
+> ```bash
+> python3 scripts/fix-math-delimiters.py . --dry-run   # inspecionar
+> python3 scripts/fix-math-delimiters.py .             # aplicar
+> python3 scripts/escape-currency.py . --loose-dollars --dry-run
+> python3 scripts/escape-currency.py . --loose-dollars
+> ```
 
 ---
 

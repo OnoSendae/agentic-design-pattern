@@ -75,7 +75,7 @@ E fechamos com **árvores de decisão**: dado seu cenário (treinar do zero, fin
 
 Do [Post 02](./02-attention-mha-mqa-gqa-mla-flashattention.md) e [Post 03](./03-kv-cache-anatomia-pagedattention-vllm.md):
 
-- **Prefill** (processar o prompt inteiro de uma vez): atenção \(O(N^2 \cdot d)\), GEMM grande, **compute-bound** — você satura os Tensor Cores da GPU.
+- **Prefill** (processar o prompt inteiro de uma vez): atenção $O(N^2 \cdot d)$, GEMM grande, **compute-bound** — você satura os Tensor Cores da GPU.
 - **Decode** (gerar 1 token por vez): para cada token novo, você lê **todo o KV cache** da HBM. O compute por token é minúsculo, mas o tráfego de memória é gigantesco. Resultado: **memory-bound** — você satura a banda do HBM.
 
 Isso muda tudo: para **decode**, dobrar o número de Tensor Cores **não acelera nada** se o HBM não tiver mais banda. Daí a importância de HBM3 → HBM3e → HBM4.
@@ -112,13 +112,13 @@ Cada zona pede **um aspecto diferente do hardware**:
 
 ### 1.3 Lei de Amdahl em multi-GPU
 
-Se você divide o trabalho em \(P\) GPUs, com fração \(s\) **serial** (não paraleliza) e fração \((1-s)\) paralelizável:
+Se você divide o trabalho em $P$ GPUs, com fração $s$ **serial** (não paraleliza) e fração $(1-s)$ paralelizável:
 
 $$
 \text{Speedup}(P) = \frac{1}{s + (1-s)/P}
 $$
 
-Em LLM, "serial" inclui **comunicação coletiva** (all-reduce de gradientes em DP, all-to-all em EP/MoE, all-gather em TP). Quanto pior a interconexão, maior o \(s\) efetivo, e o speedup achata.
+Em LLM, "serial" inclui **comunicação coletiva** (all-reduce de gradientes em DP, all-to-all em EP/MoE, all-gather em TP). Quanto pior a interconexão, maior o $s$ efetivo, e o speedup achata.
 
 **Exemplo concreto.** Treinar Llama-3 70B em 1024 H100s:
 - Com NVLink + IB NDR (400 Gb/s) bem topologizado: ~85–90% de eficiência forte (MFU ~50%+).
@@ -167,7 +167,7 @@ A coisa mais importante para entender LLM. Da mais rápida (e cara em silício) 
 | Ethernet 100 GbE | inter-rack genérico | ~10 µs | 12.5 GB/s | Estrada secundária |
 | SSD NVMe (storage) | TB | ~100 µs | ~7 GB/s | Depósito a 30 km |
 
-Observe os **5–6 ordens de grandeza** entre registradores e HBM. **É por isso que FlashAttention existe**: ao invés de materializar a matriz \(N \times N\) da atenção em HBM (\(N^2 \cdot 2\) bytes em FP16), o FlashAttention faz tiling em SRAM, evitando o tráfego HBM (ver [Post 02-DEEP](./02-DEEP-online-softmax-flashattention.md)).
+Observe os **5–6 ordens de grandeza** entre registradores e HBM. **É por isso que FlashAttention existe**: ao invés de materializar a matriz $N \times N$ da atenção em HBM ($N^2 \cdot 2$ bytes em FP16), o FlashAttention faz tiling em SRAM, evitando o tráfego HBM (ver [Post 02-DEEP](./02-DEEP-online-softmax-flashattention.md)).
 
 ```mermaid
 flowchart TD
@@ -236,9 +236,9 @@ A geração **Hopper** (anunciada em GTC 2022, GA H100 em 2023) é a base instal
 
 | Variante | Form factor | VRAM | HBM BW | FP8 TFLOPs (dense) | NVLink | TDP | MSRP* |
 |---|---|---|---|---|---|---|---|
-| **H100 SXM5** | módulo SXM (HGX) | 80 GB HBM3 | 3.35 TB/s | ~1979 (sparsity 2×) / ~990 dense | 900 GB/s | 700 W | $30–40k |
-| **H100 PCIe** | placa PCIe ×16 | 80 GB HBM3 | 2 TB/s | ~1513 / ~756 dense | 600 GB/s (PCIe link) | 350 W | $25–30k |
-| **H100 NVL** | 2× PCIe pareadas via NVLink bridge | 2× 94 GB HBM3 (188 GB total) | 2× 3.9 TB/s | ~1979 / ~990 por GPU | 600 GB/s entre as duas | 2× 400 W | $50k+ |
+| **H100 SXM5** | módulo SXM (HGX) | 80 GB HBM3 | 3.35 TB/s | ~1979 (sparsity 2×) / ~990 dense | 900 GB/s | 700 W | \$30–40k |
+| **H100 PCIe** | placa PCIe ×16 | 80 GB HBM3 | 2 TB/s | ~1513 / ~756 dense | 600 GB/s (PCIe link) | 350 W | \$25–30k |
+| **H100 NVL** | 2× PCIe pareadas via NVLink bridge | 2× 94 GB HBM3 (188 GB total) | 2× 3.9 TB/s | ~1979 / ~990 por GPU | 600 GB/s entre as duas | 2× 400 W | \$50k+ |
 
 *MSRP estimado mid-2024; preços flutuaram fortemente com escassez.
 
@@ -247,7 +247,7 @@ A geração **Hopper** (anunciada em GTC 2022, GA H100 em 2023) é a base instal
 ### 3.2 HGX H100 e DGX H100
 
 - **HGX H100**: placa com **8× H100 SXM5 + 4× NVSwitch**, vendida pela NVIDIA para OEMs (Supermicro, Dell, HPE…) montarem servidores. É o "tijolo" do datacenter de IA.
-- **DGX H100**: servidor de referência da própria NVIDIA com 8× H100, 2× CPUs Intel Sapphire Rapids, 8× ConnectX-7 (400 Gb/s NDR), ~$300–400k.
+- **DGX H100**: servidor de referência da própria NVIDIA com 8× H100, 2× CPUs Intel Sapphire Rapids, 8× ConnectX-7 (400 Gb/s NDR), ~\$300–400k.
 - **DGX SuperPOD**: 32 DGX H100 (256 GPUs) interconectados via Quantum-2 NDR InfiniBand, fat-tree topology, base reference design dos hyperscalers.
 
 ### 3.3 H200 — mesmo compute, muito mais memória
@@ -499,7 +499,7 @@ GA junho 2025:
 - **OpenAI**: rumores de avaliações; nada confirmado em produção.
 - **xAI / Tesla**: lealdade a NVIDIA até agora, mas avaliando.
 
-> **Síntese.** Em 2026, **AMD tem produto competitivo em silício**, mas o ecossistema software ainda exige investimento de engenharia do cliente. Para quem aceita esse custo, a economia é boa (MSRP MI300X ~$15-20k vs H100 ~$30-40k, e o dobro de VRAM).
+> **Síntese.** Em 2026, **AMD tem produto competitivo em silício**, mas o ecossistema software ainda exige investimento de engenharia do cliente. Para quem aceita esse custo, a economia é boa (MSRP MI300X ~\$15-20k vs H100 ~\$30-40k, e o dobro de VRAM).
 
 ---
 
@@ -914,14 +914,14 @@ Em **MXFP4/MXFP6/MXFP8**: cada **bloco de 32 elementos** compartilha um **scale 
 
 | GPU | MSRP (USD, est.) |
 |---|---|
-| H100 SXM | $30k–40k |
-| H100 PCIe | $25k–30k |
-| H200 SXM | $35k–45k |
-| B200 | $35k–50k |
-| B300 | $40k–55k |
-| MI300X | $15k–20k |
-| MI325X | $20k–25k |
-| MI355X | $25k–35k |
+| H100 SXM | \$30k–40k |
+| H100 PCIe | \$25k–30k |
+| H200 SXM | \$35k–45k |
+| B200 | \$35k–50k |
+| B300 | \$40k–55k |
+| MI300X | \$15k–20k |
+| MI325X | \$20k–25k |
+| MI355X | \$25k–35k |
 | TPU v5p / Ironwood | n/a (só GCP) |
 | Groq LPU stack (568 chips) | n/a (só Groq) |
 
@@ -931,11 +931,11 @@ Em **MXFP4/MXFP6/MXFP8**: cada **bloco de 32 elementos** compartilha um **scale 
 
 | GPU | AWS | GCP | Azure | Specialist (RunPod, Lambda, Vast) |
 |---|---|---|---|---|
-| H100 80GB SXM | $3.90–4.15/h (p5.48xlarge) | $3.00–4.10/h (a3-megagpu) | $5.40–6.98/h (NCadsH100v5) | $1.87–3.00/h |
-| H200 SXM | $5–7/h | $5–7/h | $6–8/h | $3–5/h |
-| B200 | $7–10/h (early) | $8–12/h (early) | n/a (limited) | $5–8/h (limited) |
-| MI300X | n/a (limited) | n/a | $4.50–6/h (preview) | $2–4/h |
-| TPU v5p | — | $4.20/h por chip on-demand | — | — |
+| H100 80GB SXM | \$3.90–4.15/h (p5.48xlarge) | \$3.00–4.10/h (a3-megagpu) | \$5.40–6.98/h (NCadsH100v5) | \$1.87–3.00/h |
+| H200 SXM | \$5–7/h | \$5–7/h | \$6–8/h | \$3–5/h |
+| B200 | \$7–10/h (early) | \$8–12/h (early) | n/a (limited) | \$5–8/h (limited) |
+| MI300X | n/a (limited) | n/a | \$4.50–6/h (preview) | \$2–4/h |
+| TPU v5p | — | \$4.20/h por chip on-demand | — | — |
 
 > **Spot/reserved** podem reduzir 30-70%. **Capacity blocks** (AWS) reservam GPUs por janela específica.
 
@@ -951,13 +951,13 @@ TCO_on_prem  =  CapEx (GPU + servidor + rack + cooling)
 ```
 
 Exemplo simplificado, 1 servidor 8× H100 SXM:
-- CapEx: 8 × $35k + $50k servidor + cabling = ~$330k
-- Power: 8 × 700W + overhead = ~7 kW × 24h × 365 = 61 MWh/ano × $0.10/kWh = **$6.1k/ano**
-- Cooling/PUE: × 1.3 → **$8k/ano**
-- Maintenance: $20-30k/ano
-- Total Year-1: ~$370k. Year-2/3: ~$40k/ano.
+- CapEx: 8 × \$35k + \$50k servidor + cabling = ~\$330k
+- Power: 8 × 700W + overhead = ~7 kW × 24h × 365 = 61 MWh/ano × \$0.10/kWh = **\$6.1k/ano**
+- Cooling/PUE: × 1.3 → **\$8k/ano**
+- Maintenance: \$20-30k/ano
+- Total Year-1: ~\$370k. Year-2/3: ~\$40k/ano.
 
-Equivalente cloud on-demand AWS: 8 × $4.10 × 8760h = **$287k/ano**. Já no ano 2 on-prem é mais barato. (Ignorando custo de oportunidade do CapEx etc.)
+Equivalente cloud on-demand AWS: 8 × \$4.10 × 8760h = **\$287k/ano**. Já no ano 2 on-prem é mais barato. (Ignorando custo de oportunidade do CapEx etc.)
 
 ### 15.4 Custo por 1M tokens (Llama-3 70B inference)
 
@@ -965,12 +965,12 @@ Estimativa grosseira para serving Llama-3 70B em FP8 com vLLM/SGLang, 1k QPS sus
 
 | Setup | Tokens/s aprox | Custo/h | $ por 1M tokens (output) |
 |---|---|---|---|
-| 4× H100 SXM (TP=4) | ~3500 t/s | $16/h on-prem amortizado | $1.27 |
-| 4× H100 SXM (TP=4) | ~3500 t/s | $16/h cloud | $1.27 |
-| 1× B200 (TP=1) | ~5500 t/s | $8/h on-prem | $0.40 |
-| 1× MI300X (TP=1) | ~3000 t/s | $4/h cloud preview | $0.37 |
-| Groq LPU (API) | ~270 t/s (single) | API: ~$0.59 in / $0.79 out per 1M | $0.79 |
-| TPU v5p (8 chips) | ~3000 t/s | $33/h | $3.05 |
+| 4× H100 SXM (TP=4) | ~3500 t/s | \$16/h on-prem amortizado | \$1.27 |
+| 4× H100 SXM (TP=4) | ~3500 t/s | \$16/h cloud | \$1.27 |
+| 1× B200 (TP=1) | ~5500 t/s | \$8/h on-prem | \$0.40 |
+| 1× MI300X (TP=1) | ~3000 t/s | \$4/h cloud preview | \$0.37 |
+| Groq LPU (API) | ~270 t/s (single) | API: ~\$0.59 in / \$0.79 out per 1M | \$0.79 |
+| TPU v5p (8 chips) | ~3000 t/s | \$33/h | \$3.05 |
 
 > **Caveat.** Estimativas dependem fortemente de **batch size, contexto, modelo, framework, quantização**. Use como ordens de grandeza, não como tabela final.
 
@@ -1099,7 +1099,7 @@ flowchart TD
 ### 18.1 Heurísticas adicionais
 
 - **"Tenho budget X. O que compro?"** — Sempre cheque **VRAM por dólar**. MI300X frequentemente vence em $/GB-VRAM, importante se você não tem TP.
-- **"Vou treinar Llama-3-style do zero"** — Esqueça nada exceto **GB200 NVL72** ou **TPU Ironwood pod** (>$100M cluster). Para **continued pretraining** ou **alignment**, 64-256 H100s já bastam.
+- **"Vou treinar Llama-3-style do zero"** — Esqueça nada exceto **GB200 NVL72** ou **TPU Ironwood pod** (>\$100M cluster). Para **continued pretraining** ou **alignment**, 64-256 H100s já bastam.
 - **"Precisamos rodar agora, sem engenharia"** — Cloud + framework maduro: **AWS p5/p5en + vLLM/TRT-LLM** ou **GroqCloud para latência**.
 - **"Open-source first, vendor-lock zero"** — Tenstorrent + Llama + vLLM. Aposta de longo prazo.
 

@@ -15,7 +15,7 @@ A jornada parte da arquitetura básica de uma LLM, passa pelos gargalos de infer
 | 03 | [KV cache: anatomia, custos e PagedAttention/vLLM](./03-kv-cache-anatomia-pagedattention-vllm.md) | Por que existe, fórmula de tamanho, fragmentação, vLLM | 01, 02 |
 | 04 | [Quantização de pesos: GPTQ, AWQ, GGUF, bitsandbytes](./04-quantizacao-pesos-gptq-awq-gguf-bitsandbytes.md) | INT8, INT4, NF4, formatos GGUF/EXL2, calibração | 01 |
 | 05 | [Quantização de KV cache: KIVI, KVQuant, CacheGen](./05-quantizacao-kv-cache-kivi-kvquant-cachegen.md) | Por que KV é difícil; outliers; per-channel/per-token | 03, 04 |
-| 06 | [TurboQuant em profundidade: polar, JL e Lloyd–Max](./06-turboquant-deep-dive-polar-jl-lloydmax.md) | Quantização não-enviesada, MSE/IP, two-stage IP, cota \(4^{-b}\) | 04, 05 |
+| 06 | [TurboQuant em profundidade: polar, JL e Lloyd–Max](./06-turboquant-deep-dive-polar-jl-lloydmax.md) | Quantização não-enviesada, MSE/IP, two-stage IP, cota $4^{-b}$ | 04, 05 |
 | 07 | [Contexto longo: RoPE, YaRN, Ring/StreamingLLM, Mamba](./07-contexto-longo-rope-yarn-ring-streaming.md) | Estender janela, escalar atenção, alternativas ao Transformer | 02, 03 |
 | 08 | [Além da quantização: sparsity, speculative decoding, MoE, distillation](./08-alem-quantizacao-sparsity-speculative-moe-distillation.md) | Outras alavancas para acelerar/reduzir custo | 01–06 |
 
@@ -64,7 +64,7 @@ A jornada parte da arquitetura básica de uma LLM, passa pelos gargalos de infer
 | 01 | [llama.cpp deep workflow: imatrix, quantize, serve](./serie-inferencia-local/01-llamacpp-deep-workflow-imatrix-quantize-serve.md) | **Pipeline ponta-a-ponta**: build → HF → GGUF → imatrix → quantize → bench → llama-server → clientes |
 | 02 | [MLX no Mac Apple Silicon: mlx-lm, mlx-vlm, fine-tune, distributed](./serie-inferencia-local/02-mlx-mac-silicon-mlx-lm-mlx-vlm-fine-tune.md) | UMA, mlx-lm/mlx-vlm/mlx-audio, LoRA local, cluster Thunderbolt 5 |
 | 03 | [Ollama, LM Studio, Open WebUI, Jan, Msty, AnythingLLM](./serie-inferencia-local/03-ollama-lmstudio-openwebui-jan-msty.md) | UX-first: Modelfile, GUI, RAG built-in, MCP, multi-user, voice |
-| 04 | [Hardware builds: Mac, PC DDR5, RTX 3090/4090/5090, Pro 6000, MI300X](./serie-inferencia-local/04-hardware-builds-mac-pc-ddr5-rtx-3090-4090-mi300x-amador.md) | 10 builds R$ 5k → R$ 400k, ROI vs API hosted, energia/ruído BR |
+| 04 | [Hardware builds: Mac, PC DDR5, RTX 3090/4090/5090, Pro 6000, MI300X](./serie-inferencia-local/04-hardware-builds-mac-pc-ddr5-rtx-3090-4090-mi300x-amador.md) | 10 builds R\$ 5k → R\$ 400k, ROI vs API hosted, energia/ruído BR |
 
 #### [`serie-llm-math/`](./serie-llm-math/) — Matemática essencial para entender LLMs
 

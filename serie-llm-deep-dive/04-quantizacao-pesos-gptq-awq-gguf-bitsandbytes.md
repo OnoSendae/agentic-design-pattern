@@ -40,13 +40,13 @@ A literatura de quantização de LLMs é, em grande parte, a engenharia de **des
 
 ### 1.2.1 Matemática da economia: quanto realmente se ganha
 
-Sejam \(N\) o número de parâmetros, \(b\) os bits por peso e \(o\) o overhead em bits/peso (escalas, zero-points). O tamanho em bytes do modelo é:
+Sejam $N$ o número de parâmetros, $b$ os bits por peso e $o$ o overhead em bits/peso (escalas, zero-points). O tamanho em bytes do modelo é:
 
 $$
 \text{MB} = \frac{N \cdot (b + o)}{8 \cdot 10^6}
 $$
 
-Para Llama 3 8B (\(N \approx 8.03 \times 10^9\)):
+Para Llama 3 8B ($N \approx 8.03 \times 10^9$):
 
 | Formato | b | o (overhead) | Tamanho |
 |---|---|---|---|
@@ -68,7 +68,7 @@ $$
 T_\text{max} = \frac{B}{S}
 $$
 
-onde \(B\) = banda em GB/s e \(S\) = tamanho do modelo em GB. Para Llama 3 8B em BF16 (16 GB), \(T_\text{max} = 1008 / 16 = 63\) tok/s. Em INT4 (4.13 GB), \(T_\text{max} = 1008 / 4.13 = 244\) tok/s. **Ganho de 4×**, exatamente proporcional à compressão.
+onde $B$ = banda em GB/s e $S$ = tamanho do modelo em GB. Para Llama 3 8B em BF16 (16 GB), $T_\text{max} = 1008 / 16 = 63$ tok/s. Em INT4 (4.13 GB), $T_\text{max} = 1008 / 4.13 = 244$ tok/s. **Ganho de 4×**, exatamente proporcional à compressão.
 
 Na prática, alcança-se 70-90% do limite teórico (kernels custom como ExLlamaV2 chegam mais perto; bibliotecas genéricas ficam mais distantes).
 
@@ -144,25 +144,25 @@ Comparação numérica essencial:
 | **FP8 E5M2** | 8 | 5 / 2 | ±57 344 | ~1.5 dígito | Backward em Hopper/Ada; "baixa precisão, alta faixa" |
 | **INT8** | 8 | — | -128..127 (signed) ou 0..255 | escala-dependente | LLM.int8, SmoothQuant, GGUF Q8_0 |
 | **INT4** | 4 | — | -8..7 ou 0..15 | escala-dependente | GPTQ, AWQ, GGUF Q4_*, EXL2 |
-| **NF4** | 4 | — não-uniforme | quantis de \(\mathcal{N}(0,1)\) | adaptada a pesos normais | QLoRA / bitsandbytes |
+| **NF4** | 4 | — não-uniforme | quantis de $\mathcal{N}(0,1)$ | adaptada a pesos normais | QLoRA / bitsandbytes |
 | **FP4 (E2M1)** | 4 | 2 / 1 | ±6 (com block scale) | discreto | MXFP4, NVFP4 (Blackwell) |
 | **MXFP4** | 4 + 8/32 | E2M1 + scale E8M0 (PoT) | bloco de 32 valores | block-scaled | OCP MX spec, Blackwell, AMD, Intel |
 | **NVFP4** | 4 + 8/16 | E2M1 + scale FP8 E4M3 + tensor FP32 | bloco de 16 | block-scaled de 2 níveis | Tensor cores Blackwell |
 
 ### 2.1.1 Lendo um float em binário — caminho passo a passo
 
-Para concretizar a abstração acima, vamos decompor o número \(13.625\) em FP16, BF16 e FP8 E4M3.
+Para concretizar a abstração acima, vamos decompor o número $13.625$ em FP16, BF16 e FP8 E4M3.
 
 **FP32** (referência).
-\(13.625 = 1101.101_2 = 1.101101_2 \times 2^{3}\). Sinal 0, expoente \(3 + 127 = 130 = 10000010_2\), mantissa \(101101000\ldots0\) (23 bits). Valor exato.
+$13.625 = 1101.101_2 = 1.101101_2 \times 2^{3}$. Sinal 0, expoente $3 + 127 = 130 = 10000010_2$, mantissa $101101000\ldots0$ (23 bits). Valor exato.
 
-**FP16**. Bias 15. Expoente \(3 + 15 = 18 = 10010_2\). Mantissa 10 bits: `1011010000`. Valor exato: \(1.1011010000_2 \times 2^3 = 13.625\).
+**FP16**. Bias 15. Expoente $3 + 15 = 18 = 10010_2$. Mantissa 10 bits: `1011010000`. Valor exato: $1.1011010000_2 \times 2^3 = 13.625$.
 
-**BF16**. Mesmo expoente do FP32: \(130 = 10000010_2\). Mantissa apenas 7 bits: `1011010`. Valor: \(1.1011010_2 \times 2^3 = 13.625\) (exato porque os bits significativos cabem).
+**BF16**. Mesmo expoente do FP32: $130 = 10000010_2$. Mantissa apenas 7 bits: `1011010`. Valor: $1.1011010_2 \times 2^3 = 13.625$ (exato porque os bits significativos cabem).
 
-**FP8 E4M3**. Bias 7. Expoente \(3 + 7 = 10 = 1010_2\). Mantissa 3 bits: o mais próximo de `1011010` em 3 bits é `101` (truncamento) ou `110` (arredondamento). Resultado: \(1.110_2 \times 2^3 = 14.0\). **Erro absoluto = 0.375**, **erro relativo = 2.75%**. Para um valor "no meio" da faixa, isso é o tamanho do degrau de quantização típico em FP8 E4M3.
+**FP8 E4M3**. Bias 7. Expoente $3 + 7 = 10 = 1010_2$. Mantissa 3 bits: o mais próximo de `1011010` em 3 bits é `101` (truncamento) ou `110` (arredondamento). Resultado: $1.110_2 \times 2^3 = 14.0$. **Erro absoluto = 0.375**, **erro relativo = 2.75%**. Para um valor "no meio" da faixa, isso é o tamanho do degrau de quantização típico em FP8 E4M3.
 
-**FP4 (E2M1)** com bloco scaling. Sem bloco, o número 13.625 nem cabe na faixa nativa (±6). Com `bloco_scale=4`, cada valor "FP4 nativo" é multiplicado por 4. O FP4 mais próximo de \(13.625 / 4 = 3.40625\) é `3` (entre `3` e `4`). Reconstrução: \(3 \times 4 = 12\). **Erro absoluto = 1.625**, **erro relativo = 12%**. Para diminuir o erro, blocos menores ou escalas mais finas (NVFP4 com escala FP8 em vez de potência de 2).
+**FP4 (E2M1)** com bloco scaling. Sem bloco, o número 13.625 nem cabe na faixa nativa (±6). Com `bloco_scale=4`, cada valor "FP4 nativo" é multiplicado por 4. O FP4 mais próximo de $13.625 / 4 = 3.40625$ é `3` (entre `3` e `4`). Reconstrução: $3 \times 4 = 12$. **Erro absoluto = 1.625**, **erro relativo = 12%**. Para diminuir o erro, blocos menores ou escalas mais finas (NVFP4 com escala FP8 em vez de potência de 2).
 
 A lição é geral: **menos bits significam degraus de quantização proporcionalmente maiores**, e o erro local é da ordem de **metade do degrau**. O block-scaling reduz o **degrau efetivo** dentro de cada bloco, ao custo de overhead de armazenamento.
 
@@ -214,11 +214,11 @@ $$
 q = \mathrm{round}\!\left(\frac{x - z}{s}\right), \qquad \hat{x} = s \cdot q + z
 $$
 
-onde \(s\) é a **escala** (passo) e \(z\) é o **zero-point** (deslocamento). Quando o zero-point é zero, dizemos que a quantização é **simétrica**; quando \(z \neq 0\), é **assimétrica**.
+onde $s$ é a **escala** (passo) e $z$ é o **zero-point** (deslocamento). Quando o zero-point é zero, dizemos que a quantização é **simétrica**; quando $z \neq 0$, é **assimétrica**.
 
-- **INT8 simétrica**: \(q \in [-127, 127]\), \(s = \max(|x|)/127\).
-- **INT8 assimétrica**: \(q \in [0, 255]\), \(s = (\max(x)-\min(x))/255\), \(z\) escolhido para que o menor valor mapeie para 0.
-- **INT4 simétrica**: \(q \in [-7, 7]\) (ou \(\{-8,\ldots,7\}\)), só 16 níveis. Cada bit pesa muito.
+- **INT8 simétrica**: $q \in [-127, 127]$, $s = \max(|x|)/127$.
+- **INT8 assimétrica**: $q \in [0, 255]$, $s = (\max(x)-\min(x))/255$, $z$ escolhido para que o menor valor mapeie para 0.
+- **INT4 simétrica**: $q \in [-7, 7]$ (ou $\{-8,\ldots,7\}$), só 16 níveis. Cada bit pesa muito.
 
 Quanto **menos bits**, mais a posição da escala (e do zero-point) afeta a perda. Em INT4, errar a escala em 5% pode custar pontos inteiros de perplexidade.
 
@@ -230,7 +230,7 @@ Considere uma linha de 8 pesos (toy example):
 w = [0.12, -0.05, 1.34, -0.87, 0.04, -0.21, 0.55, -1.10]
 ```
 
-**Per-row simétrica INT4** (\(q \in [-7, 7]\)):
+**Per-row simétrica INT4** ($q \in [-7, 7]$):
 
 - `max(|w|)` = 1.34
 - `s = 1.34 / 7 ≈ 0.1914`
@@ -249,7 +249,7 @@ O peso 0.04 ainda colapsa em zero, mas o peso 0.55 agora é representado com **m
 
 ### 2.4.2 Group-wise asimétrica INT4 — full pipeline
 
-Para o mesmo exemplo, **assimétrico INT4** (\(q \in [0, 15]\)) per-group g=4:
+Para o mesmo exemplo, **assimétrico INT4** ($q \in [0, 15]$) per-group g=4:
 
 Grupo 1: `[0.12, -0.05, 1.34, -0.87]`. Min=-0.87, max=1.34. `s = (1.34 + 0.87)/15 ≈ 0.1473`. `z = round(-(-0.87)/s) ≈ 6`. Quantizado:
 
@@ -265,7 +265,7 @@ Em datacenter para LLMs, **assimétrica é raro em pesos** (eles são quase sim�
 
 Pesos de LLMs treinados são, em larga maioria, aproximadamente **gaussianos** (após normalização e dropout). Dettmers et al. (2023) observaram: se a distribuição é normal, a melhor partição em 16 níveis (4 bits) **não é uniforme** — é a partição que iguala a probabilidade em cada bin. Esta é a definição de **quantis** da distribuição normal.
 
-**NF4** ("4-bit NormalFloat") é uma tabela de **16 níveis fixos** correspondentes aos quantis de \(\mathcal{N}(0,1)\) (com simetria forçada e zero exato). Cada peso é normalizado por uma escala (por bloco), e em seguida mapeado para o quantil mais próximo dessa tabela.
+**NF4** ("4-bit NormalFloat") é uma tabela de **16 níveis fixos** correspondentes aos quantis de $\mathcal{N}(0,1)$ (com simetria forçada e zero exato). Cada peso é normalizado por uma escala (por bloco), e em seguida mapeado para o quantil mais próximo dessa tabela.
 
 Os 16 níveis de NF4, simétricos em torno de zero (referência QLoRA):
 
@@ -321,12 +321,12 @@ A regra prática hoje (2026): em consumer GPU, **INT4 com group quantization** (
 
 ## 3. Esquema simétrico vs assimétrico, per-tensor vs per-channel vs per-group
 
-Um detalhe que confunde iniciantes: além de escolher **quantos bits**, você precisa escolher **a granularidade** com que aplicar a escala. Quantos pesos compartilham um único \((s, z)\)?
+Um detalhe que confunde iniciantes: além de escolher **quantos bits**, você precisa escolher **a granularidade** com que aplicar a escala. Quantos pesos compartilham um único $(s, z)$?
 
 ### 3.1 Simétrico vs assimétrico
 
-- **Simétrico**: a escala mapeia \([-A, A]\) em \([-Q, Q]\), com \(z=0\). Vantagens: kernel mais simples, multiplicação direta sem subtração. Desvantagem: se a distribuição é assimétrica (ex.: pós-ReLU, sempre positiva), você desperdiça metade dos níveis.
-- **Assimétrica**: \([\min, \max] \to [0, 2^b-1]\), com \(z\) calculado para alinhar o min. Necessário em ativações pós-ReLU/GELU/SiLU, e em alguns formatos de pesos com cauda só de um lado.
+- **Simétrico**: a escala mapeia $[-A, A]$ em $[-Q, Q]$, com $z=0$. Vantagens: kernel mais simples, multiplicação direta sem subtração. Desvantagem: se a distribuição é assimétrica (ex.: pós-ReLU, sempre positiva), você desperdiça metade dos níveis.
+- **Assimétrica**: $[\min, \max] \to [0, 2^b-1]$, com $z$ calculado para alinhar o min. Necessário em ativações pós-ReLU/GELU/SiLU, e em alguns formatos de pesos com cauda só de um lado.
 
 Para pesos de LLMs treinados (geralmente próximos de média zero), **simétrica** é praticamente padrão. Para ativações, **assimétrica** é frequente.
 
@@ -377,9 +377,9 @@ Per-tensor é ajustar a exposição da **foto inteira**. Per-channel é ajustar 
 
 A receita mais simples para PTQ:
 
-1. Para cada matriz de pesos \(W\), calcule \(s = \max(|W|) / Q_{\max}\).
-2. Para cada peso \(w\): \(q = \mathrm{round}(w / s)\), clamp em \([-Q_{\max}, Q_{\max}]\).
-3. Salve os \(q\) e o \(s\). Na inferência, dequantize: \(\hat{w} = s \cdot q\).
+1. Para cada matriz de pesos $W$, calcule $s = \max(|W|) / Q_{\max}$.
+2. Para cada peso $w$: $q = \mathrm{round}(w / s)$, clamp em $[-Q_{\max}, Q_{\max}]$.
+3. Salve os $q$ e o $s$. Na inferência, dequantize: $\hat{w} = s \cdot q$.
 
 Isso é o **AbsMax round-to-nearest**. Funciona razoavelmente para **INT8 per-channel** em modelos pequenos e bem-comportados. Em LLMs grandes, **falha catastroficamente abaixo de 8 bits**.
 
@@ -414,15 +414,15 @@ A engenharia prática só precisa saber: **outliers existem, são poucos e tóxi
 
 ### 4.2.2 A matemática do erro RTN
 
-Para um peso uniformemente distribuído em \([-1, 1]\) quantizado em \(b\) bits simétricos, o degrau é \(\Delta = 2/(2^b - 1)\) e o erro de quantização é uniforme em \([-\Delta/2, \Delta/2]\). O **erro quadrático médio** vale:
+Para um peso uniformemente distribuído em $[-1, 1]$ quantizado em $b$ bits simétricos, o degrau é $\Delta = 2/(2^b - 1)$ e o erro de quantização é uniforme em $[-\Delta/2, \Delta/2]$. O **erro quadrático médio** vale:
 
 $$
 \mathrm{MSE} = \frac{\Delta^2}{12} = \frac{1}{3 (2^b - 1)^2}
 $$
 
-Para \(b=8\): MSE \(\approx 5 \times 10^{-6}\). Para \(b=4\): MSE \(\approx 1.5 \times 10^{-3}\). **Cada bit a menos multiplica o MSE por 4×**. Daí a regra empírica: se a perplexidade sobe \(\Delta\) ppl em INT8, espera-se \(4\Delta\) em INT4 e \(16\Delta\) em INT3 (aproximação grosseira mas didaticamente útil).
+Para $b=8$: MSE $\approx 5 \times 10^{-6}$. Para $b=4$: MSE $\approx 1.5 \times 10^{-3}$. **Cada bit a menos multiplica o MSE por 4×**. Daí a regra empírica: se a perplexidade sobe $\Delta$ ppl em INT8, espera-se $4\Delta$ em INT4 e $16\Delta$ em INT3 (aproximação grosseira mas didaticamente útil).
 
-A regra muda com **outliers**: a faixa de \([-A, A]\) cresce, o degrau cresce, o MSE cresce **quadraticamente em A**. Daí a obsessão com domá-los.
+A regra muda com **outliers**: a faixa de $[-A, A]$ cresce, o degrau cresce, o MSE cresce **quadraticamente em A**. Daí a obsessão com domá-los.
 
 ### 4.3 Outliers em ativações vs em pesos
 
@@ -445,26 +445,26 @@ E uma quarta, que é a do GPTQ/AWQ: **errar de forma compensatória** — se eu 
 
 ### 5.1 SmoothQuant (Xiao et al., 2022, arXiv:2211.10438)
 
-A observação chave do SmoothQuant é matemática trivial e operacionalmente brilhante: numa matmul \(Y = X W\), você pode introduzir uma matriz diagonal \(\mathrm{diag}(s)\) sem mudar o resultado:
+A observação chave do SmoothQuant é matemática trivial e operacionalmente brilhante: numa matmul $Y = X W$, você pode introduzir uma matriz diagonal $\mathrm{diag}(s)$ sem mudar o resultado:
 
 $$
 Y = X W = (X \cdot \mathrm{diag}(s)^{-1}) \cdot (\mathrm{diag}(s) \cdot W) = \tilde{X} \tilde{W}
 $$
 
-Se as ativações \(X\) têm canais com magnitude alta (outliers), você escolhe \(s_i\) **proporcional à magnitude do canal \(i\)** — assim \(\tilde{X} = X / s\) fica normalizado, e o "peso" da magnitude **migra para \(\tilde{W} = s \cdot W\)**.
+Se as ativações $X$ têm canais com magnitude alta (outliers), você escolhe $s_i$ **proporcional à magnitude do canal $i$** — assim $\tilde{X} = X / s$ fica normalizado, e o "peso" da magnitude **migra para $\tilde{W} = s \cdot W$**.
 
 O resultado:
 
 - Ativações **não têm mais outliers extremos**, podem ser quantizadas em **INT8 per-tensor** sem catástrofe.
 - Pesos ficam um pouco mais "irregulares", mas como já fazemos **per-channel** neles, o impacto é pequeno.
 
-Em equação operacional, com \(\alpha \in [0, 1]\) (tipicamente 0.5):
+Em equação operacional, com $\alpha \in [0, 1]$ (tipicamente 0.5):
 
 $$
 s_j = \frac{\max_i |X_{ij}|^{\alpha}}{\max_i |W_{ij}|^{1-\alpha}}
 $$
 
-\(\alpha\) controla o quanto de magnitude "puxar" das ativações para os pesos. \(\alpha=0.5\) é o equilíbrio padrão; valores maiores agressivamente migram a magnitude.
+$\alpha$ controla o quanto de magnitude "puxar" das ativações para os pesos. $\alpha=0.5$ é o equilíbrio padrão; valores maiores agressivamente migram a magnitude.
 
 SmoothQuant é o que viabilizou **W8A8** (peso 8-bit + ativação 8-bit) com qualidade quase intacta em modelos da família OPT, Llama, BLOOM. Ele é **pré-processamento**: aplica-se **uma vez**, sem treino, com poucas centenas de amostras de calibração. O modelo resultante é matematicamente idêntico em FP16; só fica "preparado" para INT8.
 
@@ -508,25 +508,25 @@ GPTQ (**Generative Pretrained Transformer Quantization**, Frantar et al., 2022, 
 
 ### 6.1 A pergunta central
 
-Suponha uma camada linear com pesos \(W\) e queremos quantizá-los para 4 bits, **um peso por vez**. Quando arredondamos \(w_{ij}\), introduzimos um erro \(\delta_{ij}\). Como esse erro afeta a saída da camada?
+Suponha uma camada linear com pesos $W$ e queremos quantizá-los para 4 bits, **um peso por vez**. Quando arredondamos $w_{ij}$, introduzimos um erro $\delta_{ij}$. Como esse erro afeta a saída da camada?
 
-Ao primeiro grau, o erro na saída é \(X \cdot \delta\). Mas se a camada é **convexa em \(W\)** localmente (boa aproximação para uma única camada num batch fixo), podemos modelar a perda incremental como:
+Ao primeiro grau, o erro na saída é $X \cdot \delta$. Mas se a camada é **convexa em $W$** localmente (boa aproximação para uma única camada num batch fixo), podemos modelar a perda incremental como:
 
 $$
 \Delta L \approx \frac{1}{2} \delta^\top H \delta
 $$
 
-onde \(H = X^\top X\) é o **Hessiano** da reconstrução de saída em relação a \(W\). Esse Hessiano só depende das **ativações de entrada da camada** — informação que conseguimos rodando algumas centenas de amostras de calibração pelo modelo.
+onde $H = X^\top X$ é o **Hessiano** da reconstrução de saída em relação a $W$. Esse Hessiano só depende das **ativações de entrada da camada** — informação que conseguimos rodando algumas centenas de amostras de calibração pelo modelo.
 
 ### 6.2 A receita do GPTQ
 
-GPTQ processa **uma coluna de \(W\) por vez** (estrutura sequencial), e para cada coluna, **um peso por linha**. Ao quantizar \(w_{ij}\):
+GPTQ processa **uma coluna de $W$ por vez** (estrutura sequencial), e para cada coluna, **um peso por linha**. Ao quantizar $w_{ij}$:
 
-1. Arredonde \(w_{ij}\) para o nível mais próximo do reticulado de quantização.
-2. Calcule o **erro residual** \(\delta_{ij} = w_{ij} - q_{ij} \cdot s\).
+1. Arredonde $w_{ij}$ para o nível mais próximo do reticulado de quantização.
+2. Calcule o **erro residual** $\delta_{ij} = w_{ij} - q_{ij} \cdot s$.
 3. **Propague** o erro para os pesos ainda não quantizados na mesma linha, usando a inversa do Hessiano (informação de Cholesky precomputada). Isso ajusta os próximos pesos para **compensar** o erro recém-introduzido.
 
-A intuição visual: você está empilhando peças num jogo de Tetris. Quando coloca uma peça torta, você sabe que as próximas precisam encaixar **considerando essa distorção**. GPTQ é o algoritmo que faz esse ajuste global, em \(O(\text{col}^2)\) com truques numéricos.
+A intuição visual: você está empilhando peças num jogo de Tetris. Quando coloca uma peça torta, você sabe que as próximas precisam encaixar **considerando essa distorção**. GPTQ é o algoritmo que faz esse ajuste global, em $O(\text{col}^2)$ com truques numéricos.
 
 A analogia humana: **comprimir um objeto considerando as outras peças que vão encostar nele**. Você não comprime no vazio — comprime sabendo onde o objeto vai ser usado.
 
@@ -539,7 +539,7 @@ A analogia humana: **comprimir um objeto considerando as outras peças que vão 
 
 ### 6.3.1 Pseudocódigo do GPTQ (versão didática)
 
-Para uma matriz de pesos \(W \in \mathbb{R}^{d_\text{out} \times d_\text{in}}\) e ativações de calibração \(X \in \mathbb{R}^{n \times d_\text{in}}\):
+Para uma matriz de pesos $W \in \mathbb{R}^{d_\text{out} \times d_\text{in}}$ e ativações de calibração $X \in \mathbb{R}^{n \times d_\text{in}}$:
 
 ```python
 def gptq_layer(W, X, bits=4, group_size=128, percdamp=0.01):
@@ -580,10 +580,10 @@ def gptq_layer(W, X, bits=4, group_size=128, percdamp=0.01):
 ```
 
 Pontos a notar:
-- O **Cholesky** da inversa do Hessiano é a estrutura que permite propagar erro **eficientemente** sem inverter \(H\) inteira.
+- O **Cholesky** da inversa do Hessiano é a estrutura que permite propagar erro **eficientemente** sem inverter $H$ inteira.
 - O **damping** (`percdamp ≈ 0.01`) regulariza o Hessiano contra mau condicionamento.
 - A **escala per-group** é recalculada a cada bloco de 128 colunas — daí o nome `group_size`.
-- Com `desc_act=True`, as colunas são primeiro **permutadas** por sensibilidade (diagonal de \(H\)) antes desse loop.
+- Com `desc_act=True`, as colunas são primeiro **permutadas** por sensibilidade (diagonal de $H$) antes desse loop.
 
 ### 6.4 GPTQModel (2025-2026): o estado atual
 
@@ -598,8 +598,8 @@ Ou seja: o que historicamente era "AutoGPTQ" virou um **toolkit unificado** que 
 ### 6.5 Limites do GPTQ
 
 - Em **2 bits**, GPTQ puro degrada bastante. Variantes (QuIP, OmniQuant) ganham terreno.
-- A premissa quadrática local (\(H = X^\top X\)) ignora **interações entre camadas**. Métodos como SqueezeLLM usam segunda ordem, mas em estratégia diferente (sensitivity-based non-uniform).
-- Outliers de ativação ainda atrapalham GPTQ, porque \(H\) reflete sua presença.
+- A premissa quadrática local ($H = X^\top X$) ignora **interações entre camadas**. Métodos como SqueezeLLM usam segunda ordem, mas em estratégia diferente (sensitivity-based non-uniform).
+- Outliers de ativação ainda atrapalham GPTQ, porque $H$ reflete sua presença.
 
 ---
 
@@ -609,22 +609,22 @@ AWQ (**Activation-aware Weight Quantization**, Lin et al., 2023, arXiv:2306.0097
 
 > Não são os pesos com **maior magnitude** que mais importam; são os pesos que multiplicam as **ativações de maior magnitude**.
 
-Ou seja: a perda por quantizar \(w_{ij}\) escala com **a magnitude da ativação \(x_i\)** que entra naquele canal. Quantizar mal um peso que multiplica por 0.01 é benigno. Quantizar mal um peso que multiplica por 50 é catastrófico.
+Ou seja: a perda por quantizar $w_{ij}$ escala com **a magnitude da ativação $x_i$** que entra naquele canal. Quantizar mal um peso que multiplica por 0.01 é benigno. Quantizar mal um peso que multiplica por 50 é catastrófico.
 
 ### 7.1 A receita do AWQ
 
-1. Rode amostras de calibração; calcule \(\bar{x}_i = \mathrm{mean}_i |X_i|\) por canal.
+1. Rode amostras de calibração; calcule $\bar{x}_i = \mathrm{mean}_i |X_i|$ por canal.
 2. Identifique os **canais de ativação importantes** (top 1% por magnitude).
-3. Para cada canal \(i\), aplique uma **escala** \(s_i\) que **amplia** os pesos correspondentes **antes** da quantização — protegendo-os do erro de arredondamento — e a inversa nas ativações.
-4. Quantize \(W \cdot \mathrm{diag}(s)\) em INT4 normalmente.
-5. Em runtime, multiplique \(\mathrm{diag}(s)^{-1}\) na ativação.
+3. Para cada canal $i$, aplique uma **escala** $s_i$ que **amplia** os pesos correspondentes **antes** da quantização — protegendo-os do erro de arredondamento — e a inversa nas ativações.
+4. Quantize $W \cdot \mathrm{diag}(s)$ em INT4 normalmente.
+5. Em runtime, multiplique $\mathrm{diag}(s)^{-1}$ na ativação.
 
-A escala ótima \(s_i\) é encontrada por **busca em grade** que minimiza o erro de saída; tipicamente \(s_i \in [1, 3]\) para canais top.
+A escala ótima $s_i$ é encontrada por **busca em grade** que minimiza o erro de saída; tipicamente $s_i \in [1, 3]$ para canais top.
 
 ### 7.2 Por que isso funciona (e não vira o problema do SmoothQuant ao contrário)
 
 - AWQ protege **só ~1% dos canais**, com escalas modestas. Não estoura a faixa do INT4.
-- A operação inversa (multiplicar a ativação por \(s_i^{-1}\)) é uma operação elementwise barata, fundida nos kernels de matmul.
+- A operação inversa (multiplicar a ativação por $s_i^{-1}$) é uma operação elementwise barata, fundida nos kernels de matmul.
 - Não há **custo de calibração quadrático** como o do GPTQ. AWQ roda em minutos para modelos grandes.
 
 A analogia: **decidir o que comprimir mais com base no que mais é olhado**. Se uma peça do quebra-cabeça vai estar bem visível na frente da casa, você a fabrica em alta resolução; o que vai pro fundo do armário, baixa resolução. AWQ "olha" para as ativações e decide a resolução de cada peso.
@@ -733,14 +733,14 @@ QLoRA (Dettmers et al., 2023, arXiv:2305.14314) não foi proposto como esquema d
 
 ### 8.1 NF4 detalhado
 
-Como visto na seção 2.5, NF4 é uma tabela fixa de 16 níveis, correspondentes aos quantis de \(\mathcal{N}(0,1)\), com simetria forçada. A operação:
+Como visto na seção 2.5, NF4 é uma tabela fixa de 16 níveis, correspondentes aos quantis de $\mathcal{N}(0,1)$, com simetria forçada. A operação:
 
-1. Para cada bloco de 64 pesos, calcule a **escala** \(s = \max(|W_{\text{bloco}}|)\).
-2. Normalize: \(\tilde{w} = w / s\), agora em \([-1, 1]\).
-3. Mapeie cada \(\tilde{w}\) para o nível NF4 mais próximo.
+1. Para cada bloco de 64 pesos, calcule a **escala** $s = \max(|W_{\text{bloco}}|)$.
+2. Normalize: $\tilde{w} = w / s$, agora em $[-1, 1]$.
+3. Mapeie cada $\tilde{w}$ para o nível NF4 mais próximo.
 4. Salve: 4 bits por peso + 1 escala FP32 por bloco de 64.
 
-Custo bruto: \(4 + 32/64 = 4.5\) bits por peso. Pior que GPTQ (que usa FP16 para escalas, ~4.13 bits).
+Custo bruto: $4 + 32/64 = 4.5$ bits por peso. Pior que GPTQ (que usa FP16 para escalas, ~4.13 bits).
 
 ### 8.2 Double Quantization
 
@@ -793,8 +793,8 @@ A premissa do HQQ: **pode-se quantizar bem sem usar dataset de calibração**, c
 
 A receita:
 
-- Modele a quantização como minimização de uma perda **não convexa** com termo *sparsity-promoting* (norma \(\ell_p\) com \(p<1\)) sobre o **erro**.
-- Resolva por *half-quadratic splitting*: alterne entre uma atualização proximal (closed-form) e uma minimização em \(W\) (closed-form).
+- Modele a quantização como minimização de uma perda **não convexa** com termo *sparsity-promoting* (norma $\ell_p$ com $p<1$) sobre o **erro**.
+- Resolva por *half-quadratic splitting*: alterne entre uma atualização proximal (closed-form) e uma minimização em $W$ (closed-form).
 - Use blocos de 64 ou 128, com escalas e zero-points por bloco.
 
 Resultado: **Llama-2-70B quantizado em 4-bit em < 5 minutos** (50× mais rápido que GPTQ). Qualidade comparável a GPTQ em 4-bit, e **competitiva em 2-bit** (onde GPTQ degrada).
@@ -811,7 +811,7 @@ Quando preferir HQQ: quantização rápida em pipeline contínuo (ex.: você pub
 
 A ideia mestra do QuaRot é **mudar de base** o modelo inteiro com uma **rotação de Hadamard aleatória**. Por que isso ajuda?
 
-A invariância matemática: se \(R\) é ortogonal (\(R^\top R = I\)) e o modelo tem certas propriedades de **invariância computacional** (LayerNorm + Linear + LayerNorm + ...), então:
+A invariância matemática: se $R$ é ortogonal ($R^\top R = I$) e o modelo tem certas propriedades de **invariância computacional** (LayerNorm + Linear + LayerNorm + ...), então:
 
 $$
 W \to R^\top W R, \quad x \to R^\top x
@@ -836,23 +836,23 @@ flowchart LR
   M --> Y["Saída ~= original"]
 ```
 
-A analogia: imagine que você tem uma distribuição com 99% dos valores em \([-1, 1]\) e 1% em \([-100, 100]\). Em vez de tentar comprimir essa distribuição estranha, você **embaralha** os valores (multiplicação por matriz aleatória ortogonal). O Teorema do Limite Central faz o trabalho: a soma de muitas variáveis com magnitude moderada é aproximadamente gaussiana. Depois do embaralhamento, **todos os canais** têm magnitude parecida, e quantização uniforme funciona.
+A analogia: imagine que você tem uma distribuição com 99% dos valores em $[-1, 1]$ e 1% em $[-100, 100]$. Em vez de tentar comprimir essa distribuição estranha, você **embaralha** os valores (multiplicação por matriz aleatória ortogonal). O Teorema do Limite Central faz o trabalho: a soma de muitas variáveis com magnitude moderada é aproximadamente gaussiana. Depois do embaralhamento, **todos os canais** têm magnitude parecida, e quantização uniforme funciona.
 
 ### 9.2.1 Por que rotações de Hadamard funcionam — a matemática essencial
 
-Uma matriz de Hadamard \(H_n\) é uma matriz \(n \times n\) com entradas \(\pm 1/\sqrt{n}\) tal que \(H_n^\top H_n = I\). Existe para \(n\) potência de 2 (construção recursiva de Sylvester):
+Uma matriz de Hadamard $H_n$ é uma matriz $n \times n$ com entradas $\pm 1/\sqrt{n}$ tal que $H_n^\top H_n = I$. Existe para $n$ potência de 2 (construção recursiva de Sylvester):
 
 $$
 H_2 = \frac{1}{\sqrt{2}}\begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}, \qquad H_{2n} = \frac{1}{\sqrt{2}}\begin{pmatrix} H_n & H_n \\ H_n & -H_n \end{pmatrix}
 $$
 
-**Propriedade chave**: para qualquer vetor \(x \in \mathbb{R}^n\) com norma \(\|x\|_2\), o vetor rotacionado \(y = H_n x\) tem **a mesma norma** mas **suas coordenadas estão "espalhadas"**: cada \(y_i\) é uma soma ponderada de **todas** as coordenadas de \(x\) com sinais aleatórios. Pelo Teorema Central do Limite, para \(n\) grande, **cada \(y_i\) é aproximadamente gaussiana**, com magnitude típica da ordem de \(\|x\|_2 / \sqrt{n}\).
+**Propriedade chave**: para qualquer vetor $x \in \mathbb{R}^n$ com norma $\|x\|_2$, o vetor rotacionado $y = H_n x$ tem **a mesma norma** mas **suas coordenadas estão "espalhadas"**: cada $y_i$ é uma soma ponderada de **todas** as coordenadas de $x$ com sinais aleatórios. Pelo Teorema Central do Limite, para $n$ grande, **cada $y_i$ é aproximadamente gaussiana**, com magnitude típica da ordem de $\|x\|_2 / \sqrt{n}$.
 
-Em particular, o **maior valor** em \(y\) é da ordem de \(\|x\|_2 \cdot \sqrt{2 \log n / n}\) (cota de concentração para gaussianas), enquanto em \(x\) podia ser \(\|x\|_\infty\) com \(\|x\|_\infty / \|x\|_2\) próximo de 1 (caso outlier).
+Em particular, o **maior valor** em $y$ é da ordem de $\|x\|_2 \cdot \sqrt{2 \log n / n}$ (cota de concentração para gaussianas), enquanto em $x$ podia ser $\|x\|_\infty$ com $\|x\|_\infty / \|x\|_2$ próximo de 1 (caso outlier).
 
-Numericamente: para \(n = 4096\), o "ratio outlier" típico cai de **~10** (no input) para **~3** (no rotacionado). Isso é a diferença entre INT4 funcionar ou não.
+Numericamente: para $n = 4096$, o "ratio outlier" típico cai de **~10** (no input) para **~3** (no rotacionado). Isso é a diferença entre INT4 funcionar ou não.
 
-A **transformada rápida de Walsh-Hadamard** (WHT) computa \(H_n x\) em \(O(n \log n)\), igual à FFT. Em hardware moderno, a operação custa **menos que o próprio matmul**, então a rotação é praticamente gratuita.
+A **transformada rápida de Walsh-Hadamard** (WHT) computa $H_n x$ em $O(n \log n)$, igual à FFT. Em hardware moderno, a operação custa **menos que o próprio matmul**, então a rotação é praticamente gratuita.
 
 A "incoerência computacional" do paper QuIP segue lógica similar: pré-multiplicar pesos por matrizes ortogonais aleatórias produz pesos cujos **valores** são incoerentes — nenhum valor sobressai. Isso pode ser combinado com qualquer método de quantização downstream (RTN, GPTQ).
 
@@ -860,7 +860,7 @@ A "incoerência computacional" do paper QuIP segue lógica similar: pré-multipl
 
 SpinQuant é a **versão treinada** do QuaRot. A observação: rotações de Hadamard aleatórias têm **alta variância** de qualidade — algumas rotações funcionam excelentemente, outras quebram o modelo. Em zero-shot reasoning, a diferença chega a **13 pontos**.
 
-A solução: **aprender** a rotação ótima diretamente. SpinQuant parametriza \(R\) como uma matriz na **variedade de Stiefel** (matrizes ortogonais) e usa **Cayley optimization** para encontrar a \(R^*\) que minimiza a perda de quantização.
+A solução: **aprender** a rotação ótima diretamente. SpinQuant parametriza $R$ como uma matriz na **variedade de Stiefel** (matrizes ortogonais) e usa **Cayley optimization** para encontrar a $R^*$ que minimiza a perda de quantização.
 
 Resultados:
 - Llama-2-7B em 4-bit: gap de apenas **2.9 pontos** vs full precision.
@@ -1113,7 +1113,7 @@ Conta de bits por peso para Q4_K:
 - Master scale + master min: 16 + 16 = 32 bits
 - Total por super-bloco: **1120 bits** / 256 pesos = **4.375 bits/peso**
 
-A reconstrução de um peso \(w\) num sub-bloco \(s\) com índice \(i\):
+A reconstrução de um peso $w$ num sub-bloco $s$ com índice $i$:
 
 $$
 \hat{w} = \text{master\_scale} \cdot \text{sub\_scale}_s \cdot q_i + \text{master\_min} \cdot \text{sub\_zero}_s
@@ -1549,26 +1549,26 @@ A trajetória é clara: **a cada ~6 meses surge um método que melhora 2-bit ou 
 
 ### 11.10 Quantização sob a ótica taxa-distorção (Shannon)
 
-Vale uma rápida amarração teórica que prepara o terreno para o Post 06 (TurboQuant). A **teoria taxa-distorção** de Shannon estabelece, para uma fonte \(X\) com distribuição conhecida e medida de distorção \(d\), o **limite informacional** \(R(D)\) — o menor número de bits/símbolo necessário para reconstruir \(X\) com distorção média no máximo \(D\).
+Vale uma rápida amarração teórica que prepara o terreno para o Post 06 (TurboQuant). A **teoria taxa-distorção** de Shannon estabelece, para uma fonte $X$ com distribuição conhecida e medida de distorção $d$, o **limite informacional** $R(D)$ — o menor número de bits/símbolo necessário para reconstruir $X$ com distorção média no máximo $D$.
 
-Para fonte gaussiana \(X \sim \mathcal{N}(0, \sigma^2)\) com distorção MSE:
+Para fonte gaussiana $X \sim \mathcal{N}(0, \sigma^2)$ com distorção MSE:
 
 $$
 R(D) = \frac{1}{2} \log_2 \frac{\sigma^2}{D}, \quad D \le \sigma^2
 $$
 
-Equivalentemente, a **distorção mínima** com \(R\) bits/símbolo é \(D_{\min}(R) = \sigma^2 \cdot 2^{-2R}\). **Cada bit reduz a distorção por um fator de 4**. Eis a "regra dos 4×" que aparece empiricamente nos experimentos de quantização!
+Equivalentemente, a **distorção mínima** com $R$ bits/símbolo é $D_{\min}(R) = \sigma^2 \cdot 2^{-2R}$. **Cada bit reduz a distorção por um fator de 4**. Eis a "regra dos 4×" que aparece empiricamente nos experimentos de quantização!
 
-Métodos práticos não atingem \(R(D)\) na prática (precisariam de codificação vetorial em blocos infinitos). RTN é cerca de 1.4 vezes pior que o ótimo (em MSE). GPTQ chega muito perto do ótimo **sob a hipótese de bem-comportamento das ativações**. Métodos vetoriais (PQ, RVQ, e o próprio TurboQuant) podem chegar **mais perto** do ótimo do Shannon, especialmente em altos comprimentos de bloco.
+Métodos práticos não atingem $R(D)$ na prática (precisariam de codificação vetorial em blocos infinitos). RTN é cerca de 1.4 vezes pior que o ótimo (em MSE). GPTQ chega muito perto do ótimo **sob a hipótese de bem-comportamento das ativações**. Métodos vetoriais (PQ, RVQ, e o próprio TurboQuant) podem chegar **mais perto** do ótimo do Shannon, especialmente em altos comprimentos de bloco.
 
 A diferença filosófica:
 
 - **Quantização escalar** (RTN, INT4, NF4): cada coordenada é quantizada independentemente. Fácil, paralelo, sub-ótimo.
-- **Quantização vetorial** (PQ, KMeans, TurboQuant): blocos de \(d\) coordenadas viram um único índice em um codebook de tamanho \(2^{bd}\). Aproxima o limite de Shannon, mas **quadrático ou exponencial** em complexidade.
+- **Quantização vetorial** (PQ, KMeans, TurboQuant): blocos de $d$ coordenadas viram um único índice em um codebook de tamanho $2^{bd}$. Aproxima o limite de Shannon, mas **quadrático ou exponencial** em complexidade.
 
 Truques modernos (NVFP4 com micro-blocos de 16 valores, GGUF Q4_K com sub-blocos de 32) são **híbridos**: quantizam escalarmente, mas compartilham parâmetros (escala/zero) por bloco — uma "quantização vetorial leve" que escala bem.
 
-O TurboQuant usará uma terceira via: rotação aleatória + quantização escalar otimizada por coordenada + correção JL no residual, atingindo cota teórica \(4^{-b}\). Mas isso é o tema do Post 06.
+O TurboQuant usará uma terceira via: rotação aleatória + quantização escalar otimizada por coordenada + correção JL no residual, atingindo cota teórica $4^{-b}$. Mas isso é o tema do Post 06.
 
 ### 11.11 FAQ — perguntas comuns de quem começa
 
@@ -1594,7 +1594,7 @@ R: Porque é o **mais portátil**: roda em CPU, GPU, Mac, mobile, Raspberry Pi. 
 R: Importance matrix é um arquivo gerado por calibração que pondera quanto cada peso afeta a saída. **Sempre** use imatrix com IQ-quants (IQ4_XS, IQ3_*, IQ2_*). Para K-quants tradicionais, opcional, melhora levemente.
 
 **P: Quantos GB de RAM/VRAM eu preciso?**
-R: Para um modelo de \(N\) bilhões de parâmetros em formato \(b\) bits/peso: aproximadamente \(N \cdot b / 8\) GB para os pesos. Adicione 1-4 GB para o KV cache (depende do contexto), e ~1 GB de overhead do runtime. Para Llama 3 8B em Q4_K_M com contexto 8k: ~5 GB pesos + ~2 GB KV + 1 GB overhead = **8 GB de RAM/VRAM**.
+R: Para um modelo de $N$ bilhões de parâmetros em formato $b$ bits/peso: aproximadamente $N \cdot b / 8$ GB para os pesos. Adicione 1-4 GB para o KV cache (depende do contexto), e ~1 GB de overhead do runtime. Para Llama 3 8B em Q4_K_M com contexto 8k: ~5 GB pesos + ~2 GB KV + 1 GB overhead = **8 GB de RAM/VRAM**.
 
 **P: Quantização aumenta a latência ou diminui?**
 R: Em batch 1 (memory-bound), **diminui** — você lê menos bytes. Em batch grande (compute-bound), depende do hardware. Em FP8 H100 ou NVFP4 B200, **diminui** porque tensor cores aceleram. Em INT4 com kernel só de "dequant + FP16 matmul", pode **não mudar** (banda economizada compensada por kernel mais complexo).
@@ -1721,7 +1721,7 @@ Em 2026, **DeepSeek-V3 671B em INT4 + MoE pruning** roda em **2× H100** com lat
 - **Codebook**: tabela de valores de reconstrução em quantização não-uniforme. NF4 tem codebook de 16 entradas; AQLM aprende codebooks dinâmicos.
 - **Dequantization**: operação inversa, expande inteiros de volta para FP. Pode ocorrer **antes** do matmul (modo lento) ou **fundida** (modo rápido).
 - **Group size (g)**: número de pesos contíguos que compartilham uma escala/zero. Padrão `g=128`.
-- **Hessian**: matriz das segundas derivadas. Em GPTQ, \(H = X^\top X\) representa a curvatura local da reconstrução.
+- **Hessian**: matriz das segundas derivadas. Em GPTQ, $H = X^\top X$ representa a curvatura local da reconstrução.
 - **imatrix**: importance matrix em llama.cpp. Pondera a importância de cada peso baseada em magnitude de ativação.
 - **K-quant**: família de tipos GGUF (Q4_K, Q5_K, Q6_K) com super-blocos de 256 e escalas hierárquicas.
 - **I-quant / IQ-quant**: família mais nova com codebook learned + suporte a imatrix.
@@ -1946,9 +1946,9 @@ A regra geral para edge: **modelo pequeno + Q4_K_M** vence quase sempre. INT8 te
 
 Para servir em produção em cloud, a quantização tem efeito direto no custo por token:
 
-- **GPU H100 a US$ 4/h** (preço típico cloud): ~14 400 tokens/min em FP8 = ~US$ 4.6 por **milhão de tokens**.
-- Com NVFP4 em B200 (~US$ 6/h), aproximadamente o mesmo custo por token, mas **maior throughput agregado** (mais usuários simultâneos).
-- Em GPU consumer cloud (RTX 4090 a US$ 0.40/h): com AWQ INT4, ~9 200 tok/min = ~US$ 0.72 por milhão de tokens. **6× mais barato**.
+- **GPU H100 a US\$ 4/h** (preço típico cloud): ~14 400 tokens/min em FP8 = ~US\$ 4.6 por **milhão de tokens**.
+- Com NVFP4 em B200 (~US\$ 6/h), aproximadamente o mesmo custo por token, mas **maior throughput agregado** (mais usuários simultâneos).
+- Em GPU consumer cloud (RTX 4090 a US\$ 0.40/h): com AWQ INT4, ~9 200 tok/min = ~US\$ 0.72 por milhão de tokens. **6× mais barato**.
 
 A engenharia de quantização **é engenharia de custo**, especialmente em escala. Cada bit a menos é uma fração de centavo a menos por usuário-mês.
 
@@ -1973,7 +1973,7 @@ QAT em LLMs grandes é caro mas viável quando o objetivo é **2-bit ou inferior
 Pesquisa recente (Frantar et al., 2025; Dettmers e Zettlemoyer, 2023) mapeou **leis de escala** para quantização:
 
 - **Em escala fixa de modelo**: a qualidade pós-quantização cresce monotonicamente com bits, com **rendimentos decrescentes** acima de ~5-6 bits.
-- **A quantização em \(b\) bits reduz a "capacidade efetiva" do modelo** em aproximadamente \(\Delta(b)\), independente do tamanho.
+- **A quantização em $b$ bits reduz a "capacidade efetiva" do modelo** em aproximadamente $\Delta(b)$, independente do tamanho.
 - **Modelos maiores toleram mais quantização**: o Δ relativo (em ppl) de quantizar 70B em INT4 é **menor** que o Δ de quantizar 7B em INT4. Isso porque a redundância é maior em modelos grandes.
 - **Pareto front (tamanho × qualidade)**: para um orçamento fixo de **bits totais armazenados**, você quase sempre prefere **um modelo maior em menos bits** vs **um modelo menor em mais bits**. Ex.: Llama 70B em Q4 > Llama 13B em FP16 (mesmo tamanho ~35 GB), e por margem ampla.
 
@@ -2046,7 +2046,7 @@ Para fechar a parte aplicada, quatro cenários típicos com recomendações conc
 - Hardware: 1× A100 80GB ou 2× RTX 4090 (cloud).
 - Recomendação: **AWQ INT4** servido com **vLLM**.
 - Throughput: ~2000 req/min (batch contínuo, contexto 4k).
-- Custo: ~US$ 1.20/h, com TPS suficiente para cobrir 100 usuários ativos.
+- Custo: ~US\$ 1.20/h, com TPS suficiente para cobrir 100 usuários ativos.
 
 #### Cenário C: Empresa com SLA estrito de qualidade, modelo crítico
 
@@ -2066,7 +2066,7 @@ Para fechar a parte aplicada, quatro cenários típicos com recomendações conc
 
 ### 11.27 Mini-estudo empírico: o que muda quando você reduz bits
 
-Tomando um único `down_proj` de uma camada intermediária do Llama 3 8B (matriz \(14336 \times 4096\)), e comparando o erro de reconstrução em diferentes esquemas de quantização (referência: trabalho de calibração interna):
+Tomando um único `down_proj` de uma camada intermediária do Llama 3 8B (matriz $14336 \times 4096$), e comparando o erro de reconstrução em diferentes esquemas de quantização (referência: trabalho de calibração interna):
 
 | Esquema | Bits efetivos | MSE médio | MSE 99-percentil | Δ saída pós-camada (FP) |
 |---|---|---|---|---|
@@ -2092,7 +2092,7 @@ $$
 \Delta \text{ppl} \approx \alpha \cdot \sum_l \text{erro}_l \cdot \text{sensibilidade}_l
 $$
 
-onde \(\alpha\) é uma constante por modelo (~1-3 em Llama 3) e \(\text{sensibilidade}_l\) é alta em camadas profundas e em projeções de output.
+onde $\alpha$ é uma constante por modelo (~1-3 em Llama 3) e $\text{sensibilidade}_l$ é alta em camadas profundas e em projeções de output.
 
 ### 11.28 Apêndice de leituras complementares por subtema
 
@@ -2122,7 +2122,7 @@ E é exatamente esse o ponto de partida do **próximo post**.
 
 > **Post 05 — Quantização de KV cache: KIVI, KVQuant, CacheGen.** Vamos atacar o outro grande consumidor de memória: o KV cache. Veremos por que quantizar K e V é mais difícil que quantizar pesos (per-token outliers, anisotropia entre Key e Value, distribuições que mudam por camada e por cabeça), entender **KIVI** (per-channel para K, per-token para V), **KVQuant** (rotações + outliers preservados), **CacheGen** (transmissão eficiente), e como vLLM/PagedAttention está integrando KV-quant em produção.
 
-E, no post seguinte (06), entraremos no **TurboQuant** com rigor matemático: rotações aleatórias, transformada de Johnson-Lindenstrauss quantizada, dois estágios para estimativa não-enviesada de produto interno, cota \(4^{-b}\) — o tema que abre essa série.
+E, no post seguinte (06), entraremos no **TurboQuant** com rigor matemático: rotações aleatórias, transformada de Johnson-Lindenstrauss quantizada, dois estágios para estimativa não-enviesada de produto interno, cota $4^{-b}$ — o tema que abre essa série.
 
 ---
 
@@ -2255,5 +2255,4 @@ AutoModel.from_pretrained('X', quantization_config=BitsAndBytesConfig(load_in_4b
 (Subjetivo onde necessário; ordens de magnitude robustas.)
 
 ---
-
 

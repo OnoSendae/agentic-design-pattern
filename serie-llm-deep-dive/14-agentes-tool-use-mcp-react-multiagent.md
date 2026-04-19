@@ -10,7 +10,7 @@
 
 - Um **agente LLM** = `LLM + memória + tools + planejamento + loop`. Tira qualquer item, e o que sobra é um *workflow* (rígido) ou um *function-calling assistant* (sem ciclo). O loop autônomo é o que **transforma um chat em um agente**.
 - Em 2026 a stack converge em torno de quatro primitivas: **(1) tool calling** nativo do modelo (OpenAI, Anthropic, Gemini, Llama 3.1+, Qwen 2.5+), **(2) MCP — Model Context Protocol** como o "USB-C" entre LLM e mundo (97 M downloads/mês de SDK em nov/2025; ~20 mil servers indexados em mar/2026; doado para a Linux Foundation via *Agentic AI Foundation*), **(3) padrões de loop** (ReAct, Plan-and-Solve, Reflexion, Swarm), e **(4) frameworks de orquestração** (LangGraph, CrewAI, AutoGen v0.4, OpenAI Agents SDK, smolagents, Pydantic AI, Letta).
-- **Computer use** saiu da gambiarra para produto: Claude Computer Use (out/2024) → Anthropic Dispatch (2026), OpenAI Operator/CUA (jan/2025) e Google Project Mariner (dez/2024 → preview pago $250/mês em 2026) viraram serviços comerciais. Modelos especializados em pixels (Gemini 2.5 Computer Use, Claude 3.7 Vision) sustentam a camada.
+- **Computer use** saiu da gambiarra para produto: Claude Computer Use (out/2024) → Anthropic Dispatch (2026), OpenAI Operator/CUA (jan/2025) e Google Project Mariner (dez/2024 → preview pago \$250/mês em 2026) viraram serviços comerciais. Modelos especializados em pixels (Gemini 2.5 Computer Use, Claude 3.7 Vision) sustentam a camada.
 - **Multi-agent** é simultaneamente onde a *emergent capability* aparece e onde os custos explodem: 5–50 chamadas LLM por tarefa é normal. Sem **prompt caching** (-90% Anthropic, OpenAI prompt cache, Gemini context cache), **model routing** (modelo barato para passos triviais, modelo caro para decisões) e **early stopping**, a conta destrói o ROI.
 - **Segurança de agente** é tema distinto de segurança de LLM puro. O *trifecta letal* (Simon Willison): (a) acesso a dados privados + (b) exposição a conteúdo controlado por terceiros + (c) capacidade de comunicação externa = exfiltração quase garantida. Mitigações: **allowlists**, **sandboxing** (e2b, Modal sandbox, Daytona, Browserbase), **HITL** (Human-in-the-Loop) para ações destrutivas, **idempotência** por step.
 - **Eval** de agentes é eval de **trajetória**, não só de resposta final. Benchmarks que importam em 2026: **τ³-bench** (Sierra, customer service multi-turn — Gemini 3 Pro lidera com 85.4%, Claude Sonnet 4.5 com 84.7%), **GAIA** (general assistant), **WebArena/WebVoyager/OSWorld** (web/desktop agents), **AgentBench**, **AgentClinic**.
@@ -677,7 +677,7 @@ Nunca dar `shell.exec` direto no host. Use containers, micro-VMs (e2b, Modal), r
 Por sessão e por agente:
 
 - **Tokens**: máx. 200k/sessão.
-- **$$$**: máx. $1/task, $20/dia/usuário.
+- **$$$**: máx. \$1/task, \$20/dia/usuário.
 - **Tool calls**: máx. 50/task.
 - **Wall time**: máx. 5 min/task (ou 24h para long-horizon).
 
@@ -920,9 +920,9 @@ Em 2026, o estado dos serviços comerciais (validação WebSearch):
 
 | Serviço | Vendor | Escopo | Preço (2026) | Modelo | 24/7 cloud | Local files |
 |---|---|---|---|---|---|---|
-| **Claude Dispatch** (sucessor de Computer Use) | Anthropic | Desktop apps + files + browser | $20–$200/mo | Claude (3.7+/4) | Não (host local) | Sim |
-| **OpenAI Operator** | OpenAI | Browser only | $20/mo (via ChatGPT Plus) | GPT-5.4 | Sim (cloud) | Não |
-| **Google Project Mariner** (preview pago) | Google | Browser/web + cloud VMs | $250/mo | Gemini 2.x/3 | Sim (cloud VMs) | Não |
+| **Claude Dispatch** (sucessor de Computer Use) | Anthropic | Desktop apps + files + browser | \$20–\$200/mo | Claude (3.7+/4) | Não (host local) | Sim |
+| **OpenAI Operator** | OpenAI | Browser only | \$20/mo (via ChatGPT Plus) | GPT-5.4 | Sim (cloud) | Não |
+| **Google Project Mariner** (preview pago) | Google | Browser/web + cloud VMs | \$250/mo | Gemini 2.x/3 | Sim (cloud VMs) | Não |
 
 Open-source / framework:
 
@@ -1087,7 +1087,7 @@ Um agente típico faz **5–50 LLM calls por task**. Multiplique:
 50 calls × 8k tokens médios in × $3/1M (Claude Sonnet 4.5) = $1.20/task
 ```
 
-Para 10k tasks/dia → **$12k/dia = $360k/mês**. Sem otimização, **destrói** o ROI.
+Para 10k tasks/dia → **\$12k/dia = \$360k/mês**. Sem otimização, **destrói** o ROI.
 
 ### 17.2 Estratégias
 
@@ -1556,7 +1556,7 @@ if __name__ == "__main__":
 ### Web search 2026 (validação)
 
 - **MCP em 2026**: ~97 M downloads SDK/mês (nov/2025); ~19.831 servers indexados (mar/2026); doação para Linux Foundation (Agentic AI Foundation, dez/2025). Adoção em todas as principais frameworks (LangChain, LlamaIndex, AutoGen, CrewAI) e hosts (Cursor, VS Code Copilot, JetBrains, Zed, Cline, Claude Desktop, ChatGPT). Roadmap 2026 prioriza transport scalability, agent-to-agent, enterprise governance.
-- **Computer use 2026**: Claude Dispatch ($20–$200/mo) — desktop+files+browser, local; OpenAI Operator ($20/mo via ChatGPT Plus) — browser cloud; Google Mariner ($250/mo preview pago) — browser/web cloud VMs. Modelos especializados: Gemini 2.5 Computer Use, Claude 3.7+ Vision.
+- **Computer use 2026**: Claude Dispatch (\$20–\$200/mo) — desktop+files+browser, local; OpenAI Operator (\$20/mo via ChatGPT Plus) — browser cloud; Google Mariner (\$250/mo preview pago) — browser/web cloud VMs. Modelos especializados: Gemini 2.5 Computer Use, Claude 3.7+ Vision.
 - **AutoGen v0.4 vs LangGraph vs CrewAI (2026)**: LangGraph líder em deployments produção (~40% mais que peers, ~48 k stars), state-machine + persistence + LangSmith. CrewAI: prototipagem rápida, role-based, 25% menos tokens, fraco em branching. AutoGen v0.4: event-driven, async, distribuído — bom para multi-agent dinâmico, curva mais íngreme.
 - **OpenAI Agents SDK (2025)**: tracing on-by-default; spans `agent_span`, `generation_span`, `function_span`, `handoff_span`; `flush_traces()` para workers longos; handoffs como tools com `tool_name_override`, `on_handoff`, `input_filter`.
 - **τ-bench leaderboard (2026)**: Gemini 3 Pro 85.4% > Claude Sonnet 4.5 84.7% > DeepSeek V3.2 80.4% > GPT-5 80.0% > Qwen3-Max 72.0%. Versão atual τ³-bench inclui banking + voice modality.

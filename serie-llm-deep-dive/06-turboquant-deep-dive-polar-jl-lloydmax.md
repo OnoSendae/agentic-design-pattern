@@ -10,8 +10,8 @@
 
 ## TL;DR
 
-- **TurboQuant** é um esquema de **quantização vetorial online**, **data-oblivious** (não precisa calibrar com dados) que comprime cada coordenada de um vetor em **`b` bits** mantendo distorção próxima do **limite de Shannon** (\(\propto 4^{-b}\)).
-- A ideia central: **rotacionar aleatoriamente** o vetor para a esfera unitária \(S^{d-1}\) (representação **polar**: norma + direção) e quantizar cada coordenada com um **quantizador escalar Lloyd–Max** desenhado para a **distribuição Beta** que aparece naturalmente nas projeções uniformes em alta dimensão.
+- **TurboQuant** é um esquema de **quantização vetorial online**, **data-oblivious** (não precisa calibrar com dados) que comprime cada coordenada de um vetor em **`b` bits** mantendo distorção próxima do **limite de Shannon** ($\propto 4^{-b}$).
+- A ideia central: **rotacionar aleatoriamente** o vetor para a esfera unitária $S^{d-1}$ (representação **polar**: norma + direção) e quantizar cada coordenada com um **quantizador escalar Lloyd–Max** desenhado para a **distribuição Beta** que aparece naturalmente nas projeções uniformes em alta dimensão.
 - Tem **duas variantes**: **MSE** (Algoritmo 1) — minimiza erro quadrático na reconstrução; **Inner Product** (Algoritmo 2 / Teorema 2) — usa um **bit de correção** estilo **QJL** no resíduo para garantir **estimador não-enviesado** de produto interno (ideal para atenção e busca vetorial).
 - Resultados reportados pelo paper são fortes: **3,5 bits/canal** mantém qualidade praticamente intacta em Llama-3.1-8B (LongBench, NIAH); **2,5 bits/canal** sofre degradação marginal; em recall de busca vetorial supera **Product Quantization (PQ)** com **tempo de indexação ~zero**.
 - A **comunidade** aderiu rápido: implementações em **MLX** (Prince Kanuma / sharpner, rachittshah), **`llama.cpp`** (turboquant_plus, turboquant-cuda) e protótipos para vLLM aparecem desde abril/2025.
@@ -85,35 +85,39 @@ Essa é a alavanca conceitual. O resto do TurboQuant é **engenharia matemática
 
 ---
 
-## 3. Lema da Beta: por que coordenadas de \(S^{d-1}\) seguem uma Beta
+## 3. Lema da Beta: por que coordenadas de $S^{d-1}$ seguem uma Beta
 
 ### 3.1. Enunciado informal
 
-> **Lema (Beta na esfera).** Seja \(y\) um vetor uniformemente distribuído na esfera unitária \(S^{d-1}\subset \mathbb{R}^d\). Então cada coordenada \(y_j\) tem densidade marginal
+> **Lema (Beta na esfera).** Seja $y$ um vetor uniformemente distribuído na esfera unitária $S^{d-1}\subset \mathbb{R}^d$. Então cada coordenada $y_j$ tem densidade marginal
 >
-> \[
+> 
+
+$$
 >  f_X(t) \;=\; \frac{\Gamma(d/2)}{\sqrt{\pi}\,\Gamma((d-1)/2)} \,(1-t^2)^{(d-3)/2}, \qquad t\in[-1,1].
-> \]
 >
-> Essa densidade pertence à família **Beta simétrica** (após reescala para \([0,1]\)) e, em alta dimensão, **converge para uma normal** \(\mathcal{N}(0, 1/d)\).
+$$
+
+>
+> Essa densidade pertence à família **Beta simétrica** (após reescala para $[0,1]$) e, em alta dimensão, **converge para uma normal** $\mathcal{N}(0, 1/d)$.
 
 ### 3.2. Por que isso vale
 
-A construção mais limpa da **uniforme em \(S^{d-1}\)** é gerar \(g \sim \mathcal{N}(0, I_d)\) e tomar \(y = g/\|g\|\). Por **simetria rotacional da Gaussiana esférica**, \(y\) é uniforme na esfera. A coordenada \(y_1 = g_1/\|g\|\) é a razão entre uma normal-padrão e a raiz da soma de \(d\) normais ao quadrado, o que produz exatamente a Beta simétrica acima.
+A construção mais limpa da **uniforme em $S^{d-1}$** é gerar $g \sim \mathcal{N}(0, I_d)$ e tomar $y = g/\|g\|$. Por **simetria rotacional da Gaussiana esférica**, $y$ é uniforme na esfera. A coordenada $y_1 = g_1/\|g\|$ é a razão entre uma normal-padrão e a raiz da soma de $d$ normais ao quadrado, o que produz exatamente a Beta simétrica acima.
 
-Operacionalmente, no TurboQuant, **forçamos** essa distribuição: dado um vetor de entrada \(x\) (um *Key* ou *Value* qualquer), aplicamos uma **matriz ortogonal aleatória** \(\Pi\) e trabalhamos com \(y = \Pi x\). Isso **destrói a estrutura adversarial das coordenadas** (outliers, polaridade) — qualquer estrutura especial de \(x\) é "embaralhada" pela rotação. Como \(\Pi\) é ortogonal, **todas as distâncias e produtos internos são preservados**, então não perdemos informação:
+Operacionalmente, no TurboQuant, **forçamos** essa distribuição: dado um vetor de entrada $x$ (um *Key* ou *Value* qualquer), aplicamos uma **matriz ortogonal aleatória** $\Pi$ e trabalhamos com $y = \Pi x$. Isso **destrói a estrutura adversarial das coordenadas** (outliers, polaridade) — qualquer estrutura especial de $x$ é "embaralhada" pela rotação. Como $\Pi$ é ortogonal, **todas as distâncias e produtos internos são preservados**, então não perdemos informação:
 
-\[
+$$
 \|x_1 - x_2\|_2 \;=\; \|\Pi x_1 - \Pi x_2\|_2,
 \qquad
 \langle x_1, x_2\rangle \;=\; \langle \Pi x_1, \Pi x_2\rangle.
-\]
+$$
 
 A **rotação aleatória** é a versão "bonita" do mesmo truque que o KVQuant fazia com `Hadamard transform` para "espalhar" outliers — com a diferença de que aqui ela é **central no design**, não um patch.
 
 ### 3.3. Implementação prática da rotação
 
-Na prática, ninguém usa uma matriz ortogonal completa de \(d\times d\) (custo \(\mathcal{O}(d^2)\) por vetor). Usa-se uma **transformada Walsh–Hadamard randomizada** (sinais aleatórios + butterfly de Hadamard), que é **ortogonal** e tem custo **\(\mathcal{O}(d \log d)\)**. Esse detalhe entra como **debate de performance** mais adiante: a rotação **não é grátis** e em prefill longo o overhead aparece.
+Na prática, ninguém usa uma matriz ortogonal completa de $d\times d$ (custo $\mathcal{O}(d^2)$ por vetor). Usa-se uma **transformada Walsh–Hadamard randomizada** (sinais aleatórios + butterfly de Hadamard), que é **ortogonal** e tem custo **$\mathcal{O}(d \log d)$**. Esse detalhe entra como **debate de performance** mais adiante: a rotação **não é grátis** e em prefill longo o overhead aparece.
 
 ```mermaid
 flowchart LR
@@ -125,41 +129,41 @@ flowchart LR
 
 ---
 
-## 4. Shannon Lower Bound: a física da informação diz **\(4^{-b}\)**
+## 4. Shannon Lower Bound: a física da informação diz **$4^{-b}$**
 
 ### 4.1. Rate-distortion: o limite teórico
 
 A pergunta mais fundamental da teoria da informação aplicada à compressão é:
 
-> Dada uma fonte \(X\) e uma medida de distorção \(D\), qual é a **menor taxa** \(R\) (bits por amostra) necessária para codificar \(X\) com distorção esperada \(\leq D\)?
+> Dada uma fonte $X$ e uma medida de distorção $D$, qual é a **menor taxa** $R$ (bits por amostra) necessária para codificar $X$ com distorção esperada $\leq D$?
 
-A resposta vem da **função rate-distortion** \(R(D)\) de Shannon (1948, 1959). Para a **Gaussiana \(\mathcal{N}(0, \sigma^2)\) sob distorção MSE**:
+A resposta vem da **função rate-distortion** $R(D)$ de Shannon (1948, 1959). Para a **Gaussiana $\mathcal{N}(0, \sigma^2)$ sob distorção MSE**:
 
-\[
+$$
 R(D) \;=\; \tfrac{1}{2}\log_2\!\left(\frac{\sigma^2}{D}\right), \qquad 0 \le D \le \sigma^2.
-\]
+$$
 
 Invertendo, a **distortion-rate** é:
 
-\[
+$$
 D(R) \;=\; \sigma^2 \cdot 2^{-2R} \;=\; \sigma^2 \cdot 4^{-R}.
-\]
+$$
 
-Em palavras: **cada bit adicional reduz a distorção por um fator 4**. Esse \(4^{-R}\) (ou \(4^{-b}\), trocando \(R\) por bits/coordenada \(b\)) é o famoso **Shannon Lower Bound (SLB)** para fontes gaussianas em MSE.
+Em palavras: **cada bit adicional reduz a distorção por um fator 4**. Esse $4^{-R}$ (ou $4^{-b}$, trocando $R$ por bits/coordenada $b$) é o famoso **Shannon Lower Bound (SLB)** para fontes gaussianas em MSE.
 
 ### 4.2. Analogia: o limite da física da informação
 
 Pense em zoom de imagem digital: ao **dobrar** a resolução em bits por pixel, você não dobra a fidelidade — você a **quadruplica** (porque distorção é em escala quadrática). Esse `4^{-b}` é o **chão termodinâmico** da compressão lossy: ninguém, com nenhum algoritmo, pode quebrá-lo de forma sistemática. Toda quantização real tem **constante multiplicativa** acima dele:
 
-\[
+$$
 D_{\text{operacional}}(b) \;=\; C \cdot 4^{-b}, \qquad C \ge 1.
-\]
+$$
 
-A **glória de um quantizador** é minimizar essa constante \(C\). Para quantização escalar uniforme em alta resolução, **Panter–Dite (1951)** dá \(C \approx \frac{\sqrt{3}\pi}{2} \approx 2{,}72\) para a Gaussiana — e esse é justamente o número que o TurboQuant **alcança** (ou \(\sqrt{3\pi}/2 \approx 1{,}53\), dependendo de qual radical o paper usa; ver nota em `transcripts/turboquant-docs/07-limites-inferiores-e-experimentos.md`).
+A **glória de um quantizador** é minimizar essa constante $C$. Para quantização escalar uniforme em alta resolução, **Panter–Dite (1951)** dá $C \approx \frac{\sqrt{3}\pi}{2} \approx 2{,}72$ para a Gaussiana — e esse é justamente o número que o TurboQuant **alcança** (ou $\sqrt{3\pi}/2 \approx 1{,}53$, dependendo de qual radical o paper usa; ver nota em `transcripts/turboquant-docs/07-limites-inferiores-e-experimentos.md`).
 
 ### 4.3. Por que isso é grande coisa
 
-O TurboQuant é, do ponto de vista teórico, uma **das primeiras famílias de quantizadores online, data-oblivious e GPU-friendly** que **chega perto** de \(4^{-b}\) — algo que algoritmos como Product Quantization (PQ) só alcançavam **com calibração offline pesada e códigos densos**. Ele faz isso explorando a **Beta da esfera**: quantizar uma fonte cuja distribuição é **conhecida e quase-Gaussiana** é exatamente o cenário em que Lloyd–Max é ótimo — e assim a **constante de Panter–Dite** entra como um teorema, não como um chute.
+O TurboQuant é, do ponto de vista teórico, uma **das primeiras famílias de quantizadores online, data-oblivious e GPU-friendly** que **chega perto** de $4^{-b}$ — algo que algoritmos como Product Quantization (PQ) só alcançavam **com calibração offline pesada e códigos densos**. Ele faz isso explorando a **Beta da esfera**: quantizar uma fonte cuja distribuição é **conhecida e quase-Gaussiana** é exatamente o cenário em que Lloyd–Max é ótimo — e assim a **constante de Panter–Dite** entra como um teorema, não como um chute.
 
 ```mermaid
 flowchart LR
@@ -178,17 +182,20 @@ Antes do TurboQuant, os mesmos autores (Zandieh, Daliri, Hadian, …) publicaram
 
 ### 5.1. Ideia central do QJL
 
-- Aplique uma **projeção JL** \(S \in \mathbb{R}^{m\times d}\) (entradas \(\sim \mathcal{N}(0,1)\)) ao vetor \(x\) — isso é **Johnson–Lindenstrauss**: \(Sx\) preserva distâncias e produtos internos com alta probabilidade quando \(m\) é proporcional a \(\log n / \epsilon^2\).
-- **Quantize só o sinal**: \(q = \mathrm{sign}(Sx) \in \{-1, +1\}^m\). É **1 bit por coordenada projetada**.
-- **Estimador de produto interno**: aplique \(S\) também ao vetor de consulta \(y\) (não quantizado) e use
-  \[
-  \widehat{\langle x, y\rangle} \;=\; \frac{1}{m}\sqrt{\frac{\pi}{2}}\,\|x\|\, \langle q,\, S y\rangle.
-  \]
+- Aplique uma **projeção JL** $S \in \mathbb{R}^{m\times d}$ (entradas $\sim \mathcal{N}(0,1)$) ao vetor $x$ — isso é **Johnson–Lindenstrauss**: $Sx$ preserva distâncias e produtos internos com alta probabilidade quando $m$ é proporcional a $\log n / \epsilon^2$.
+- **Quantize só o sinal**: $q = \mathrm{sign}(Sx) \in \{-1, +1\}^m$. É **1 bit por coordenada projetada**.
+- **Estimador de produto interno**: aplique $S$ também ao vetor de consulta $y$ (não quantizado) e use
+  
+
+$$
+\widehat{\langle x, y\rangle} \;=\; \frac{1}{m}\sqrt{\frac{\pi}{2}}\,\|x\|\, \langle q,\, S y\rangle.
+$$
+
   Esse estimador é **não-enviesado** e tem **variância controlada** — é o famoso **estimador assimétrico** do JL com sinal.
 
 ### 5.2. Por que QJL é "zero overhead"
 
-Esquemas de quantização tradicionais (INT8 *per-tensor*, *per-channel*) precisam armazenar **escala** \(s\) e **zero point** \(z\) por bloco, gastando 1–2 bits adicionais por elemento. **QJL não precisa**: o sinal não tem escala. A única coisa armazenada é \(\|x\|\) (uma vez por vetor) e os bits de sinal. Por isso o título: **zero overhead**.
+Esquemas de quantização tradicionais (INT8 *per-tensor*, *per-channel*) precisam armazenar **escala** $s$ e **zero point** $z$ por bloco, gastando 1–2 bits adicionais por elemento. **QJL não precisa**: o sinal não tem escala. A única coisa armazenada é $\|x\|$ (uma vez por vetor) e os bits de sinal. Por isso o título: **zero overhead**.
 
 ### 5.3. Resultados do QJL
 
@@ -219,24 +226,27 @@ flowchart LR
 
 ## 6. TurboQuant — variante MSE (Lloyd–Max em coordenadas polares)
 
-Vamos abrir o **Algoritmo 1** do paper. Esta é a variante focada em **minimizar erro de reconstrução** \(\mathbb{E}\|x - \hat x\|^2\).
+Vamos abrir o **Algoritmo 1** do paper. Esta é a variante focada em **minimizar erro de reconstrução** $\mathbb{E}\|x - \hat x\|^2$.
 
-### 6.1. Definição formal de \(D_{\text{mse}}\)
+### 6.1. Definição formal de $D_{\text{mse}}$
 
 Lembrando do Post 04 e do paper:
 
-\[
+$$
 D_{\text{mse}}(b) \;:=\; \mathbb{E}_Q\!\left[\|x - \hat x\|_2^2\right], \qquad \hat x = Q^{-1}(Q(x)).
-\]
+$$
 
-A largura média de bits por coordenada é \(b = B/d\). O paper prova:
+A largura média de bits por coordenada é $b = B/d$. O paper prova:
 
-> **Teorema 1 (limite MSE do TurboQuant).** Para todo \(x \in S^{d-1}\) e \(b \ge 0\),
-> \[
+> **Teorema 1 (limite MSE do TurboQuant).** Para todo $x \in S^{d-1}$ e $b \ge 0$,
+> 
+
+$$
 >  D_{\text{mse}}(b) \;\le\; \frac{\sqrt{3\pi}}{2}\cdot 4^{-b}.
-> \]
+>
+$$
 
-Ou seja, a constante operacional do TurboQuant é \(\sqrt{3\pi}/2 \approx 1{,}53\), próxima do ótimo de Panter–Dite.
+Ou seja, a constante operacional do TurboQuant é $\sqrt{3\pi}/2 \approx 1{,}53$, próxima do ótimo de Panter–Dite.
 
 ### 6.2. Os três passos do Algoritmo 1
 
@@ -258,33 +268,36 @@ flowchart TB
   end
 ```
 
-**Passo 1 — Rotação aleatória \(\Pi\).** Geramos uma matriz ortogonal aleatória (na prática, uma transformada Walsh–Hadamard randomizada) e calculamos \(y = \Pi x\). Pelo Lema da Beta, cada \(y_j\) é distribuído \(\sim \mathrm{Beta}(d/2, d/2)\) em \([-1, 1]\) (depois de reescalar pela norma).
+**Passo 1 — Rotação aleatória $\Pi$.** Geramos uma matriz ortogonal aleatória (na prática, uma transformada Walsh–Hadamard randomizada) e calculamos $y = \Pi x$. Pelo Lema da Beta, cada $y_j$ é distribuído $\sim \mathrm{Beta}(d/2, d/2)$ em $[-1, 1]$ (depois de reescalar pela norma).
 
 **Passo 2 — Quantização escalar Lloyd–Max por coordenada.** Resolvemos uma vez (offline) o problema de Lloyd–Max para a densidade Beta:
 
-\[
+$$
 C(f_X, b) \;:=\; \min_{c_1 \le \cdots \le c_{2^b}} \;\sum_{i=1}^{2^b} \int_{m_{i-1}}^{m_i} (t - c_i)^2 \, f_X(t)\, dt,
-\]
+$$
 
-onde \(m_i = (c_i + c_{i+1})/2\) são os midpoints (fronteiras de Voronoi 1D). Os **centroides** \(c_1, \dots, c_{2^b}\) são as **médias condicionais** em cada célula. O algoritmo iterativo de Lloyd alterna **fronteiras → centroides → fronteiras → …** até convergir. Para a Beta de \(S^{d-1}\) em alta dim, esse codebook é **universal** — depende só de \(d\) e \(b\), **não do dado**.
+onde $m_i = (c_i + c_{i+1})/2$ são os midpoints (fronteiras de Voronoi 1D). Os **centroides** $c_1, \dots, c_{2^b}$ são as **médias condicionais** em cada célula. O algoritmo iterativo de Lloyd alterna **fronteiras → centroides → fronteiras → …** até convergir. Para a Beta de $S^{d-1}$ em alta dim, esse codebook é **universal** — depende só de $d$ e $b$, **não do dado**.
 
-**Passo 3 — Reconstrução.** Cada coordenada vira o centroide do seu intervalo: \(\tilde y_j = c_{\mathrm{idx}_j}\). E a **rotação inversa** (que é \(\Pi^T\) por ortogonalidade) recupera \(\tilde x = \Pi^T \tilde y\).
+**Passo 3 — Reconstrução.** Cada coordenada vira o centroide do seu intervalo: $\tilde y_j = c_{\mathrm{idx}_j}$. E a **rotação inversa** (que é $\Pi^T$ por ortogonalidade) recupera $\tilde x = \Pi^T \tilde y$.
 
-### 6.3. Por que isso atinge \(4^{-b}\)
+### 6.3. Por que isso atinge $4^{-b}$
 
 A **prova** do Teorema 1 é elegante:
 
-1. **Ortogonalidade preserva norma**: \(\|x - \tilde x\|^2 = \|y - \tilde y\|^2\).
-2. **Simetria das coordenadas**: como todas as \(y_j\) têm a mesma marginal Beta e o quantizador é o mesmo,
-   \[
-    D_{\text{mse}} = d \cdot \mathbb{E}|y_1 - \tilde y_1|^2 = d \cdot C(f_X, b).
-   \]
-3. **Lloyd–Max + Panter–Dite** dão \(C(f_X, b) \le \frac{\sqrt{3\pi}}{2d} \cdot 4^{-b}\) em alta resolução.
-4. Multiplicando por \(d\) (passo 2): \(D_{\text{mse}} \le \frac{\sqrt{3\pi}}{2} \cdot 4^{-b}\).
+1. **Ortogonalidade preserva norma**: $\|x - \tilde x\|^2 = \|y - \tilde y\|^2$.
+2. **Simetria das coordenadas**: como todas as $y_j$ têm a mesma marginal Beta e o quantizador é o mesmo,
+   
+
+$$
+D_{\text{mse}} = d \cdot \mathbb{E}|y_1 - \tilde y_1|^2 = d \cdot C(f_X, b).
+$$
+
+3. **Lloyd–Max + Panter–Dite** dão $C(f_X, b) \le \frac{\sqrt{3\pi}}{2d} \cdot 4^{-b}$ em alta resolução.
+4. Multiplicando por $d$ (passo 2): $D_{\text{mse}} \le \frac{\sqrt{3\pi}}{2} \cdot 4^{-b}$.
 
 ### 6.4. Tabela numérica (do paper, valores finos para baixo `b`)
 
-| `b` | \(D_{\text{mse}}\) (cota fina) | Compressão vs `fp16` |
+| `b` | $D_{\text{mse}}$ (cota fina) | Compressão vs `fp16` |
 |---:|---:|---:|
 | 1 | 0,36 | 16× |
 | 2 | 0,117 | 8× |
@@ -319,24 +332,26 @@ A variante MSE é ótima para reconstrução **isotrópica**, mas tem um problem
 
 O exemplo mais limpo está no paper, com `b = 1` (1 bit por coord):
 
-- Os dois centroides ótimos para a Beta(d/2, d/2) ficam aproximadamente em \(\pm \sqrt{2/(\pi d)}\).
-- A reconstrução \(\hat x_{\text{mse}}\) acaba sendo essencialmente \(\sqrt{2/(\pi d)}\cdot \mathrm{sign}(\Pi x)\) rotacionado de volta.
+- Os dois centroides ótimos para a Beta(d/2, d/2) ficam aproximadamente em $\pm \sqrt{2/(\pi d)}$.
+- A reconstrução $\hat x_{\text{mse}}$ acaba sendo essencialmente $\sqrt{2/(\pi d)}\cdot \mathrm{sign}(\Pi x)$ rotacionado de volta.
 - Calculando o produto interno esperado:
-  \[
-   \mathbb{E}\langle y, \hat x_{\text{mse}}\rangle \;=\; \frac{2}{\pi}\,\langle y, x\rangle.
-  \]
+  
 
-Isso é um **viés multiplicativo de \(2/\pi \approx 0{,}637\)** — toda a sua atenção/similaridade fica **encolhida** por esse fator. Pior: o viés é **dependente da geometria** (depende de \(b\) e \(d\)). Em softmax de atenção, viés multiplicativo desloca **logits**, então a distribuição de atenção não é só "menos confiante", é **diferente**. Em ranking IP de busca vetorial, candidatos próximos ao limiar saltam de posição.
+$$
+\mathbb{E}\langle y, \hat x_{\text{mse}}\rangle \;=\; \frac{2}{\pi}\,\langle y, x\rangle.
+$$
+
+Isso é um **viés multiplicativo de $2/\pi \approx 0{,}637$** — toda a sua atenção/similaridade fica **encolhida** por esse fator. Pior: o viés é **dependente da geometria** (depende de $b$ e $d$). Em softmax de atenção, viés multiplicativo desloca **logits**, então a distribuição de atenção não é só "menos confiante", é **diferente**. Em ranking IP de busca vetorial, candidatos próximos ao limiar saltam de posição.
 
 ### 7.2. A solução: **dois estágios + bit de correção QJL**
 
 A ideia é **decompor o vetor**:
 
-\[
+$$
 x \;=\; \underbrace{\hat x_{\text{mse}}}_{\text{primeira etapa: }(b-1)\text{ bits}} \;+\; \underbrace{r}_{\text{residuo}}
-\]
+$$
 
-E aplicar **QJL no resíduo \(r\)** com **1 bit por coordenada projetada**, gastando o "último bit" do orçamento.
+E aplicar **QJL no resíduo $r$** com **1 bit por coordenada projetada**, gastando o "último bit" do orçamento.
 
 ```mermaid
 flowchart TB
@@ -355,7 +370,7 @@ flowchart TB
 
 **Setup (uma vez):**
 - Instanciar `TurboQuant_mse` com largura `(b-1)` bits/coord.
-- Amostrar matriz JL \(S \in \mathbb{R}^{d\times d}\) com entradas Gaussianas i.i.d. (na prática, novamente uma Walsh–Hadamard randomizada).
+- Amostrar matriz JL $S \in \mathbb{R}^{d\times d}$ com entradas Gaussianas i.i.d. (na prática, novamente uma Walsh–Hadamard randomizada).
 
 **Quant_prod(x):**
 1. `idx = Quant_mse(x)` — codifica em `(b-1)` bits/coord.
@@ -391,18 +406,18 @@ sequenceDiagram
     Q->>Q: soma final = <y, x_mse_tilde> + <y, x_qjl_tilde><br/>= estimador NAO-ENVIESADO de <y, x>
 ```
 
-### 7.6. Teorema 2 — não-enviesamento + cota \(D_{\text{prod}}\)
+### 7.6. Teorema 2 — não-enviesamento + cota $D_{\text{prod}}$
 
 O paper formaliza:
 
-> **Teorema 2 (TurboQuant IP).** Para todo \(x \in S^{d-1}\), \(y \in \mathbb{R}^d\), com \(\tilde x\) saindo do `DeQuant_prod`:
+> **Teorema 2 (TurboQuant IP).** Para todo $x \in S^{d-1}$, $y \in \mathbb{R}^d$, com $\tilde x$ saindo do `DeQuant_prod`:
 >
-> 1. **Não-enviesamento:** \(\mathbb{E}_{\tilde x}[\langle y, \tilde x\rangle] = \langle y, x\rangle\).
-> 2. **Distorção:** \(D_{\text{prod}}(b) := \mathbb{E}_{\tilde x}\big[(\langle y, x\rangle - \langle y, \tilde x\rangle)^2\big] \;\le\; \dfrac{\sqrt{3\pi}}{2} \cdot \dfrac{\|y\|_2^2}{d} \cdot 4^{-b}.\)
+> 1. **Não-enviesamento:** $\mathbb{E}_{\tilde x}[\langle y, \tilde x\rangle] = \langle y, x\rangle$.
+> 2. **Distorção:** $D_{\text{prod}}(b) := \mathbb{E}_{\tilde x}\big[(\langle y, x\rangle - \langle y, \tilde x\rangle)^2\big] \;\le\; \dfrac{\sqrt{3\pi}}{2} \cdot \dfrac{\|y\|_2^2}{d} \cdot 4^{-b}.$
 
 E a tabela numérica:
 
-| `b` | \(D_{\text{prod}}\) (fina, multiplicar por \(\|y\|^2/d\)) |
+| `b` | $D_{\text{prod}}$ (fina, multiplicar por $\|y\|^2/d$) |
 |---:|---:|
 | 1 | 1,57 |
 | 2 | 0,56 |
@@ -411,10 +426,10 @@ E a tabela numérica:
 
 A prova é uma decomposição **viés–variância** clássica:
 
-- **Esperança**: condicionando em `x_mse_tilde`, o estimador QJL é construído (Lemma 4 do paper) para que \(\mathbb{E}[\langle y, x_{\text{qjl}}\tilde{}\rangle | x_{\text{mse}}\tilde{}] = \langle y, r\rangle\). Pela lei da esperança total, \(\mathbb{E}\langle y, \tilde x\rangle = \langle y, x_{\text{mse}}\tilde{}\rangle + \langle y, r\rangle = \langle y, x\rangle\).
-- **Variância**: \(\mathrm{Var}(\langle y, x_{\text{qjl}}\tilde{}\rangle | x_{\text{mse}}\tilde{}) \le \frac{\pi}{2d}\|r\|^2\|y\|^2\). Tomando esperança em \(\|r\|^2\) (que é \(D_{\text{mse}}\) do estágio 1) e aplicando o Teorema 1 com `(b-1)` bits, obtém-se a cota em \(4^{-b}\).
+- **Esperança**: condicionando em `x_mse_tilde`, o estimador QJL é construído (Lemma 4 do paper) para que $\mathbb{E}[\langle y, x_{\text{qjl}}\tilde{}\rangle | x_{\text{mse}}\tilde{}] = \langle y, r\rangle$. Pela lei da esperança total, $\mathbb{E}\langle y, \tilde x\rangle = \langle y, x_{\text{mse}}\tilde{}\rangle + \langle y, r\rangle = \langle y, x\rangle$.
+- **Variância**: $\mathrm{Var}(\langle y, x_{\text{qjl}}\tilde{}\rangle | x_{\text{mse}}\tilde{}) \le \frac{\pi}{2d}\|r\|^2\|y\|^2$. Tomando esperança em $\|r\|^2$ (que é $D_{\text{mse}}$ do estágio 1) e aplicando o Teorema 1 com `(b-1)` bits, obtém-se a cota em $4^{-b}$.
 
-Notar que **toda a aleatoriedade vem do design do quantizador** (rotação \(\Pi\), projeção \(S\)) — não há suposição alguma sobre a distribuição dos dados \(x\). Isso é o **data-oblivious** que o título do paper destaca.
+Notar que **toda a aleatoriedade vem do design do quantizador** (rotação $\Pi$, projeção $S$) — não há suposição alguma sobre a distribuição dos dados $x$. Isso é o **data-oblivious** que o título do paper destaca.
 
 ---
 
@@ -448,13 +463,13 @@ Vamos colocar lado a lado o que o paper prova versus o que Shannon permite:
 
 | Quantidade | Limite Shannon (Gaussiana) | TurboQuant (esfera, oblivious, online) |
 |---|---|---|
-| \(D_{\text{mse}}(b)\) | \(\sigma^2 \cdot 4^{-b}\) | \(\frac{\sqrt{3\pi}}{2} \cdot 4^{-b}\) |
-| \(D_{\text{prod}}(b)\) | \(\sigma^2 \|y\|^2/d \cdot 4^{-b}\) (informacional) | \(\frac{\sqrt{3\pi}}{2}\cdot \|y\|^2/d \cdot 4^{-b}\) |
+| $D_{\text{mse}}(b)$ | $\sigma^2 \cdot 4^{-b}$ | $\frac{\sqrt{3\pi}}{2} \cdot 4^{-b}$ |
+| $D_{\text{prod}}(b)$ | $\sigma^2 \|y\|^2/d \cdot 4^{-b}$ (informacional) | $\frac{\sqrt{3\pi}}{2}\cdot \|y\|^2/d \cdot 4^{-b}$ |
 | Estimador IP | — | **Não-enviesado** (Teorema 2) |
 | Calibração necessária | depende | **Nenhuma** (oblivious) |
 | Setup online | — | **Sim** (rotação + codebook universal) |
 
-A **constante \(\sqrt{3\pi}/2 \approx 1{,}53\)** (ou \(\approx 2{,}72\) na outra interpretação do radical, ver paper §1) é **dentro de um fator pequeno** do ótimo. Para colocar em perspectiva: PQ com `m=8` subespaços e `k=256` centróides em alta dim costuma ter constantes operacionais **>10×** o SLB; KIVI 4-bit fica em torno de **3–5×** dependendo do canal.
+A **constante $\sqrt{3\pi}/2 \approx 1{,}53$** (ou $\approx 2{,}72$ na outra interpretação do radical, ver paper §1) é **dentro de um fator pequeno** do ótimo. Para colocar em perspectiva: PQ com `m=8` subespaços e `k=256` centróides em alta dim costuma ter constantes operacionais **>10×** o SLB; KIVI 4-bit fica em torno de **3–5×** dependendo do canal.
 
 ```mermaid
 flowchart LR
@@ -628,12 +643,12 @@ Estimativa razoável (não chute, baseada em paralelos com FlashAttention 1→2�
 
 | Aspecto | TurboQuant MSE (Alg. 1) | TurboQuant IP (Alg. 2) |
 |---|---|---|
-| Otimização | Erro quadrático \(\|x - \tilde x\|^2\) | Erro de produto interno \((\langle y, x\rangle - \langle y, \tilde x\rangle)^2\) |
-| Estimador IP | **Enviesado** (\(\sim 2/\pi\) em `b=1`) | **Não-enviesado** |
+| Otimização | Erro quadrático $\|x - \tilde x\|^2$ | Erro de produto interno $(\langle y, x\rangle - \langle y, \tilde x\rangle)^2$ |
+| Estimador IP | **Enviesado** ($\sim 2/\pi$ em `b=1`) | **Não-enviesado** |
 | Bits/coord | `b` | `b-1` (MSE) + 1 (QJL no resíduo) = `b` total |
 | Custo Quant | 1 rotação + argmin | 1 rotação + argmin + projeção JL no resíduo |
 | Custo DeQuant | Lookup centroides + rotação inversa | Lookup + rotação + soma do termo QJL |
-| Garantia teórica | \(D_{\text{mse}} \le \frac{\sqrt{3\pi}}{2} 4^{-b}\) | \(D_{\text{prod}} \le \frac{\sqrt{3\pi}}{2} \frac{\|y\|^2}{d} 4^{-b}\) |
+| Garantia teórica | $D_{\text{mse}} \le \frac{\sqrt{3\pi}}{2} 4^{-b}$ | $D_{\text{prod}} \le \frac{\sqrt{3\pi}}{2} \frac{\|y\|^2}{d} 4^{-b}$ |
 | Quando usar | Reconstrução de KV "isotrópica" | Atenção, similaridade, ranking IP, ANN |
 
 ### 13.2. TurboQuant vs alternativas para KV cache
@@ -703,7 +718,7 @@ Ele faz isso com três ingredientes:
 2. **Lloyd–Max universal**: um único codebook escalar, pré-computado offline para a Beta da dimensão, serve todos os modelos.
 3. **Bit de correção QJL**: uma "errata" de 1 bit/coord no resíduo elimina o viés do estágio MSE no produto interno.
 
-E **alcança constantes próximas do Shannon Lower Bound** \(4^{-b}\) sem calibração, sem dados sensíveis, sem retreino.
+E **alcança constantes próximas do Shannon Lower Bound** $4^{-b}$ sem calibração, sem dados sensíveis, sem retreino.
 
 Mas o caminho de **paper → produção** é longo. As primeiras implementações têm overhead de rotação que come ganhos em hardware *compute-bound*. Para você, leitor, a recomendação prática é:
 
@@ -769,9 +784,9 @@ Fica, portanto, marcado o ponto: o TurboQuant resolve **a memória**. O Post 07 
 - `spiritbuun/llama-cpp-turboquant-cuda` Issue #8 — *persistent V dequant buffer + fused K tile loading*.
 
 ### Documentos didáticos locais (série acadêmica)
-- `transcripts/turboquant-docs/01-fundamentos-e-definicao-formal.md` — definições \(D_{\text{mse}}\), \(D_{\text{prod}}\), não-viés, Quant/DeQuant.
+- `transcripts/turboquant-docs/01-fundamentos-e-definicao-formal.md` — definições $D_{\text{mse}}$, $D_{\text{prod}}$, não-viés, Quant/DeQuant.
 - `transcripts/turboquant-docs/03-preliminares-beta-esfera-e-concentracao.md` — Lema da Beta, concentração em alta dimensão.
-- `transcripts/turboquant-docs/04-shannon-lower-bound.md` — derivação detalhada do SLB \(4^{-b}\).
+- `transcripts/turboquant-docs/04-shannon-lower-bound.md` — derivação detalhada do SLB $4^{-b}$.
 - `transcripts/turboquant-docs/05-qjl-quantized-johnson-lindenstrauss.md` — QJL com prova do Lemma 4.
 - `transcripts/turboquant-docs/06-turboquant-mse-e-produto-interno.md` — Algoritmos 1 e 2, Teoremas 1 e 2.
 - `transcripts/turboquant-docs/07-limites-inferiores-e-experimentos.md` — cotas inferiores e tabelas experimentais completas.

@@ -32,11 +32,11 @@
 
 A atenção *standard* (Vaswani 2017) é literalmente:
 
-\[
+$$
 S = \frac{Q K^\top}{\sqrt{d_k}} \in \mathbb{R}^{N\times N},\qquad
 P = \mathrm{softmax}(S) \in \mathbb{R}^{N\times N},\qquad
 O = P\,V \in \mathbb{R}^{N\times d_k}.
-\]
+$$
 
 Em pseudo‑código PyTorch (didático, sem cabeças e sem máscara):
 
@@ -47,23 +47,23 @@ P = torch.softmax(S, dim=-1)                   # (N, N)
 O = P @ V                                      # (N, d_k)
 ```
 
-### 1.1. Custo de memória — o vilão é o \(N\times N\)
+### 1.1. Custo de memória — o vilão é o $N\times N$
 
-Para uma única cabeça, em precisão FP16/BF16 (2 bytes), as **matrizes intermediárias** \(S\) e \(P\) ocupam:
+Para uma única cabeça, em precisão FP16/BF16 (2 bytes), as **matrizes intermediárias** $S$ e $P$ ocupam:
 
-\[
+$$
 \text{mem}(S) + \text{mem}(P) = 2\cdot 2\cdot N^2 \text{ bytes} = 4 N^2 \text{ bytes}.
-\]
+$$
 
-Com **\(h\) cabeças** e **batch \(B\)** rodando em paralelo, o consumo (apenas para guardar \(S\) e \(P\)) é:
+Com **$h$ cabeças** e **batch $B$** rodando em paralelo, o consumo (apenas para guardar $S$ e $P$) é:
 
-\[
+$$
 4\cdot B\cdot h\cdot N^2 \text{ bytes}.
-\]
+$$
 
-Concretamente, num H100 com 80 GB de HBM3, considerando **um único exemplo** (\(B=1\)) e \(h=32\) cabeças:
+Concretamente, num H100 com 80 GB de HBM3, considerando **um único exemplo** ($B=1$) e $h=32$ cabeças:
 
-| Sequence length \(N\) | \(N^2\)        | \(4 \cdot 32 \cdot N^2\) bytes | Cabe na HBM (80 GB)? |
+| Sequence length $N$ | $N^2$        | $4 \cdot 32 \cdot N^2$ bytes | Cabe na HBM (80 GB)? |
 |-----------------------|----------------|--------------------------------|----------------------|
 | 2 048                 | 4,2 M          | 537 MB                         | sim (folgado)        |
 | 8 192                 | 67 M           | 8,6 GB                         | sim (apertado)       |
@@ -71,11 +71,11 @@ Concretamente, num H100 com 80 GB de HBM3, considerando **um único exemplo** (\
 | 131 072 (128 k)       | 17,2 G         | 2,2 TB                         | **NÃO**              |
 | 1 048 576 (1 M)       | 1,1 T          | 141 TB                         | **NÃO**              |
 
-Ou seja: o naive software que aloca a matriz inteira **não cabe na GPU** já em \(N=32\)k. E mesmo quando cabe, **o custo dominante não é compute**, é **bandwidth**: você lê e escreve esses \(O(N^2)\) bytes em HBM várias vezes (logits, softmax, multiply‑and‑accumulate). Como veremos na §5, HBM é ~6× mais lenta que SRAM por byte.
+Ou seja: o naive software que aloca a matriz inteira **não cabe na GPU** já em $N=32$k. E mesmo quando cabe, **o custo dominante não é compute**, é **bandwidth**: você lê e escreve esses $O(N^2)$ bytes em HBM várias vezes (logits, softmax, multiply‑and‑accumulate). Como veremos na §5, HBM é ~6× mais lenta que SRAM por byte.
 
 > **Analogia.** Imagine ter que multiplicar duas matrizes gigantes anotando *todos* os produtos parciais num caderno antes de somar nada. O caderno ocupa o quarto inteiro. Se você fizesse o cálculo **em colunas**, com um rascunho de bolso, terminaria mais rápido **e** sem entupir a casa.
 
-### 1.2. Diagrama — a matriz \(N\times N\) saturando a HBM
+### 1.2. Diagrama — a matriz $N\times N$ saturando a HBM
 
 ```mermaid
 flowchart TB
@@ -96,9 +96,9 @@ flowchart TB
   class S,P big
 ```
 
-O problema é estrutural: **\(S\) e \(P\) crescem com \(N^2\)**, enquanto \(Q, K, V, O\) crescem só com \(N\). Para \(N=128\)k, **\(S\)** e **\(P\)** dominam a memória **em mais de duas ordens de grandeza**.
+O problema é estrutural: **$S$ e $P$ crescem com $N^2$**, enquanto $Q, K, V, O$ crescem só com $N$. Para $N=128$k, **$S$** e **$P$** dominam a memória **em mais de duas ordens de grandeza**.
 
-> A grande sacada do FlashAttention (Tri Dao 2022) é simples de descrever em uma frase: **nunca materializar \(S\) nem \(P\) em HBM**. Manter apenas blocos pequenos em **SRAM** e ir acumulando \(O\) em uma única passada. O resto do post deriva *como isso é matematicamente possível*.
+> A grande sacada do FlashAttention (Tri Dao 2022) é simples de descrever em uma frase: **nunca materializar $S$ nem $P$ em HBM**. Manter apenas blocos pequenos em **SRAM** e ir acumulando $O$ em uma única passada. O resto do post deriva *como isso é matematicamente possível*.
 
 ---
 
@@ -108,9 +108,9 @@ Antes de chegar à versão *online*, precisamos do truque clássico que **toda i
 
 ### 2.1. O problema: overflow do `exp`
 
-Em FP16, `exp(x)` satura em `+inf` para `x ≳ 11.09` (porque o maior número finito FP16 é \(\approx 6.55\cdot 10^4\), e \(\ln(6.55\cdot 10^4)\approx 11.09\)). Em FP32, `exp(89)` já estoura.
+Em FP16, `exp(x)` satura em `+inf` para `x ≳ 11.09` (porque o maior número finito FP16 é $\approx 6.55\cdot 10^4$, e $\ln(6.55\cdot 10^4)\approx 11.09$). Em FP32, `exp(89)` já estoura.
 
-Logits de atenção, mesmo após dividir por \(\sqrt{d_k}\), facilmente atingem \(\pm 20\) ou \(\pm 30\) durante o treino (especialmente se a inicialização não for cuidadosa). Resultado: `exp(s_ij)` vira `inf`, `inf / inf` vira `NaN`, e o gradiente morre.
+Logits de atenção, mesmo após dividir por $\sqrt{d_k}$, facilmente atingem $\pm 20$ ou $\pm 30$ durante o treino (especialmente se a inicialização não for cuidadosa). Resultado: `exp(s_ij)` vira `inf`, `inf / inf` vira `NaN`, e o gradiente morre.
 
 ```python
 import torch
@@ -121,13 +121,13 @@ torch.exp(x) / torch.exp(x).sum()  # tensor([nan, 0., 0.])
 
 ### 2.2. A identidade de invariância
 
-Para qualquer constante \(c\):
+Para qualquer constante $c$:
 
-\[
+$$
 \mathrm{softmax}(x)_i = \frac{e^{x_i}}{\sum_j e^{x_j}} = \frac{e^{x_i - c}}{\sum_j e^{x_j - c}} \cdot \frac{e^c}{e^c} = \frac{e^{x_i - c}}{\sum_j e^{x_j - c}}.
-\]
+$$
 
-Escolhendo \(c = m := \max_j x_j\), garantimos que **todos os expoentes são \(\le 0\)**, portanto **todos os `exp` ficam em \([0, 1]\)** e nunca estouram.
+Escolhendo $c = m := \max_j x_j$, garantimos que **todos os expoentes são $\le 0$**, portanto **todos os `exp` ficam em $[0, 1]$** e nunca estouram.
 
 ```python
 def safe_softmax(x):
@@ -139,73 +139,73 @@ safe_softmax(torch.tensor([1000.0, 1.0, 2.0]))
 # tensor([1.0000e+00, 0.0000e+00, 0.0000e+00])
 ```
 
-> **Notação que usaremos:** ao longo deste apêndice, \(m\) denota um *running max* e \(\ell\) (ou `l`) denota uma *running normalization sum* — uma soma de exponenciais já reescaladas pelo max corrente.
+> **Notação que usaremos:** ao longo deste apêndice, $m$ denota um *running max* e $\ell$ (ou `l`) denota uma *running normalization sum* — uma soma de exponenciais já reescaladas pelo max corrente.
 
 ---
 
 ## 3. Trick 2 — Online softmax (Milakov & Gimelshein 2018)
 
-O safe softmax tradicional **precisa de duas passadas** sobre o vetor: uma para achar o max, outra para somar `exp(x - m)`. Para um vetor de \(N\) elementos, ambas passadas leem o mesmo dado de HBM.
+O safe softmax tradicional **precisa de duas passadas** sobre o vetor: uma para achar o max, outra para somar `exp(x - m)`. Para um vetor de $N$ elementos, ambas passadas leem o mesmo dado de HBM.
 
-**Online softmax** (Milakov & Gimelshein, NVIDIA, 2018) faz a mesma conta em **uma única passada**, **bloco por bloco**, mantendo um par \((m, \ell)\) que pode ser **atualizado** quando um novo bloco chega — como uma **média online** sabe se atualizar quando vê mais um número.
+**Online softmax** (Milakov & Gimelshein, NVIDIA, 2018) faz a mesma conta em **uma única passada**, **bloco por bloco**, mantendo um par $(m, \ell)$ que pode ser **atualizado** quando um novo bloco chega — como uma **média online** sabe se atualizar quando vê mais um número.
 
-> **Analogia.** É como calcular a média de uma fila infinita de números **sem nunca poder vê‑los todos juntos**. Você guarda a média parcial \(\mu_n\) e o tamanho \(n\); quando chega o número \((n+1)\)‑ésimo, atualiza \(\mu_{n+1}\) com a fórmula de Welford. Online softmax é o análogo *exponencial* desse truque.
+> **Analogia.** É como calcular a média de uma fila infinita de números **sem nunca poder vê‑los todos juntos**. Você guarda a média parcial $\mu_n$ e o tamanho $n$; quando chega o número $(n+1)$‑ésimo, atualiza $\mu_{n+1}$ com a fórmula de Welford. Online softmax é o análogo *exponencial* desse truque.
 
 ### 3.1. Definições
 
-Seja \(x = (x_1, \ldots, x_N)\) um vetor sobre o qual queremos calcular \(p_i = \mathrm{softmax}(x)_i\). Particione \(x\) em **blocos** \(B_1, B_2, \ldots, B_T\) (cada \(B_t\) é um sub‑vetor; pense num "tile" de tamanho \(B_c\) que cabe em SRAM).
+Seja $x = (x_1, \ldots, x_N)$ um vetor sobre o qual queremos calcular $p_i = \mathrm{softmax}(x)_i$. Particione $x$ em **blocos** $B_1, B_2, \ldots, B_T$ (cada $B_t$ é um sub‑vetor; pense num "tile" de tamanho $B_c$ que cabe em SRAM).
 
-Definimos, **após processar o bloco \(t\)**:
+Definimos, **após processar o bloco $t$**:
 
-\[
+$$
 m^{(t)} := \max_{x_j \in B_1\cup\cdots\cup B_t} x_j, \qquad
 \ell^{(t)} := \sum_{x_j \in B_1\cup\cdots\cup B_t} e^{x_j - m^{(t)}}.
-\]
+$$
 
-Note que \(\ell^{(t)}\) **muda de escala** quando \(m^{(t)}\) muda. Por isso a fórmula não é apenas "soma cumulativa".
+Note que $\ell^{(t)}$ **muda de escala** quando $m^{(t)}$ muda. Por isso a fórmula não é apenas "soma cumulativa".
 
 ### 3.2. Fórmula de atualização
 
-Recebido um novo bloco \(B_{t+1}\) com max local \(\tilde m := \max_{x_j \in B_{t+1}} x_j\) e soma local \(\tilde \ell := \sum_{x_j \in B_{t+1}} e^{x_j - \tilde m}\), atualizamos:
+Recebido um novo bloco $B_{t+1}$ com max local $\tilde m := \max_{x_j \in B_{t+1}} x_j$ e soma local $\tilde \ell := \sum_{x_j \in B_{t+1}} e^{x_j - \tilde m}$, atualizamos:
 
-\[
+$$
 \boxed{\;
 \begin{aligned}
 m^{(t+1)} &= \max\!\big(m^{(t)},\, \tilde m\big), \\[3pt]
 \ell^{(t+1)} &= e^{\,m^{(t)} - m^{(t+1)}}\,\ell^{(t)} \;+\; e^{\,\tilde m - m^{(t+1)}}\,\tilde \ell.
 \end{aligned}
 \;}
-\]
+$$
 
-A **chave** está nos dois fatores de reescala \(e^{m^{(t)} - m^{(t+1)}}\) e \(e^{\tilde m - m^{(t+1)}}\): ambos são \(\le 1\) (porque o novo max é o maior dos dois) e corrigem a normalização para o novo "centro" \(m^{(t+1)}\).
+A **chave** está nos dois fatores de reescala $e^{m^{(t)} - m^{(t+1)}}$ e $e^{\tilde m - m^{(t+1)}}$: ambos são $\le 1$ (porque o novo max é o maior dos dois) e corrigem a normalização para o novo "centro" $m^{(t+1)}$.
 
 ### 3.3. Prova de equivalência
 
-Vamos provar por indução em \(t\) que **após processar todos os blocos** \(B_1,\ldots,B_T\),
+Vamos provar por indução em $t$ que **após processar todos os blocos** $B_1,\ldots,B_T$,
 
-\[
+$$
 \ell^{(T)} = \sum_{j=1}^{N} e^{x_j - m^{(T)}} \quad \text{e portanto} \quad p_i = \frac{e^{x_i - m^{(T)}}}{\ell^{(T)}}
-\]
+$$
 
 é **bit‑a‑bit equivalente** ao safe softmax tradicional.
 
-**Base \(t=1\).** Após o primeiro bloco, \(m^{(1)} = \tilde m_1 = \max_{B_1} x_j\) e \(\ell^{(1)} = \tilde \ell_1 = \sum_{x_j \in B_1} e^{x_j - m^{(1)}}\) — exatamente a definição.
+**Base $t=1$.** Após o primeiro bloco, $m^{(1)} = \tilde m_1 = \max_{B_1} x_j$ e $\ell^{(1)} = \tilde \ell_1 = \sum_{x_j \in B_1} e^{x_j - m^{(1)}}$ — exatamente a definição.
 
-**Passo \(t \to t+1\).** Suponha \(\ell^{(t)} = \sum_{j \in B_1\cup\cdots\cup B_t} e^{x_j - m^{(t)}}\). Então:
+**Passo $t \to t+1$.** Suponha $\ell^{(t)} = \sum_{j \in B_1\cup\cdots\cup B_t} e^{x_j - m^{(t)}}$. Então:
 
-\[
+$$
 \begin{aligned}
 e^{m^{(t)} - m^{(t+1)}}\,\ell^{(t)}
 &= e^{m^{(t)} - m^{(t+1)}} \sum_{j \in B_1\cup\cdots\cup B_t} e^{x_j - m^{(t)}} \\[3pt]
 &= \sum_{j \in B_1\cup\cdots\cup B_t} e^{x_j - m^{(t+1)}}.
 \end{aligned}
-\]
+$$
 
-Já \(e^{\tilde m - m^{(t+1)}}\,\tilde \ell = e^{\tilde m - m^{(t+1)}} \sum_{j \in B_{t+1}} e^{x_j - \tilde m} = \sum_{j \in B_{t+1}} e^{x_j - m^{(t+1)}}\). Somando:
+Já $e^{\tilde m - m^{(t+1)}}\,\tilde \ell = e^{\tilde m - m^{(t+1)}} \sum_{j \in B_{t+1}} e^{x_j - \tilde m} = \sum_{j \in B_{t+1}} e^{x_j - m^{(t+1)}}$. Somando:
 
-\[
+$$
 \ell^{(t+1)} = \sum_{j \in B_1\cup\cdots\cup B_{t+1}} e^{x_j - m^{(t+1)}}. \qquad \blacksquare
-\]
+$$
 
 A fórmula é **exata**, não aproximada. Não há erro adicional além do FP16/BF16 normal de qualquer softmax.
 
@@ -240,76 +240,76 @@ p_torch  = torch.softmax(torch.tensor(x), dim=0).tolist()
 assert all(abs(a - b) < 1e-6 for a, b in zip(p_online, p_torch))
 ```
 
-> A "passada 2" só existe porque queremos *materializar* \(p_i\). No FlashAttention, **não materializamos** \(p_i\); usamos \((m, \ell)\) diretamente para acumular \(O = P V\) numa única passada (próxima seção).
+> A "passada 2" só existe porque queremos *materializar* $p_i$. No FlashAttention, **não materializamos** $p_i$; usamos $(m, \ell)$ diretamente para acumular $O = P V$ numa única passada (próxima seção).
 
 ---
 
 ## 4. Trick 3 — Online softmax + matmul = FlashAttention forward
 
-Agora estendemos o online softmax para também **acumular \(O = P V\)** em uma só passada, sem materializar \(P\).
+Agora estendemos o online softmax para também **acumular $O = P V$** em uma só passada, sem materializar $P$.
 
 ### 4.1. Setup
 
-Estamos calculando uma linha \(o \in \mathbb{R}^{d_k}\) da saída \(O\) (digamos a linha correspondente à query \(q \in \mathbb{R}^{d_k}\)). O cálculo "naive" seria:
+Estamos calculando uma linha $o \in \mathbb{R}^{d_k}$ da saída $O$ (digamos a linha correspondente à query $q \in \mathbb{R}^{d_k}$). O cálculo "naive" seria:
 
-\[
+$$
 s_j = \frac{q\cdot k_j}{\sqrt{d_k}},\quad
 p_j = \frac{e^{s_j - m^{(T)}}}{\ell^{(T)}},\quad
 o = \sum_{j=1}^{N} p_j\, v_j.
-\]
+$$
 
-Particionamos os índices \(j\) em blocos de tamanho \(B_c\) (um bloco lê \(B_c\) linhas de \(K\) e \(V\)). Definimos um **\(O\) parcial** \(o^{(t)}\) que satisfaz:
+Particionamos os índices $j$ em blocos de tamanho $B_c$ (um bloco lê $B_c$ linhas de $K$ e $V$). Definimos um **$O$ parcial** $o^{(t)}$ que satisfaz:
 
-\[
+$$
 o^{(t)} := \frac{1}{\ell^{(t)}}\sum_{j \in B_1\cup\cdots\cup B_t} e^{s_j - m^{(t)}}\, v_j.
-\]
+$$
 
-Isto é, \(o^{(t)}\) é "o \(o\) que sairia se a sequência terminasse no bloco \(t\)".
+Isto é, $o^{(t)}$ é "o $o$ que sairia se a sequência terminasse no bloco $t$".
 
-### 4.2. Fórmula de atualização para \(o\)
+### 4.2. Fórmula de atualização para $o$
 
-Quando chega o bloco \(t+1\) com max local \(\tilde m\) e contribuições \(\sum_{j \in B_{t+1}} e^{s_j - \tilde m}\,v_j =: \tilde o\), queremos uma atualização que produza \(o^{(t+1)}\) usando apenas \(o^{(t)}\), \((m^{(t)}, \ell^{(t)})\), \((\tilde m, \tilde \ell, \tilde o)\) e \((m^{(t+1)}, \ell^{(t+1)})\).
+Quando chega o bloco $t+1$ com max local $\tilde m$ e contribuições $\sum_{j \in B_{t+1}} e^{s_j - \tilde m}\,v_j =: \tilde o$, queremos uma atualização que produza $o^{(t+1)}$ usando apenas $o^{(t)}$, $(m^{(t)}, \ell^{(t)})$, $(\tilde m, \tilde \ell, \tilde o)$ e $(m^{(t+1)}, \ell^{(t+1)})$.
 
-A álgebra é direta. Multiplicando \(o^{(t)}\) por \(\ell^{(t)}\):
+A álgebra é direta. Multiplicando $o^{(t)}$ por $\ell^{(t)}$:
 
-\[
+$$
 \ell^{(t)}\, o^{(t)} = \sum_{j \in B_1\cup\cdots\cup B_t} e^{s_j - m^{(t)}}\, v_j.
-\]
+$$
 
-Reescalando para o novo max \(m^{(t+1)}\):
+Reescalando para o novo max $m^{(t+1)}$:
 
-\[
+$$
 e^{m^{(t)} - m^{(t+1)}}\, \ell^{(t)}\, o^{(t)} = \sum_{j \in B_1\cup\cdots\cup B_t} e^{s_j - m^{(t+1)}}\, v_j.
-\]
+$$
 
-Adicionando o bloco novo (também reescalado para \(m^{(t+1)}\)):
+Adicionando o bloco novo (também reescalado para $m^{(t+1)}$):
 
-\[
+$$
 \ell^{(t+1)}\, o^{(t+1)} = e^{m^{(t)} - m^{(t+1)}}\, \ell^{(t)}\, o^{(t)} \;+\; e^{\tilde m - m^{(t+1)}}\, \tilde o.
-\]
+$$
 
-Dividindo ambos os lados por \(\ell^{(t+1)}\):
+Dividindo ambos os lados por $\ell^{(t+1)}$:
 
-\[
+$$
 \boxed{\;
 o^{(t+1)} = \underbrace{\frac{\ell^{(t)}\, e^{m^{(t)} - m^{(t+1)}}}{\ell^{(t+1)}}}_{\text{rescala o que já tinha}} o^{(t)} \;+\; \underbrace{\frac{e^{\tilde m - m^{(t+1)}}}{\ell^{(t+1)}}}_{\text{normaliza o bloco novo}} \tilde o.
 \;}
-\]
+$$
 
-Após o último bloco, \(o^{(T)}\) **é exatamente** \(\sum_j p_j v_j\) — atenção exata, sem materializar nem \(S\) nem \(P\). \(\blacksquare\)
+Após o último bloco, $o^{(T)}$ **é exatamente** $\sum_j p_j v_j$ — atenção exata, sem materializar nem $S$ nem $P$. $\blacksquare$
 
 ### 4.3. Otimização do paper original — adiar a divisão final
 
-O paper FA‑1 (Dao 2022) e principalmente FA‑2 (Dao 2023) observam que **dividir por \(\ell^{(t+1)}\) a cada bloco é desperdício** (uma divisão escalar por linha por bloco). É melhor **acumular \(O\) sem normalizar** e dividir **uma única vez no final**:
+O paper FA‑1 (Dao 2022) e principalmente FA‑2 (Dao 2023) observam que **dividir por $\ell^{(t+1)}$ a cada bloco é desperdício** (uma divisão escalar por linha por bloco). É melhor **acumular $O$ sem normalizar** e dividir **uma única vez no final**:
 
-\[
+$$
 \tilde O^{(t+1)} = e^{m^{(t)} - m^{(t+1)}}\,\tilde O^{(t)} + e^{\tilde m - m^{(t+1)}}\,\tilde o,
 \qquad O = \tilde O^{(T)} / \ell^{(T)}.
-\]
+$$
 
 Isso reduz drasticamente os "non‑matmul FLOPs" — que são FLOPs que **não rodam em Tensor Core** e portanto custam **muito mais por unidade de trabalho**. Voltaremos a isto na §7.
 
-### 4.4. Diagrama — passada única acumulando \(m, \ell, O\)
+### 4.4. Diagrama — passada única acumulando $m, \ell, O$
 
 ```mermaid
 sequenceDiagram
@@ -329,7 +329,7 @@ sequenceDiagram
   SRAM ->> SRAM: escreve O na HBM (única escrita por linha de Q)
 ```
 
-A propriedade central: **a HBM é tocada \(O(N)\) vezes**, não \(O(N^2)\). Isto é o que torna a atenção *bandwidth‑bound* viável em sequências longas.
+A propriedade central: **a HBM é tocada $O(N)$ vezes**, não $O(N^2)$. Isto é o que torna a atenção *bandwidth‑bound* viável em sequências longas.
 
 ---
 
@@ -385,17 +385,17 @@ Agora juntamos tudo. Vamos escrever o algoritmo no estilo do paper Tri Dao 2022,
 
 Sejam:
 
-- \(Q \in \mathbb{R}^{N\times d}\), \(K \in \mathbb{R}^{N\times d}\), \(V \in \mathbb{R}^{N\times d}\) na HBM.
-- \(B_r\): tamanho do bloco de **linhas de Q** (e de \(O, m, \ell\)).
-- \(B_c\): tamanho do bloco de **linhas de K, V**.
+- $Q \in \mathbb{R}^{N\times d}$, $K \in \mathbb{R}^{N\times d}$, $V \in \mathbb{R}^{N\times d}$ na HBM.
+- $B_r$: tamanho do bloco de **linhas de Q** (e de $O, m, \ell$).
+- $B_c$: tamanho do bloco de **linhas de K, V**.
 
-Critério de escolha (FA‑1): \(B_c, B_r\) tais que **um tile de \(Q, K, V, O\) e os escalares \(m, \ell\) caibam simultaneamente em SRAM**:
+Critério de escolha (FA‑1): $B_c, B_r$ tais que **um tile de $Q, K, V, O$ e os escalares $m, \ell$ caibam simultaneamente em SRAM**:
 
-\[
+$$
 \underbrace{B_r d}_{Q_i} + \underbrace{B_c d}_{K_j} + \underbrace{B_c d}_{V_j} + \underbrace{B_r d}_{O_i} + \underbrace{B_r}_{m_i} + \underbrace{B_r}_{\ell_i} \;\le\; \frac{M}{\text{bytes/elem}}
-\]
+$$
 
-onde \(M\) é o tamanho total da SRAM por SM (228 KB no H100). Para \(d=128\) e FP16, escolhas típicas: \(B_r = B_c = 64\) ou \(128\).
+onde $M$ é o tamanho total da SRAM por SM (228 KB no H100). Para $d=128$ e FP16, escolhas típicas: $B_r = B_c = 64$ ou $128$.
 
 ### 6.2. Algoritmo (pseudocódigo no estilo do paper)
 
@@ -429,23 +429,23 @@ Saída:    O = softmax(QKᵀ/√d) V em HBM.
 19. Retorna O
 ```
 
-### 6.3. Análise de IO — por que é \(O(N^2/M)\) bytes em vez de \(O(N^2)\)
+### 6.3. Análise de IO — por que é $O(N^2/M)$ bytes em vez de $O(N^2)$
 
-**Naive**: lê \(S\) e \(P\), ambas de tamanho \(N^2\), múltiplas vezes. Total HBM access \(\sim O(N^2 + N\,d)\).
+**Naive**: lê $S$ e $P$, ambas de tamanho $N^2$, múltiplas vezes. Total HBM access $\sim O(N^2 + N\,d)$.
 
-**FA‑1**: para cada um dos \(T_c = \lceil N/B_c\rceil\) blocos de \(K, V\), lê todos os \(T_r = \lceil N/B_r\rceil\) blocos de \(Q\). Total HBM access:
+**FA‑1**: para cada um dos $T_c = \lceil N/B_c\rceil$ blocos de $K, V$, lê todos os $T_r = \lceil N/B_r\rceil$ blocos de $Q$. Total HBM access:
 
-\[
+$$
 T_c \cdot T_r \cdot (B_r + B_c)\,d = \frac{N^2}{B_r B_c}\cdot (B_r + B_c)\,d = O\!\left(\frac{N^2 d^2}{M}\right)
-\]
+$$
 
-(usando que \(B_r d, B_c d \sim \sqrt{M}\)). Para \(d = 128\), \(M = 228\)KB e \(N = 8\)k, isso é cerca de **9× menos bytes** do que o naive — empiricamente o FA‑1 é **2–4× mais rápido** para sequências longas (paper Tri Dao 2022, Tabela 5).
+(usando que $B_r d, B_c d \sim \sqrt{M}$). Para $d = 128$, $M = 228$KB e $N = 8$k, isso é cerca de **9× menos bytes** do que o naive — empiricamente o FA‑1 é **2–4× mais rápido** para sequências longas (paper Tri Dao 2022, Tabela 5).
 
-> **FLOPs:** mesmos do naive (\(\sim 4 N^2 d\) por cabeça). **Bytes:** muito menos. Como atenção é **bandwidth‑bound** em hardware moderno, ganhar bytes é ganhar tempo direto.
+> **FLOPs:** mesmos do naive ($\sim 4 N^2 d$ por cabeça). **Bytes:** muito menos. Como atenção é **bandwidth‑bound** em hardware moderno, ganhar bytes é ganhar tempo direto.
 
 ### 6.4. Recomputação no backward (já visto na §10)
 
-O paper FA‑1 também ataca a memória do backward: em vez de armazenar a matriz \(P\) toda para o backward, **armazena apenas \((m, \ell)\) por bloco** e **recomputa** \(S, P\) on‑the‑fly. Voltaremos a isso na §10.
+O paper FA‑1 também ataca a memória do backward: em vez de armazenar a matriz $P$ toda para o backward, **armazena apenas $(m, \ell)$ por bloco** e **recomputa** $S, P$ on‑the‑fly. Voltaremos a isso na §10.
 
 ---
 
@@ -455,19 +455,19 @@ FA‑1 já era ótimo em **memória**, mas no H100 só atingia ~25–35% da peak
 
 ### 7.1. Reordenar os loops (Q como loop externo)
 
-No FA‑1, o **loop externo** é sobre **blocos de K, V**, e o **interno** sobre **blocos de Q**. Cada block de Q é **lido e escrito \(T_c\) vezes** — desperdício, porque o output \(O_i\) só termina depois que todos os \(T_c\) blocos passaram.
+No FA‑1, o **loop externo** é sobre **blocos de K, V**, e o **interno** sobre **blocos de Q**. Cada block de Q é **lido e escrito $T_c$ vezes** — desperdício, porque o output $O_i$ só termina depois que todos os $T_c$ blocos passaram.
 
-FA‑2 inverte: **Q no loop externo**, K, V no loop interno. Cada \(Q_i, O_i, m_i, \ell_i\) é lido **uma vez**, mantido em **registers/SRAM** durante todo o loop interno, e escrito **uma vez** no fim. Resultado: muito menos tráfego entre SRAM e HBM, e os warps não precisam mais sincronizar entre blocos de K, V.
+FA‑2 inverte: **Q no loop externo**, K, V no loop interno. Cada $Q_i, O_i, m_i, \ell_i$ é lido **uma vez**, mantido em **registers/SRAM** durante todo o loop interno, e escrito **uma vez** no fim. Resultado: muito menos tráfego entre SRAM e HBM, e os warps não precisam mais sincronizar entre blocos de K, V.
 
 ### 7.2. Reduzir non‑matmul FLOPs
 
-Tensor Cores fazem matmul em FP16/BF16 a centenas de TFLOPs. Operações **fora do Tensor Core** (exp, divisão, comparação) rodam em ~10× menos FLOPs/s. O FA‑1 fazia uma divisão por \(\ell\) **a cada iteração** — cara.
+Tensor Cores fazem matmul em FP16/BF16 a centenas de TFLOPs. Operações **fora do Tensor Core** (exp, divisão, comparação) rodam em ~10× menos FLOPs/s. O FA‑1 fazia uma divisão por $\ell$ **a cada iteração** — cara.
 
-FA‑2 adia a divisão final (§4.3): mantém \(\tilde O^{(t)}\) **não normalizado** durante todo o loop e divide por \(\ell^{(T)}\) **uma única vez** no fim. Isso elimina ~1 divisão escalar por bloco por linha — pode parecer pouco, mas em sequências longas é a diferença entre 35% e 70% de utilização.
+FA‑2 adia a divisão final (§4.3): mantém $\tilde O^{(t)}$ **não normalizado** durante todo o loop e divide por $\ell^{(T)}$ **uma única vez** no fim. Isso elimina ~1 divisão escalar por bloco por linha — pode parecer pouco, mas em sequências longas é a diferença entre 35% e 70% de utilização.
 
 ### 7.3. Paralelismo por sequence length
 
-FA‑1 paraleliza **um bloco de SM por (batch, head)** — bom quando `batch * heads >= num_sms` (~132 no H100). Ruim no **decoding**, onde \(B=1\) e \(h\sim 32\): só 32 SMs ativos, 100 ociosos.
+FA‑1 paraleliza **um bloco de SM por (batch, head)** — bom quando `batch * heads >= num_sms` (~132 no H100). Ruim no **decoding**, onde $B=1$ e $h\sim 32$: só 32 SMs ativos, 100 ociosos.
 
 FA‑2 também paraleliza **dentro da dimensão de sequência**: blocos de Q diferentes vão para SMs diferentes. Para o forward isto é trivial (blocos de Q são independentes). Para o backward exige cuidado (o gradiente precisa ser *atomicamente* somado).
 
@@ -478,7 +478,7 @@ FA‑2 também paraleliza **dentro da dimensão de sequência**: blocos de Q dif
 | TFLOPs FP16 efetivos                      | ~120               | **~225 (2×)**       | ~160               | **~335**            |
 | % da peak FP16 do hardware                | ~38%               | **~73%**            | ~16%               | **~35%**            |
 | Speedup vs PyTorch SDPA naive             | 2,2×               | **3,0×**            | 1,8×               | **2,8×**            |
-| HBM access reduzido                       | \(O(N^2/\sqrt M)\) | mesmo               | mesmo              | mesmo               |
+| HBM access reduzido                       | $O(N^2/\sqrt M)$ | mesmo               | mesmo              | mesmo               |
 | Backward speedup vs FA‑1                  | 1×                 | **~1,7×**           | 1×                 | **~2×**             |
 
 Fonte: paper FA‑2 §4 e §5.
@@ -499,7 +499,7 @@ Com TMA, FA‑3 separa os warps em dois grupos:
 - **Producer warps**: emitem `cp.async.bulk` (TMA) para puxar o próximo tile de K, V para SRAM.
 - **Consumer warps**: rodam WGMMA no tile atual.
 
-Isso é um **pipeline software** no estilo de double/triple buffering — enquanto o consumer roda matmul no tile \(j\), o producer já está trazendo o tile \(j+1\). **Latência de carregamento = zero efetivo**.
+Isso é um **pipeline software** no estilo de double/triple buffering — enquanto o consumer roda matmul no tile $j$, o producer já está trazendo o tile $j+1$. **Latência de carregamento = zero efetivo**.
 
 ### 8.2. WGMMA — Warp Group MMA assíncrono
 
@@ -514,8 +514,8 @@ FA‑3 chama isso de **"intra‑warpgroup overlapping of GEMM and softmax"**. É
 
 H100 tem Tensor Cores que rodam **FP8** ao **dobro** dos FLOPs do FP16: ~1979 TFLOPs FP16 vs **~3958 TFLOPs FP8** (ambos com sparsity). FA‑3 introduz dois truques para usar FP8 sem destruir a qualidade:
 
-1. **Block quantization**: cada tile (\(B_r \times B_c\)) tem seu **próprio scale factor**, em vez de um scale por matriz. Reduz erro de quantização em ~2,6× vs baseline FP8.
-2. **Incoherent processing**: multiplica Q e K por uma **matriz aleatória ortogonal** \(M\) (Hadamard) **antes** da quantização. \(QK^\top = (QM)(KM)^\top\) (ortogonalidade preserva o produto interno), mas a multiplicação por \(M\) **espalha outliers** entre dimensões, reduzindo dinâmico.
+1. **Block quantization**: cada tile ($B_r \times B_c$) tem seu **próprio scale factor**, em vez de um scale por matriz. Reduz erro de quantização em ~2,6× vs baseline FP8.
+2. **Incoherent processing**: multiplica Q e K por uma **matriz aleatória ortogonal** $M$ (Hadamard) **antes** da quantização. $QK^\top = (QM)(KM)^\top$ (ortogonalidade preserva o produto interno), mas a multiplicação por $M$ **espalha outliers** entre dimensões, reduzindo dinâmico.
 
 ### 8.4. Números do paper FA‑3
 
@@ -689,16 +689,16 @@ Para **produção em H100/B200**, use o `flash-attn` oficial (que é CUTLASS por
 
 ## 10. Backward pass — recomputation strategy
 
-O backward de atenção é **muito mais complicado** que o forward, e por uma razão simples: o gradiente de \(O\) em relação a \(Q\), \(K\), \(V\) **depende de \(P\)**, que tem tamanho \(N\times N\). Naive backward materializa \(P\) na HBM e fica preso no mesmo problema do naive forward.
+O backward de atenção é **muito mais complicado** que o forward, e por uma razão simples: o gradiente de $O$ em relação a $Q$, $K$, $V$ **depende de $P$**, que tem tamanho $N\times N$. Naive backward materializa $P$ na HBM e fica preso no mesmo problema do naive forward.
 
 ### 10.1. Por que recomputar é melhor que armazenar
 
-FlashAttention faz uma escolha radical: **não armazena \(P\) nem \(S\)**. Armazena apenas:
+FlashAttention faz uma escolha radical: **não armazena $P$ nem $S$**. Armazena apenas:
 
-- \(O \in \mathbb{R}^{N\times d}\) (a saída — barata, \(O(Nd)\)).
-- \(L \in \mathbb{R}^N\), onde \(L_i = m_i + \log \ell_i\) é o **logsumexp** por linha (também \(O(N)\)).
+- $O \in \mathbb{R}^{N\times d}$ (a saída — barata, $O(Nd)$).
+- $L \in \mathbb{R}^N$, onde $L_i = m_i + \log \ell_i$ é o **logsumexp** por linha (também $O(N)$).
 
-No backward, **recomputa \(S\) e \(P\) on‑the‑fly** dentro do kernel, em SRAM, da mesma forma que o forward.
+No backward, **recomputa $S$ e $P$ on‑the‑fly** dentro do kernel, em SRAM, da mesma forma que o forward.
 
 Essa estratégia é genericamente chamada de **gradient checkpointing** ou **recomputation**. Funciona porque atenção é **bandwidth‑bound**, não compute‑bound: gastar 2× FLOPs (forward + recompute no backward) **sai mais barato** que gastar 6× HBM bandwidth (escrever P, ler P três vezes).
 
@@ -706,23 +706,23 @@ Essa estratégia é genericamente chamada de **gradient checkpointing** ou **rec
 
 ### 10.2. Math — gradiente passo a passo
 
-Dada a perda \(\mathcal L\) com \(dO := \partial \mathcal L / \partial O\), queremos \(dQ, dK, dV\). Usando a chain rule e \(O = PV\):
+Dada a perda $\mathcal L$ com $dO := \partial \mathcal L / \partial O$, queremos $dQ, dK, dV$. Usando a chain rule e $O = PV$:
 
-\[
+$$
 dV = P^\top\, dO, \qquad dP = dO\, V^\top.
-\]
+$$
 
-Para \(dS\) precisamos derivar a softmax. Definindo \(D_i := (dO_i)\cdot O_i^\top = \sum_k (dO)_{ik}\,O_{ik}\) (escalar por linha):
+Para $dS$ precisamos derivar a softmax. Definindo $D_i := (dO_i)\cdot O_i^\top = \sum_k (dO)_{ik}\,O_{ik}$ (escalar por linha):
 
-\[
+$$
 dS_{ij} = P_{ij}\,(dP_{ij} - D_i).
-\]
+$$
 
-E finalmente \(dQ\), \(dK\) por matmuls:
+E finalmente $dQ$, $dK$ por matmuls:
 
-\[
+$$
 dQ = (dS)\, K / \sqrt{d_k}, \qquad dK = (dS)^\top\, Q / \sqrt{d_k}.
-\]
+$$
 
 ### 10.3. Algoritmo do backward (alto nível)
 
@@ -749,12 +749,12 @@ Saída:   dQ, dK, dV em HBM
 16. end
 ```
 
-> **FA‑2 backward improvement:** o FA‑1 fazia um `atomic_add` em HBM para acumular `dQ_i` (porque vários blocos de K, V contribuem para o mesmo bloco de Q). FA‑2 reordena para evitar atomics: passa Q como loop externo no backward também, faz a recomputação de \(L\) localmente, e elimina a contenção.
+> **FA‑2 backward improvement:** o FA‑1 fazia um `atomic_add` em HBM para acumular `dQ_i` (porque vários blocos de K, V contribuem para o mesmo bloco de Q). FA‑2 reordena para evitar atomics: passa Q como loop externo no backward também, faz a recomputação de $L$ localmente, e elimina a contenção.
 
 ### 10.4. Memória do backward
 
-- **Naive backward**: armazena \(P\) (\(N^2\) bytes) e os scores \(S\) (\(N^2\) bytes). Inviável para \(N\geq 32\)k.
-- **FA backward**: armazena apenas \(O, dO, Q, K, V, L\) — todos \(O(Nd)\). **Memória do backward fica linear em \(N\)**, não quadrática.
+- **Naive backward**: armazena $P$ ($N^2$ bytes) e os scores $S$ ($N^2$ bytes). Inviável para $N\geq 32$k.
+- **FA backward**: armazena apenas $O, dO, Q, K, V, L$ — todos $O(Nd)$. **Memória do backward fica linear em $N$**, não quadrática.
 
 Esse é o motivo prático pelo qual treinar com **contexto longo** (16k+) só virou viável **depois** do FlashAttention.
 
@@ -766,9 +766,9 @@ O algoritmo geral foi sendo adaptado para diferentes regimes operacionais. Os ma
 
 ### 11.1. FlashDecoding (Tri Dao et al., outubro 2023)
 
-**Problema:** durante **decoding**, geramos **um token por vez**, então a query é \(Q \in \mathbb{R}^{1\times d}\). O FA‑2 paraleliza por blocos de Q, mas só há **um bloco** — só um SM trabalha, **131 SMs ociosos** no H100.
+**Problema:** durante **decoding**, geramos **um token por vez**, então a query é $Q \in \mathbb{R}^{1\times d}$. O FA‑2 paraleliza por blocos de Q, mas só há **um bloco** — só um SM trabalha, **131 SMs ociosos** no H100.
 
-**Solução:** paralelizar dentro da dimensão de **K, V** (a sequência longa do KV cache). Vários SMs processam **partes diferentes da mesma sequência de K, V**, cada um produzindo um \(o\) parcial e \((m, \ell)\) parciais. Um **kernel de redução** combina os parciais usando exatamente a mesma fórmula de online softmax (§3.2) para devolver o \(o\) final.
+**Solução:** paralelizar dentro da dimensão de **K, V** (a sequência longa do KV cache). Vários SMs processam **partes diferentes da mesma sequência de K, V**, cada um produzindo um $o$ parcial e $(m, \ell)$ parciais. Um **kernel de redução** combina os parciais usando exatamente a mesma fórmula de online softmax (§3.2) para devolver o $o$ final.
 
 Ganho: **até 8× mais rápido** que FA‑2 em decode com `batch=1, seq_len=64k`.
 
@@ -803,7 +803,7 @@ A partir de vLLM 0.7 (mid‑2025), FlashInfer é o backend default em H100/B200 
 
 ### 11.5. FlashMLA (DeepSeek, fevereiro 2025)
 
-Versão do FlashAttention **especializada para MLA** (Multi‑head Latent Attention) do DeepSeek‑V2/V3. O loop interno opera sobre o **latent KV** \(c_t \in \mathbb{R}^{d_c}\) (com \(d_c \approx 512\)) e faz a **expansão para K, V** dentro do kernel, sem materializar o KV "completo". Pulled requests para vLLM / SGLang / TGI integraram em março/abril 2025.
+Versão do FlashAttention **especializada para MLA** (Multi‑head Latent Attention) do DeepSeek‑V2/V3. O loop interno opera sobre o **latent KV** $c_t \in \mathbb{R}^{d_c}$ (com $d_c \approx 512$) e faz a **expansão para K, V** dentro do kernel, sem materializar o KV "completo". Pulled requests para vLLM / SGLang / TGI integraram em março/abril 2025.
 
 ---
 
@@ -838,7 +838,7 @@ E o **bandwidth efetivo** que cada um extrai da HBM:
 - **Post principal — [02 — Atenção MHA/MQA/GQA/MLA + FlashAttention](./02-attention-mha-mqa-gqa-mla-flashattention.md)** §6: visão de alto nível das três versões, sem derivações.
 - **[Post 03 — KV cache, PagedAttention, vLLM](./03-kv-cache-anatomia-pagedattention-vllm.md)**: como **PagedFlashAttention** (§11.3) integra o tiling de FA com paginação do KV cache; por que isso multiplica throughput em servidores LLM por 3–24×.
 - **[Post 06 — TurboQuant](./06-turboquant-mse-e-produto-interno.md)** e **[Post 06‑DEEP](./06-DEEP-online-softmax-flashattention.md)** (TurboQuant matemático): o TurboQuant é, como o FlashAttention, um **algoritmo exato** que **substitui um cálculo direto por uma transformação matemática** que respeita melhor a estrutura do hardware. A filosofia é a mesma: *não aproxime a math, transforme‑a para ela caber no silício*.
-- **[Post 07 — Contexto longo, RoPE/YARN, Ring Attention](./07-contexto-longo-rope-yarn-ring-streaming.md)**: o **Ring Attention** (Liu et al., 2023) generaliza online softmax para **rodar entre GPUs** num anel — exatamente os mesmos \((m, \ell)\) sendo passados como mensagens NVLink. É "FlashAttention distribuído".
+- **[Post 07 — Contexto longo, RoPE/YARN, Ring Attention](./07-contexto-longo-rope-yarn-ring-streaming.md)**: o **Ring Attention** (Liu et al., 2023) generaliza online softmax para **rodar entre GPUs** num anel — exatamente os mesmos $(m, \ell)$ sendo passados como mensagens NVLink. É "FlashAttention distribuído".
 
 ---
 

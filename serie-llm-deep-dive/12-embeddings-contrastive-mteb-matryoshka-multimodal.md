@@ -8,13 +8,13 @@
 
 ## TL;DR
 
-- **Embedding** é uma função \( f: x \rightarrow \mathbb{R}^d \) que mapeia texto, imagem, áudio ou código para um vetor onde **proximidade geométrica = similaridade semântica**. É o "endereço num bairro" onde vizinhos têm significado parecido.
+- **Embedding** é uma função $f: x \rightarrow \mathbb{R}^d$ que mapeia texto, imagem, áudio ou código para um vetor onde **proximidade geométrica = similaridade semântica**. É o "endereço num bairro" onde vizinhos têm significado parecido.
 - A **arquitetura** é quase sempre um encoder (BERT-style) ou um **decoder-only adaptado** (LLM2Vec, E5-Mistral, NV-Embed) seguido de **pooling** (CLS, mean, last-token, attention) e **projeção opcional**.
 - O **treinamento** dominante é **contrastive learning** com loss **InfoNCE**: puxar o par correto, empurrar todos os errados ao mesmo tempo. *Hard negatives* (BM25, cross-encoder, in-batch) são o segredo da qualidade.
 - A pipeline canônica (BGE / E5 / SBERT) tem **quatro estágios**: pretraining MLM → contrastive *weakly-supervised* (NLI, MS MARCO, Reddit, CC) → contrastive *supervised* com hard negatives → instruction tuning task-specific.
 - Em 2026, **embeddings decoder-only** dominam o topo do MTEB: **Gemini Embedding 001** (Google, top inglês), **NV-Embed-v2** (Mistral 7B), **Qwen3-Embedding-8B** (top multilingue v2), **Llama-Embed-Nemotron-8B** (NVIDIA, multilingue open), **Microsoft Harrier-oss-v1-27b** (open, multilingue), **Cohere Embed v4** (multimodal text+imagem, 128k context), **Jina Embeddings v4** (3.8B, multimodal multilingue), **Voyage 3 large / Voyage 4** (Anthropic), **BGE-M3** (dense + sparse + multi-vector simultâneos), **Nomic Embed v2 MoE** (open-data, ~305M ativos).
 - **Matryoshka Representation Learning** (Kusupati 2022) virou padrão de fato: **um único modelo serve N dimensões** (3072 → 1536 → 512 → 256 → 64), permitindo cortar storage/latência em runtime sem retreinar. Adotado por OpenAI 3-large/small, Cohere v3/v4, Nomic v1.5/v2, Jina v3, Voyage 3 large, Snowflake Arctic v2.0.
-- **Multi-vector** (ColBERT, ColBERTv2, PLAID, ColPali) troca **storage \(10\text{–}100\times\) maior** por *recall* superior via *late interaction* (`MaxSim`). É a melhor opção quando o *budget* é precisão e o índice cabe em SSD/NVMe.
+- **Multi-vector** (ColBERT, ColBERTv2, PLAID, ColPali) troca **storage $10\text{–}100\times$ maior** por *recall* superior via *late interaction* (`MaxSim`). É a melhor opção quando o *budget* é precisão e o índice cabe em SSD/NVMe.
 - **Sparse aprendido** (SPLADE, SPLADE++, BGE-M3-sparse) oferece **lexical match interpretável** sobre índice invertido tradicional — combinado com denso, é o backbone de busca híbrida moderna.
 - **Multimodal** (CLIP, SigLIP, SigLIP-2, EVA-CLIP, JinaCLIP v2, Cohere v4, Voyage multimodal-3, ImageBind) projeta texto+imagem (e até áudio/vídeo/IMU) num **espaço compartilhado** via contrastive em pares (`image, caption`).
 - **Avaliação** rigorosa = **MTEB / MMTEB v2** (Muennighoff 2022, agora com 8 famílias de tarefas e 200+ datasets) + **MIRACL** (multilingue retrieval) + **BEIR** (zero-shot) + **CoIR** (código) + **MTEB-PT** (português, relevante para audiência BR) + **custom eval** com seus próprios golden pairs.
@@ -60,25 +60,25 @@
 
 Um **embedding** é uma função
 
-\[
+$$
 f_\theta : \mathcal{X} \rightarrow \mathbb{R}^d
-\]
+$$
 
-onde \(\mathcal{X}\) é o espaço de entradas (frases, parágrafos, imagens, trechos de código, áudio…) e \(\mathbb{R}^d\) é um espaço vetorial de dimensão fixa \(d\) (tipicamente 256–8192). Os parâmetros \(\theta\) são treinados de modo a satisfazer **uma única propriedade geométrica**:
+onde $\mathcal{X}$ é o espaço de entradas (frases, parágrafos, imagens, trechos de código, áudio…) e $\mathbb{R}^d$ é um espaço vetorial de dimensão fixa $d$ (tipicamente 256–8192). Os parâmetros $\theta$ são treinados de modo a satisfazer **uma única propriedade geométrica**:
 
-\[
+$$
 \text{sim}(f(x), f(y)) \approx \text{sim}_{\text{semântica}}(x, y)
-\]
+$$
 
 A **similaridade geométrica** é, na prática, uma de três funções:
 
 | Métrica | Fórmula | Quando usar |
 |---|---|---|
-| **Cosine similarity** | \(\frac{\langle u, v \rangle}{\|u\| \cdot \|v\|}\) | Padrão para texto; remove efeito de magnitude |
-| **Dot product (IP)** | \(\langle u, v \rangle\) | Quando vetores já estão normalizados, ou modelos que treinam com IP (NV-Embed, alguns BGE) |
-| **L2 (euclidiana)** | \(\|u - v\|_2\) | Equivalente a cosine para vetores unitários; usado por alguns vector DBs por baseline |
+| **Cosine similarity** | $\frac{\langle u, v \rangle}{\|u\| \cdot \|v\|}$ | Padrão para texto; remove efeito de magnitude |
+| **Dot product (IP)** | $\langle u, v \rangle$ | Quando vetores já estão normalizados, ou modelos que treinam com IP (NV-Embed, alguns BGE) |
+| **L2 (euclidiana)** | $\|u - v\|_2$ | Equivalente a cosine para vetores unitários; usado por alguns vector DBs por baseline |
 
-> **Detalhe crítico.** Para vetores **L2-normalizados** (\(\|u\| = 1\)), cosine, dot product e L2 são **monótonos um do outro**: ranqueiam exatamente igual. Por isso a maioria dos modelos modernos *normaliza no `forward`* — você pode usar qualquer métrica do seu vector DB sem mudar resultado.
+> **Detalhe crítico.** Para vetores **L2-normalizados** ($\|u\| = 1$), cosine, dot product e L2 são **monótonos um do outro**: ranqueiam exatamente igual. Por isso a maioria dos modelos modernos *normaliza no `forward`* — você pode usar qualquer métrica do seu vector DB sem mudar resultado.
 
 ### 1.2 Diagrama do processo
 
@@ -98,7 +98,7 @@ flowchart LR
 
 ### 1.3 Por que isso é poderoso
 
-Uma vez que você tem \(f\), **qualquer tarefa** que dependa de "estes dois itens são parecidos?" cai em:
+Uma vez que você tem $f$, **qualquer tarefa** que dependa de "estes dois itens são parecidos?" cai em:
 
 1. **Busca semântica / RAG** — Post 13.
 2. **Classificação** por *nearest centroid* (zero/few-shot).
@@ -109,7 +109,7 @@ Uma vez que você tem \(f\), **qualquer tarefa** que dependa de "estes dois iten
 7. **Cross-modal retrieval** (texto → imagem, texto → código, áudio → vídeo).
 8. **Retrieval para fine-tune** (escolher exemplos *in-context* relevantes).
 
-Tudo isso roda em **um único índice** se a função \(f\) for boa.
+Tudo isso roda em **um único índice** se a função $f$ for boa.
 
 ---
 
@@ -213,20 +213,20 @@ Decoder-only embedders **devem** usar `padding_side="left"` para que o último t
 
 ### 4.1 A intuição: ringue de empurra-empurra
 
-Imagine que você tem uma **query** \(q\) e um **documento positivo** \(d^+\) (que de fato responde \(q\)). Você também tem **N documentos negativos** \(d_1^-, d_2^-, \ldots, d_N^-\). A loss **InfoNCE** (van den Oord 2018) é:
+Imagine que você tem uma **query** $q$ e um **documento positivo** $d^+$ (que de fato responde $q$). Você também tem **N documentos negativos** $d_1^-, d_2^-, \ldots, d_N^-$. A loss **InfoNCE** (van den Oord 2018) é:
 
-\[
+$$
 \mathcal{L}_{\text{InfoNCE}}(q, d^+, \{d_i^-\}) =
 -\log \frac{\exp(\text{sim}(q, d^+)/\tau)}{\exp(\text{sim}(q, d^+)/\tau) + \sum_{i=1}^{N} \exp(\text{sim}(q, d_i^-)/\tau)}
-\]
+$$
 
-Onde \(\tau\) é a **temperatura** (tipicamente 0.01–0.05). Lendo:
+Onde $\tau$ é a **temperatura** (tipicamente 0.01–0.05). Lendo:
 
 - **Numerador**: "puxa" o positivo.
 - **Denominador**: "empurra" o positivo + todos os negativos (softmax os faz competir).
 - Conceitualmente é uma **classificação multi-classe** entre `1 + N` candidatos, em que a "classe correta" é o positivo.
 
-> **Analogia.** É um **ringue** com 1 amigo e N estranhos. A loss penaliza qualquer estranho que esteja mais perto de você do que o amigo. Quanto maior \(N\), mais difícil o ringue, mais discriminativo o modelo.
+> **Analogia.** É um **ringue** com 1 amigo e N estranhos. A loss penaliza qualquer estranho que esteja mais perto de você do que o amigo. Quanto maior $N$, mais difícil o ringue, mais discriminativo o modelo.
 
 ### 4.2 Pseudocódigo PyTorch
 
@@ -264,7 +264,7 @@ def in_batch_info_nce(q: torch.Tensor, d_pos: torch.Tensor, tau: float = 0.02):
     return F.cross_entropy(logits, labels)
 ```
 
-Com batch \(B = 1024\) você ganha **1023 negativos grátis por query**. Os modelos top-MTEB modernos treinam com batches efetivos de 8k–32k via **gradient cache** (GradCache, Gao 2021) ou TPU pods.
+Com batch $B = 1024$ você ganha **1023 negativos grátis por query**. Os modelos top-MTEB modernos treinam com batches efetivos de 8k–32k via **gradient cache** (GradCache, Gao 2021) ou TPU pods.
 
 ### 4.4 Hard negatives mining: o pulo do gato
 
@@ -309,11 +309,11 @@ def mine_hard_negatives(query: str, positive: str, corpus: list[str],
 
 Antes do InfoNCE, o padrão era **triplet loss** (Schroff 2015 — FaceNet):
 
-\[
+$$
 \mathcal{L}_{\text{triplet}} = \max(0, \text{sim}(q, d^-) - \text{sim}(q, d^+) + m)
-\]
+$$
 
-com **margin** \(m\). Funciona, mas:
+com **margin** $m$. Funciona, mas:
 - **1 negativo por amostra** → muita amostragem para qualidade.
 - Sensível à escolha do margin.
 - InfoNCE é estritamente mais informativo (é triplet com N=1 caso degenerado).
@@ -435,7 +435,7 @@ flowchart LR
 
 ### 7.1 O problema que resolve
 
-Você embedou 100M docs em 3072 dimensões com `text-embedding-3-large`. Storage: \(100\text{M} \times 3072 \times 4\text{B} = 1.23\text{ TB}\). Latência cosine: O(d).
+Você embedou 100M docs em 3072 dimensões com `text-embedding-3-large`. Storage: $100\text{M} \times 3072 \times 4\text{B} = 1.23\text{ TB}$. Latência cosine: O(d).
 
 **Você precisa cortar pela metade**. Tradicionalmente: re-embed tudo com modelo de 1536 dim. Custo: ré-fazer 100M API calls e re-indexar.
 
@@ -445,11 +445,12 @@ Você embedou 100M docs em 3072 dimensões com `text-embedding-3-large`. Storage
 
 ### 7.2 Como treinar
 
-A loss agregada soma a perda contrastive computada **em cada granularidade** \(d_k \in \{64, 128, 256, 512, 1024, 2048, 3072\}\):
+A loss agregada soma a perda contrastive computada **em cada granularidade** $d_k \in \{64, 128, 256, 512, 1024, 2048, 3072\}$:
 
-\[
+$$
 \mathcal{L}_{\text{MRL}} = \sum_{k} w_k \cdot \mathcal{L}_{\text{InfoNCE}}\left(f(x)[:d_k]\right)
-\]
+$$
+
 
 ```python
 def matryoshka_info_nce(q_full: torch.Tensor, d_pos_full: torch.Tensor,
@@ -521,9 +522,9 @@ Single-vector embedding **comprime a frase inteira em um ponto**. Isso perde nua
 
 ColBERT (Khattab 2020) propôs: **um vetor por token**. Em vez de comprimir, mantenha a **constelação de embeddings de tokens**, e compute a similaridade query-doc como:
 
-\[
+$$
 \text{MaxSim}(q, d) = \sum_{i=1}^{|q|} \max_{j=1}^{|d|} \langle q_i, d_j \rangle
-\]
+$$
 
 Para cada token de query, pega o **melhor match** entre todos os tokens do doc (`max`), e soma. Isso é **late interaction**: query e doc são embedados independentemente, mas a comparação é por token.
 
@@ -606,11 +607,11 @@ BM25 (Robertson 1994) é o **baseline lexical** clássico: TF-IDF tunado, vetor 
 1. Passa o texto pelo BERT (encoder).
 2. Sobre cada token do output, projeta para o vocabulário inteiro via **MLM head**.
 3. Aplica **ReLU + log(1+x)** e faz **max-pooling** sobre tokens.
-4. Resultado: vetor sparse de tamanho \(|V| \approx 30\text{k}\), com termos do vocab que o modelo **expandiu/contraiu** semanticamente.
+4. Resultado: vetor sparse de tamanho $|V| \approx 30\text{k}$, com termos do vocab que o modelo **expandiu/contraiu** semanticamente.
 
-\[
+$$
 w_j = \max_i \log\left(1 + \text{ReLU}\left(\text{logit}(t_i, v_j)\right)\right)
-\]
+$$
 
 A loss combina contrastive InfoNCE com **regularização L1** sobre os pesos para forçar sparsity.
 
@@ -680,18 +681,18 @@ Você indexa as três e combina os três scores na hora da query. Custo de infer
 
 | Modelo | Provedor | Dim | Max tokens | MRL | Multilingue | Multimodal | Preço (/M tokens) |
 |---|---|---|---|---|---|---|---|
-| **Gemini Embedding 001** | Google | 3072 → 256 | 8k | ✅ | ✅ 100+ | ❌ | ~$0.13 |
-| **OpenAI text-embedding-3-large** | OpenAI | 3072 → 256 | 8191 | ✅ | ✅ | ❌ | $0.13 |
-| **OpenAI text-embedding-3-small** | OpenAI | 1536 → 512 | 8191 | ✅ | ✅ | ❌ | $0.02 |
-| **Cohere Embed v4** | Cohere | 1536/1024/512/256 | 128k | ✅ | ✅ 100+ | ✅ text+img | ~$0.12 |
-| **Cohere Embed Multilingual v3** | Cohere | 1024 | 512 | ❌ | ✅ 100+ | ❌ | $0.10 |
-| **Voyage 3 large** | Anthropic/Voyage | 2048/1024/512/256 | 32k | ✅ | ✅ | ❌ | $0.18 (200M free) |
+| **Gemini Embedding 001** | Google | 3072 → 256 | 8k | ✅ | ✅ 100+ | ❌ | ~\$0.13 |
+| **OpenAI text-embedding-3-large** | OpenAI | 3072 → 256 | 8191 | ✅ | ✅ | ❌ | \$0.13 |
+| **OpenAI text-embedding-3-small** | OpenAI | 1536 → 512 | 8191 | ✅ | ✅ | ❌ | \$0.02 |
+| **Cohere Embed v4** | Cohere | 1536/1024/512/256 | 128k | ✅ | ✅ 100+ | ✅ text+img | ~\$0.12 |
+| **Cohere Embed Multilingual v3** | Cohere | 1024 | 512 | ❌ | ✅ 100+ | ❌ | \$0.10 |
+| **Voyage 3 large** | Anthropic/Voyage | 2048/1024/512/256 | 32k | ✅ | ✅ | ❌ | \$0.18 (200M free) |
 | **Voyage 4 / 4-large** | Anthropic/Voyage | 2048 | 32k | ✅ | ✅ | ✅ | n.d. (premium) |
-| **Voyage code-3** | Anthropic/Voyage | 1024 | 32k | ✅ | ❌ (código) | ❌ | $0.18 |
-| **Voyage multimodal-3** | Anthropic/Voyage | 1024 | 32k | ✅ | ✅ | ✅ text+img | $0.12 |
-| **Jina Embeddings v3** | Jina AI | 1024 → 32 | 8192 (32k RoPE) | ✅ | ✅ 89 | ❌ | $0.02 |
+| **Voyage code-3** | Anthropic/Voyage | 1024 | 32k | ✅ | ❌ (código) | ❌ | \$0.18 |
+| **Voyage multimodal-3** | Anthropic/Voyage | 1024 | 32k | ✅ | ✅ | ✅ text+img | \$0.12 |
+| **Jina Embeddings v3** | Jina AI | 1024 → 32 | 8192 (32k RoPE) | ✅ | ✅ 89 | ❌ | \$0.02 |
 | **Jina Embeddings v4** | Jina AI | 2048/1024/512 | 32k | ✅ | ✅ 100+ | ✅ text+img + visual | n.d. |
-| **Mixedbread mxbai-embed-large** | Mixedbread | 1024 (MRL) | 512 | ✅ | parcial | ❌ | $0.06 |
+| **Mixedbread mxbai-embed-large** | Mixedbread | 1024 (MRL) | 512 | ✅ | parcial | ❌ | \$0.06 |
 | **Snowflake Arctic-Embed v2.0** | Snowflake | 1024/768/256 | 8192 | ✅ | ✅ | ❌ | uso interno + open |
 
 ### 10.3 Caveat: contaminação MTEB
@@ -742,7 +743,7 @@ Para **português brasileiro** (uso típico: RAG corporativo, busca semântica, 
 
 | Cenário | Recomendação |
 |---|---|
-| **RAG simples, hosted, baixo custo** | OpenAI 3-small (1536 dim, $0.02/M) ou Cohere Embed Multilingual v3 |
+| **RAG simples, hosted, baixo custo** | OpenAI 3-small (1536 dim, \$0.02/M) ou Cohere Embed Multilingual v3 |
 | **RAG corporativo, qualidade alta hosted** | Cohere Embed v4 ou Gemini Embedding 001 |
 | **RAG self-hosted, GPU disponível** | bge-m3 (1024 dim, dense+sparse), Llama-Embed-Nemotron-8B, Qwen3-Embedding-4B/8B |
 | **Edge / latência ultra-baixa** | mxbai-embed-large, Snowflake Arctic-Embed v2.0, Qwen3-Embedding-0.6B |
@@ -788,9 +789,9 @@ flowchart LR
 
 **SigLIP** (Zhai 2023, arXiv:2303.15343) trocou **softmax** por **sigmoid loss** pareada:
 
-\[
+$$
 \mathcal{L}_{\text{SigLIP}} = -\sum_{i,j} \log \sigma(\text{sign}(i,j) \cdot (\langle u_i, v_j \rangle / \tau + b))
-\]
+$$
 
 A loss é independente para cada par `(i,j)`, sem normalizar pelo batch. Vantagens:
 - **Não exige batch enorme** (CLIP precisa 32k para top quality).
@@ -1031,7 +1032,7 @@ PQ é o backbone de **FAISS-IVFPQ**, **Milvus**, **Qdrant** (em modo PQ), **Vesp
 
 ### 16.5 TurboQuant aplicado a embeddings (Post 06)
 
-**TurboQuant** (Post 06, arXiv:2504.19874) é uma quantização **não-enviesada** com cota \(4^{-b}\) para MSE/IP. Aplica-se a vetores de embedding com ganhos:
+**TurboQuant** (Post 06, arXiv:2504.19874) é uma quantização **não-enviesada** com cota $4^{-b}$ para MSE/IP. Aplica-se a vetores de embedding com ganhos:
 
 - **Sem necessidade de calibração** (ao contrário de PQ).
 - **Erro distribuído isotropicamente** (importante para cosine).
@@ -1160,16 +1161,16 @@ Não esqueça: aplicar prefixo errado (treinar com `query:` e servir sem) costum
 
 | Provedor | Modelo | Custo embedding | Custo storage (1024 dim, fp32) | Custo storage (binary) |
 |---|---|---|---|---|
-| **OpenAI** | text-embedding-3-large @ 1024 dim (MRL) | $0.13 × 100k = **$13.000** | 100M × 4 KB = 400 GB | 100M × 128 B = 12 GB |
-| **OpenAI** | text-embedding-3-small @ 512 dim (MRL) | $0.02 × 100k = **$2.000** | 100M × 2 KB = 200 GB | — |
-| **Cohere** | Embed v4 @ 1024 dim | ~$0.12 × 100k = **$12.000** | 400 GB | 12 GB |
-| **Cohere** | Multilingual v3 | $0.10 × 100k = **$10.000** | 400 GB | — |
-| **Voyage** | voyage-3-large | $0.18 × 100k − 200M free = **$17.964** | 400 GB | 12 GB |
-| **Jina v3** | hosted | ~$0.02 × 100k = **$2.000** | 400 GB | — |
-| **Mixedbread mxbai** | hosted | $0.06 × 100k = **$6.000** | 400 GB | — |
-| **Self-hosted bge-m3** | 1× A100 (80GB), throughput ~500 docs/s | 100M / 500 = 200k s ≈ 56h × $1.50/h ≈ **$84** GPU + tempo de eng | 400 GB | 12 GB |
-| **Self-hosted Qwen3-Embedding-8B** | 1× H100, ~150 docs/s | 100M / 150 ≈ 185h × $3/h ≈ **$555** GPU | 400 GB | 12 GB |
-| **Self-hosted NV-Embed-v2** | 2× H100, ~100 docs/s | 100M / 100 = 278h × $6/h ≈ **$1.668** GPU | 400 GB | 12 GB |
+| **OpenAI** | text-embedding-3-large @ 1024 dim (MRL) | \$0.13 × 100k = **\$13.000** | 100M × 4 KB = 400 GB | 100M × 128 B = 12 GB |
+| **OpenAI** | text-embedding-3-small @ 512 dim (MRL) | \$0.02 × 100k = **\$2.000** | 100M × 2 KB = 200 GB | — |
+| **Cohere** | Embed v4 @ 1024 dim | ~\$0.12 × 100k = **\$12.000** | 400 GB | 12 GB |
+| **Cohere** | Multilingual v3 | \$0.10 × 100k = **\$10.000** | 400 GB | — |
+| **Voyage** | voyage-3-large | \$0.18 × 100k − 200M free = **\$17.964** | 400 GB | 12 GB |
+| **Jina v3** | hosted | ~\$0.02 × 100k = **\$2.000** | 400 GB | — |
+| **Mixedbread mxbai** | hosted | \$0.06 × 100k = **\$6.000** | 400 GB | — |
+| **Self-hosted bge-m3** | 1× A100 (80GB), throughput ~500 docs/s | 100M / 500 = 200k s ≈ 56h × \$1.50/h ≈ **\$84** GPU + tempo de eng | 400 GB | 12 GB |
+| **Self-hosted Qwen3-Embedding-8B** | 1× H100, ~150 docs/s | 100M / 150 ≈ 185h × \$3/h ≈ **\$555** GPU | 400 GB | 12 GB |
+| **Self-hosted NV-Embed-v2** | 2× H100, ~100 docs/s | 100M / 100 = 278h × \$6/h ≈ **\$1.668** GPU | 400 GB | 12 GB |
 
 ### 19.2 Quando hosted vence
 
@@ -1444,7 +1445,7 @@ LLM2Vec mostrou que decoder-only é embedder. **EAGLE** e **MTP** (Post 08) most
 - **Voyage 3 large**: [docs.voyageai.com pricing](https://docs.voyageai.com/docs/pricing/).
 - **Nomic Embed v2 MoE**: [blog Nomic 2025](https://www.nomic.ai/blog/posts/nomic-embed-text-v2).
 - **Qwen3-Embedding**: [blog Qwen 2025](https://qwenlm.github.io/blog/qwen3-embedding).
-- **OpenAI text-embedding-3-large**: [docs OpenAI](https://platform.openai.com/docs/models/text-embedding-3-large/), $0.13/M tokens (2026).
+- **OpenAI text-embedding-3-large**: [docs OpenAI](https://platform.openai.com/docs/models/text-embedding-3-large/), \$0.13/M tokens (2026).
 - **MTEB GitHub**: [embeddings-benchmark/mteb](https://github.com/embeddings-benchmark/mteb).
 
 ### Bibliotecas e frameworks práticos

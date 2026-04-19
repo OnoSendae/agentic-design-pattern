@@ -45,7 +45,7 @@
 
 ### 1.1. O choque econômico de dezembro de 2024
 
-A DeepSeek-AI publicou em dezembro de 2024 o **DeepSeek-V3 Technical Report** (arXiv:2412.19437) com um número que sacudiu a indústria: **2.788 milhões de horas de H800** para treinar o modelo do zero. A US$ 2 a hora de H800 isso dá **≈ US$ 5.576.000**. Para comparação, treinos *frontier* equivalentes em 2023–2024 ficavam na casa de **US$ 60–100 milhões** (estimativas para GPT-4, Gemini 1.5 Ultra, Claude 3 Opus). O salto de eficiência não saiu de truque único — saiu do **co-design vertical**:
+A DeepSeek-AI publicou em dezembro de 2024 o **DeepSeek-V3 Technical Report** (arXiv:2412.19437) com um número que sacudiu a indústria: **2.788 milhões de horas de H800** para treinar o modelo do zero. A US\$ 2 a hora de H800 isso dá **≈ US\$ 5.576.000**. Para comparação, treinos *frontier* equivalentes em 2023–2024 ficavam na casa de **US\$ 60–100 milhões** (estimativas para GPT-4, Gemini 1.5 Ultra, Claude 3 Opus). O salto de eficiência não saiu de truque único — saiu do **co-design vertical**:
 
 1. **Arquitetura MoE** com 671 B parâmetros totais e apenas **37 B ativos por token**.
 2. **MLA (Multi-head Latent Attention)** comprimindo o KV cache em latente de baixa dimensão.
@@ -251,13 +251,13 @@ flowchart TB
 
 | Rota | Hardware | Modelo | Tok/s decode esperado | Custo CapEx (USD) |
 |---|---|---|---|---|
-| vLLM cluster | 8× H100 80GB | V3 / V3.1 / R1 FP8 | 200–400 (batch) / 30–60 (single) | ~US$ 240k |
-| SGLang + FlashMLA | 8× H200 141GB | V3.2 + DSA | 250–500 batch | ~US$ 280k |
-| KTransformers | 1× RTX 4090 + 512GB DDR5 + EPYC dual | V3/R1 Q4_K_M | **8–14 decode / 50–280 prefill** | US$ 8–12k |
-| llama.cpp `--n-cpu-moe` | 1× RTX 4090 + 384GB DDR5 | V3 GGUF Q3 | 3–6 decode | US$ 5–7k |
-| mlx-lm | Mac Studio M3 Ultra 192GB | R1-Distill-70B 4bit / V3 Q3_K_S | 20–40 (distill) / 4–8 (V3) | US$ 9.5k |
-| 1× H100 | 1× H100 80GB | R1-Distill-Qwen-32B FP16 | 80–140 | US$ 30k |
-| API hosted | — | qualquer | — | US$ 0 (paga consumo) |
+| vLLM cluster | 8× H100 80GB | V3 / V3.1 / R1 FP8 | 200–400 (batch) / 30–60 (single) | ~US\$ 240k |
+| SGLang + FlashMLA | 8× H200 141GB | V3.2 + DSA | 250–500 batch | ~US\$ 280k |
+| KTransformers | 1× RTX 4090 + 512GB DDR5 + EPYC dual | V3/R1 Q4_K_M | **8–14 decode / 50–280 prefill** | US\$ 8–12k |
+| llama.cpp `--n-cpu-moe` | 1× RTX 4090 + 384GB DDR5 | V3 GGUF Q3 | 3–6 decode | US\$ 5–7k |
+| mlx-lm | Mac Studio M3 Ultra 192GB | R1-Distill-70B 4bit / V3 Q3_K_S | 20–40 (distill) / 4–8 (V3) | US\$ 9.5k |
+| 1× H100 | 1× H100 80GB | R1-Distill-Qwen-32B FP16 | 80–140 | US\$ 30k |
+| API hosted | — | qualquer | — | US\$ 0 (paga consumo) |
 
 > Os números KTransformers vêm do tutorial oficial `kvcache-ai/ktransformers` ([repo](https://github.com/kvcache-ai/ktransformers/blob/main/doc/en/DeepseekR1_V3_tutorial.md)) e relatórios da comunidade (Lambda Labs, Reddit r/LocalLLaMA). Variam fortemente com:
 > - **Geração da CPU** (Granite Rapids/Sierra Forest com AMX → +20–40%);
@@ -502,15 +502,15 @@ Numbers do tutorial oficial KTransformers (Q4_K_M, V3 671B, 14 GB VRAM + 382 GB 
 | Dual socket | 64 | 74.36 | 11.26 |
 | Dual socket + AMX MoE kernel | 64 | **286.55** | **13.69** |
 
-Compare com vLLM em cluster 8× H100: ~280 t/s batch para um *workload* equivalente. Ou seja: KTransformers em **uma 4090 + workstation de US$ 8–12k** entrega **~5% do throughput** de um cluster de US$ 240k. Isso muda completamente o BCR para cargas exploratórias, P&D e **batch jobs noturnos**.
+Compare com vLLM em cluster 8× H100: ~280 t/s batch para um *workload* equivalente. Ou seja: KTransformers em **uma 4090 + workstation de US\$ 8–12k** entrega **~5% do throughput** de um cluster de US\$ 240k. Isso muda completamente o BCR para cargas exploratórias, P&D e **batch jobs noturnos**.
 
 ### 8.6. Comparação de custo total
 
 | Cenário | CapEx | Tok/s pico | US$/M tokens (rough) |
 |---|---|---|---|
-| 8× H100 + vLLM | US$ 240k + US$ 2k/mês energia | 350 batch | ~US$ 0.70 |
-| KTransformers RTX 4090 + EPYC dual | US$ 12k + US$ 200/mês | 14 single | ~US$ 1.40 |
-| API DeepSeek (V3.2) | US$ 0 CapEx | — | US$ 0.28 input / 1.10 output [validar §16] |
+| 8× H100 + vLLM | US\$ 240k + US\$ 2k/mês energia | 350 batch | ~US\$ 0.70 |
+| KTransformers RTX 4090 + EPYC dual | US\$ 12k + US\$ 200/mês | 14 single | ~US\$ 1.40 |
+| API DeepSeek (V3.2) | US\$ 0 CapEx | — | US\$ 0.28 input / 1.10 output [validar §16] |
 
 KTransformers vence quando **(a) você precisa rodar tudo on-prem** (compliance), **(b) você precisa de privacidade total**, ou **(c) você está prototipando**. Para volume puro, hosted ainda ganha.
 
@@ -906,7 +906,7 @@ Tendências consistentes com a trajetória DeepSeek que provavelmente vão se co
 
 ## 19. Receita “open frontier reasoning self-hosted”
 
-> **Cenário:** você quer **substituir Claude Sonnet/GPT-5 mini para tarefas internas de coding agent + RAG corporativo**, mantendo dados on-prem e **gastando menos de US$ 200k upfront**.
+> **Cenário:** você quer **substituir Claude Sonnet/GPT-5 mini para tarefas internas de coding agent + RAG corporativo**, mantendo dados on-prem e **gastando menos de US\$ 200k upfront**.
 
 ### 19.1. Stack proposta
 
@@ -927,10 +927,10 @@ flowchart LR
 
 | Item | Self-host (proposta) | API closed (GPT-5 + Claude 4.6) |
 |---|---|---|
-| CapEx ano 1 | US$ 140k (4× H100 + servidor + rede) | US$ 0 |
-| OpEx ano 1 (energia + ops + DC) | US$ 30k | US$ 250k+ (50 devs × volume médio) |
-| Total ano 1 | **US$ 170k** | **~US$ 250k** |
-| Total ano 2 | US$ 30k OpEx | US$ 250k+ |
+| CapEx ano 1 | US\$ 140k (4× H100 + servidor + rede) | US\$ 0 |
+| OpEx ano 1 (energia + ops + DC) | US\$ 30k | US\$ 250k+ (50 devs × volume médio) |
+| Total ano 1 | **US\$ 170k** | **~US\$ 250k** |
+| Total ano 2 | US\$ 30k OpEx | US\$ 250k+ |
 | Privacidade | máxima | depende de contrato |
 | Capacidade ociosa fim de semana | recuperável p/ batch jobs | desperdiçada |
 
@@ -991,4 +991,4 @@ router:
 
 ---
 
-> **TL;DR do post:** DeepSeek é a **Toyota Hilux Diesel da IA generativa** — feita para entregar 80% da Ferrari por 5% do preço. Em 2026 a família cobre desde **R1-Distill-1.5B** num celular até **V3.2/R2 685B** num cluster de pesquisa, passando pelo **truque de mestre-cuca KTransformers** que faz o motor V12 de 671B caber numa workstation de US$ 12k. **MLA + MTP + DeepSeekMoE + FP8** são os quatro parafusos que sustentam a casa, e cada um tem post dedicado nesta série. Para qualquer time que queira frontier reasoning open-weights em 2026, **a primeira parada é DeepSeek**.
+> **TL;DR do post:** DeepSeek é a **Toyota Hilux Diesel da IA generativa** — feita para entregar 80% da Ferrari por 5% do preço. Em 2026 a família cobre desde **R1-Distill-1.5B** num celular até **V3.2/R2 685B** num cluster de pesquisa, passando pelo **truque de mestre-cuca KTransformers** que faz o motor V12 de 671B caber numa workstation de US\$ 12k. **MLA + MTP + DeepSeekMoE + FP8** são os quatro parafusos que sustentam a casa, e cada um tem post dedicado nesta série. Para qualquer time que queira frontier reasoning open-weights em 2026, **a primeira parada é DeepSeek**.

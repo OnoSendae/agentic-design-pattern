@@ -23,9 +23,9 @@ Dado **x** na esfera unitária **S^{d−1}**, quer-se quantizar **x** com **b bi
 
 **Consequência (Lemma 1 no paper):** cada coordenada **y_j** segue uma lei cuja densidade marginal em **[−1, 1]** é
 
-\[
+$$
 f_X(x) = \frac{\Gamma(d/2)}{\sqrt{\pi}\,\Gamma((d-1)/2)}\,(1-x^2)^{(d-3)/2},\quad x\in[-1,1].
-\]
+$$
 
 Em **alta dimensão**, essa marginal **aproxima uma normal** (paper: converge para normal; coordenadas tornam-se **quase independentes**), o que justifica tratar cada eixo com um quantizador escalar **independente**.
 
@@ -51,10 +51,10 @@ O paper formular isso como **minimização explícita** do custo escalar:
 
 **Eq. (4) — custo MSE escalar ótimo C(f_X, b):**
 
-\[
+$$
 C(f_X,b) := \min_{-1 \le c_1 \le \cdots \le c_{2^b} \le 1} \;
 \sum_{i=1}^{2^b} \int_{\frac{c_{i-1}+c_i}{2}}^{\frac{c_i+c_{i+1}}{2}} (x - c_i)^2 \, f_X(x)\, dx
-\]
+$$
 
 (com convenção nos extremos para **c_0, c_{2^b+1}** que fecham o intervalo **[−1,1]** como no paper: integrais entre midpoints sucessivos).
 
@@ -96,9 +96,9 @@ Para **x ∈ S^{d−1}**, com **x̃** produzido por `DeQuant_mse(Quant_mse(x))`:
 
 **Cota geral (alta resolução / Panter–Dite no proof):**
 
-\[
+$$
 D_{\mathrm{mse}} := \mathbb{E}_{\tilde{x}}\big[\|x - \tilde{x}\|_2^2\big] \;\le\; \frac{\sqrt{3\pi}}{2}\,\frac{1}{4^{b}}
-\]
+$$
 
 (para **b** tal que a análise de alta resolução se aplica; o paper enuncia para **b ≥ 0** no trecho, com uso da fórmula Panter–Dite para **b > 4** na prova).
 
@@ -134,9 +134,9 @@ Para **ANN / similaridade**, interessa **𝔼[⟨y, x̂⟩] = ⟨y, x⟩** (esti
 
 **Exemplo **b = 1** (paper):** codebook tende a **±√(2/(πd))**, logo **Q_mse** ~ **sign(Πx)** e **Q_mse^{-1}(z) ∝ Π^T z**. Pelo **Lemma 4**, para **d** grande:
 
-\[
+$$
 \mathbb{E}\big[\langle y, Q_{\mathrm{mse}}^{-1}(Q_{\mathrm{mse}}(x))\rangle\big] = \frac{2}{\pi}\,\langle y, x\rangle
-\]
+$$
 
 — **viés multiplicativo 2/π**. O viés **diminui** quando **b** cresce (comportamento empírico na Seção 4.1 do paper).
 
@@ -153,10 +153,10 @@ Para **ANN / similaridade**, interessa **𝔼[⟨y, x̂⟩] = ⟨y, x⟩** (esti
 
 **Forma da estimativa de produto interno (paper):**
 
-\[
+$$
 \langle y, x\rangle \;\approx\; \big\langle y, Q_{\mathrm{mse}}^{-1}(Q_{\mathrm{mse}}(x))\big\rangle
 + \|r\|_2 \cdot \Big\langle y, Q_{\mathrm{qjl}}^{-1}(Q_{\mathrm{qjl}}(r))\Big\rangle
-\]
+$$
 
 onde o segundo termo usa o **QJL** no **r** com reescala por **γ = ‖r‖₂** na reconstrução.
 
@@ -191,15 +191,19 @@ onde o segundo termo usa o **QJL** no **r** com reescala por **γ = ‖r‖₂**
 Para **x ∈ S^{d−1}**, **y ∈ ℝ^d**, com **x̃** de `DeQuant_prod`:
 
 1. **Não enviesamento do produto interno:**  
-   \[
-   \mathbb{E}_{\tilde{x}}[\langle y, \tilde{x}\rangle] = \langle y, x\rangle.
-   \]
+   
+
+$$
+\mathbb{E}_{\tilde{x}}[\langle y, \tilde{x}\rangle] = \langle y, x\rangle.
+$$
 
 2. **Distorção do produto interno:**  
-   \[
-   D_{\mathrm{prod}} := \mathbb{E}_{\tilde{x}}\big[|\langle y,x\rangle - \langle y,\tilde{x}\rangle|^2\big]
+   
+
+$$
+D_{\mathrm{prod}} := \mathbb{E}_{\tilde{x}}\big[|\langle y,x\rangle - \langle y,\tilde{x}\rangle|^2\big]
    \;\le\; \frac{\sqrt{3\pi}}{2}\,\frac{\|y\|_2^2}{d}\,\frac{1}{4^{b}}.
-   \]
+$$
 
 3. **Valores mais finos para b = 1…4** (paper):  
    **D_prod ≈** **1.57/d**, **0.56/d**, **0.18/d**, **0.047/d**.
@@ -210,11 +214,14 @@ Para **x ∈ S^{d−1}**, **y ∈ ℝ^d**, com **x̃** de `DeQuant_prod`:
   **𝔼[⟨y, x̃_qjl⟩ | x̃_mse] = ⟨y, r⟩** com **r = x − x̃_mse** (Lemma 4). Logo **𝔼[⟨y, x̃⟩|x̃_mse] = ⟨y, x̃_mse⟩ + ⟨y, r⟩ = ⟨y, x⟩** — pela lei da esperança total, **𝔼[⟨y, x̃⟩] = ⟨y, x⟩**.
 
 - **Passo 2 — variância:**  
-  \[
-  \mathbb{E}\big[|\langle y,x\rangle - \langle y,\tilde{x}\rangle|^2 \,\big|\, \tilde{x}_{\mathrm{mse}}\big]
+  
+
+$$
+\mathbb{E}\big[|\langle y,x\rangle - \langle y,\tilde{x}\rangle|^2 \,\big|\, \tilde{x}_{\mathrm{mse}}\big]
   = \mathrm{Var}_{\tilde{x}_{\mathrm{qjl}}}\big(\langle y, \tilde{x}_{\mathrm{qjl}}\rangle \,\big|\, \tilde{x}_{\mathrm{mse}}\big)
   \le \frac{\pi}{2d}\,\|r\|_2^2\,\|y\|_2^2
-  \]
+$$
+
   (cota de variância do estimador QJL / Lemma 4).
 
 - **Passo 3 — total:** **D_prod ≤ (π/(2d)) ‖y‖² · 𝔼‖x − x̃_mse‖² = (π/(2d)) ‖y‖² · D_mse** com **D_mse** para largura **b−1**; aplica-se o **Teorema 1** e obtém-se a cota em **1/4^b**.

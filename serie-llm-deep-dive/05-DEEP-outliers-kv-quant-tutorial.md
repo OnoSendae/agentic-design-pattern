@@ -9,7 +9,7 @@
 
 ## TL;DR
 
-- O Post 05 mostrou *que* K tem outliers per-channel persistentes e por isso precisa ser quantizado **per-channel**, enquanto V se comporta bem **per-token**. Aqui mostramos *como ver isso com seus próprios olhos*: forward hook no Llama-3.1-8B → captura de \(K, V\) → estatísticas per-channel vs per-token → MSE de cada estratégia.
+- O Post 05 mostrou *que* K tem outliers per-channel persistentes e por isso precisa ser quantizado **per-channel**, enquanto V se comporta bem **per-token**. Aqui mostramos *como ver isso com seus próprios olhos*: forward hook no Llama-3.1-8B → captura de $K, V$ → estatísticas per-channel vs per-token → MSE de cada estratégia.
 - Os outliers em K vêm provavelmente de uma **combinação** de três fenômenos: (1) **pre-norm + RoPE** empurrando energia para certos canais, (2) o modelo aprendendo a usar canais como **switches estruturais** (sinks, posicionais, sintáticos), (3) **softmax saturation** que exige magnitudes grandes em K para "vencer" certos tokens. KIVI e KVQuant documentam empiricamente o padrão; *Outlier Suppression+* (Wei et al., 2023) explica como o mesmo fenômeno aparece em **activations** em geral.
 - **Pre-RoPE quant** (KVQuant) ajuda porque RoPE é uma rotação por blocos de 2 dimensões — aplicada *depois* de quantizar, ela mistura canais e arruína a estrutura per-channel; aplicada *antes*, K mantém os outliers limpos por canal.
 - **Tutorial vLLM:** `--kv-cache-dtype fp8|fp8_e4m3|fp8_e5m2|int8` (o INT8 estava em desenvolvimento ativo no início de 2026 via PR #36893, e está disponível para o backend Triton). Receita típica de produção 2026 = pesos **AWQ/GPTQ INT4** + **KV FP8** em H100/H200/B100/B200.
@@ -39,21 +39,21 @@ A literatura não tem uma única explicação fechada — há três famílias de
 
 ### Hipótese 1 — Pre-norm + RoPE empurram magnitudes para certos canais
 
-Modelos modernos (Llama 2/3/4, Mistral, Qwen, Gemma) usam **pre-LayerNorm** (ou RMSNorm): a entrada de cada bloco é normalizada *antes* das projeções \(W_Q, W_K, W_V\). Isso significa que **a entrada de \(W_K\) tem média zero e variância controlada por canal**, mas a saída \(K = W_K x\) **não** — é apenas uma projeção linear de um vetor unitário, e linhas de \(W_K\) com norma muito maior produzem canais de \(K\) com magnitude maior.
+Modelos modernos (Llama 2/3/4, Mistral, Qwen, Gemma) usam **pre-LayerNorm** (ou RMSNorm): a entrada de cada bloco é normalizada *antes* das projeções $W_Q, W_K, W_V$. Isso significa que **a entrada de $W_K$ tem média zero e variância controlada por canal**, mas a saída $K = W_K x$ **não** — é apenas uma projeção linear de um vetor unitário, e linhas de $W_K$ com norma muito maior produzem canais de $K$ com magnitude maior.
 
-Empiricamente, treinamento via gradiente tende a **amplificar** algumas linhas de \(W_K\) e atrofiar outras (efeito "winner-take-most" do Adam em features estruturais), o que cria a heterogeneidade que vemos. *Outlier Suppression+* (Wei et al., 2023, [arXiv:2304.09145](https://arxiv.org/abs/2304.09145)) mostrou esse padrão em **activations** em geral, não só em K — é uma característica de transformers pre-norm.
+Empiricamente, treinamento via gradiente tende a **amplificar** algumas linhas de $W_K$ e atrofiar outras (efeito "winner-take-most" do Adam em features estruturais), o que cria a heterogeneidade que vemos. *Outlier Suppression+* (Wei et al., 2023, [arXiv:2304.09145](https://arxiv.org/abs/2304.09145)) mostrou esse padrão em **activations** em geral, não só em K — é uma característica de transformers pre-norm.
 
 O **RoPE** mistura pares de canais por uma rotação dependente da posição:
 
-\[
+$$
 \begin{bmatrix} k_{2i} \\ k_{2i+1} \end{bmatrix}_{\text{pós-RoPE}} = \begin{bmatrix} \cos(p\theta_i) & -\sin(p\theta_i) \\ \sin(p\theta_i) & \cos(p\theta_i) \end{bmatrix} \begin{bmatrix} k_{2i} \\ k_{2i+1} \end{bmatrix}_{\text{pré-RoPE}}
-\]
+$$
 
-Se um dos dois canais (ex.: \(k_{2i}\)) tem magnitude muito maior que o outro, **a rotação espalha esse outlier** entre os dois canais, e a magnitude oscila com a posição \(p\). Resultado: pós-RoPE, o outlier "vaza" e os canais ficam **menos persistentes**. KVQuant explora exatamente isso para quantizar **antes** do RoPE.
+Se um dos dois canais (ex.: $k_{2i}$) tem magnitude muito maior que o outro, **a rotação espalha esse outlier** entre os dois canais, e a magnitude oscila com a posição $p$. Resultado: pós-RoPE, o outlier "vaza" e os canais ficam **menos persistentes**. KVQuant explora exatamente isso para quantizar **antes** do RoPE.
 
 ### Hipótese 2 — Canais como "switches" aprendidos
 
-Trabalhos de interpretabilidade (e o próprio fenômeno de **attention sinks** descrito em StreamingLLM, [arXiv:2309.17453](https://arxiv.org/abs/2309.17453)) sugerem que algumas dimensões de \(K\) são usadas como **flags** estruturais:
+Trabalhos de interpretabilidade (e o próprio fenômeno de **attention sinks** descrito em StreamingLLM, [arXiv:2309.17453](https://arxiv.org/abs/2309.17453)) sugerem que algumas dimensões de $K$ são usadas como **flags** estruturais:
 
 - "Este token é o primeiro do contexto" (sink token)
 - "Este token é início de palavra"
@@ -64,19 +64,19 @@ Essas flags precisam de **magnitude alta e estável** para sobreviver à softmax
 
 ### Hipótese 3 — Softmax saturation
 
-A softmax em atenção é \(\text{softmax}(QK^T / \sqrt{d})\). Para que um token "vença" a competição com os outros, o produto \(q \cdot k\) precisa ser grande **em magnitude** comparado aos competidores. Se o head precisa fazer um *roteamento duro* (ex.: copy mechanism, induction head), a única forma da rede empurrar a softmax para 0,99 em um token específico é ter \(K\) muito grande para esse token *em alguns canais* (os mesmos canais que \(Q\) usa para a query daquele head).
+A softmax em atenção é $\text{softmax}(QK^T / \sqrt{d})$. Para que um token "vença" a competição com os outros, o produto $q \cdot k$ precisa ser grande **em magnitude** comparado aos competidores. Se o head precisa fazer um *roteamento duro* (ex.: copy mechanism, induction head), a única forma da rede empurrar a softmax para 0,99 em um token específico é ter $K$ muito grande para esse token *em alguns canais* (os mesmos canais que $Q$ usa para a query daquele head).
 
 Resultado: **a rede aprende a usar magnitude como linguagem** para certos heads, e isso se concentra em poucos canais para evitar destruir features lineares dos demais heads.
 
 ### Síntese
 
-As três hipóteses convergem para o mesmo padrão observável: **alguns canais (~5%) de K têm \(|x|\) consistentemente 10–100× maior que os demais, em todos os tokens**. KIVI ([arXiv:2402.02750](https://arxiv.org/abs/2402.02750)) e KVQuant ([arXiv:2401.18079](https://arxiv.org/abs/2401.18079)) documentam o fenômeno; *Outlier Suppression+* explica a origem; *MiKV* e *ZipCache* exploram que esses canais também são os **mais sensíveis** ao quantizar.
+As três hipóteses convergem para o mesmo padrão observável: **alguns canais (~5%) de K têm $|x|$ consistentemente 10–100× maior que os demais, em todos os tokens**. KIVI ([arXiv:2402.02750](https://arxiv.org/abs/2402.02750)) e KVQuant ([arXiv:2401.18079](https://arxiv.org/abs/2401.18079)) documentam o fenômeno; *Outlier Suppression+* explica a origem; *MiKV* e *ZipCache* exploram que esses canais também são os **mais sensíveis** ao quantizar.
 
 ---
 
 ## A2. Setup reproduzível: capturando K e V de uma camada
 
-> **Aviso:** o código abaixo é **conceitual e didático**. Ele *funciona* na maioria dos setups, mas há quatro armadilhas: (1) a interface de `attention` mudou várias vezes em `transformers` (eager / sdpa / flash_attention_2), (2) modelos com **GQA** têm \(N_{kv} \neq N_{heads}\), (3) algumas implementações já aplicam RoPE *dentro* da camada, então o que você captura é pós-RoPE, (4) FlashAttention pode não expor K explicitamente.
+> **Aviso:** o código abaixo é **conceitual e didático**. Ele *funciona* na maioria dos setups, mas há quatro armadilhas: (1) a interface de `attention` mudou várias vezes em `transformers` (eager / sdpa / flash_attention_2), (2) modelos com **GQA** têm $N_{kv} \neq N_{heads}$, (3) algumas implementações já aplicam RoPE *dentro* da camada, então o que você captura é pós-RoPE, (4) FlashAttention pode não expor K explicitamente.
 
 ```python
 import torch
@@ -124,7 +124,7 @@ print("dtype:", K.dtype, "tokens:", K.shape[1])
 
 1. `attn_implementation="eager"`: forçar a implementação "naïve" garante que `k_proj` e `v_proj` sejam módulos `nn.Linear` independentes que podemos hookar. As implementações `sdpa` e `flash_attention_2` muitas vezes *fundem* QKV em um único kernel ou aplicam RoPE inline — você captura "lixo" se hookar `forward`.
 2. `register_forward_pre_hook`: hookar **antes** do forward da atenção; o input `inputs[0]` é o hidden state já normalizado (pré-projeções).
-3. `module.k_proj(h)`: re-projetamos manualmente para garantir que estamos olhando \(K\) **pré-RoPE**. Isso é o que KVQuant quantiza.
+3. `module.k_proj(h)`: re-projetamos manualmente para garantir que estamos olhando $K$ **pré-RoPE**. Isso é o que KVQuant quantiza.
 4. `prompt * 40`: queremos pelo menos algumas centenas de tokens para ter estatística decente per-channel.
 
 **Variantes:**

@@ -84,7 +84,7 @@ RAG resolve os cinco problemas acima, mas **adiciona** complexidade:
 - **Operação de pipeline de ingestão** (queue, parser, embedder, índice) — um sistema distribuído inteiro.
 - **Manutenção do índice**: deletes, updates, re-embedding quando troca o modelo, *backfills*.
 - **Qualidade depende da qualidade do retrieval**: lixo entra, lixo sai (*garbage in, garbage out*). Um RAG mal-tuned pode ser pior que o LLM puro porque enfia ruído no contexto.
-- **Custo de embeddings**: indexar 10M docs × 1k tokens × $0.13/1M ≈ **$1.300** com OpenAI 3-large; **zero** com BGE-M3 self-hosted (mas você paga GPU).
+- **Custo de embeddings**: indexar 10M docs × 1k tokens × \$0.13/1M ≈ **\$1.300** com OpenAI 3-large; **zero** com BGE-M3 self-hosted (mas você paga GPU).
 
 A pergunta não é "RAG ou não", é "**quanto** RAG e **onde** colocar a complexidade".
 
@@ -326,12 +326,12 @@ flowchart TB
 
 | Modelo | Provedor | Dim | Max tokens | Multilíngue | Preço (1M tok) | Notas |
 |---|---|---|---|---|---|---|
-| **Gemini Embedding 001** | Google | 768/1536/3072 | 8192 | sim | $0.025 | #1 MTEB EN (mar/2026), Matryoshka |
+| **Gemini Embedding 001** | Google | 768/1536/3072 | 8192 | sim | \$0.025 | #1 MTEB EN (mar/2026), Matryoshka |
 | **NV-Embed-v2** | NVIDIA | 4096 | 32768 | parcial | self-host | Top MTEB free, pesa 7B |
 | **Qwen3-Embedding-8B** | Alibaba | 4096 | 32768 | 119 idiomas | self-host | #2-4 MTEB, 0.6B/4B/8B |
-| **OpenAI text-embedding-3-large** | OpenAI | 3072 (Matryoshka) | 8191 | sim | $0.13 | API confiável, mas perde para Gemini em MTEB |
-| **Cohere Embed v4** | Cohere | 1536 | 128k | sim | $0.10 | Multimodal nativo (texto+imagem) |
-| **Voyage-3** | Voyage AI | 1024 | 32k | sim | $0.06 | Bom custo-benefício, multimodal-3 disponível |
+| **OpenAI text-embedding-3-large** | OpenAI | 3072 (Matryoshka) | 8191 | sim | \$0.13 | API confiável, mas perde para Gemini em MTEB |
+| **Cohere Embed v4** | Cohere | 1536 | 128k | sim | \$0.10 | Multimodal nativo (texto+imagem) |
+| **Voyage-3** | Voyage AI | 1024 | 32k | sim | \$0.06 | Bom custo-benefício, multimodal-3 disponível |
 | **BGE-M3** | BAAI | 1024 | 8192 | 100+ idiomas | self-host | 3-em-1: dense+sparse+multivector |
 | **bge-large-en-v1.5** | BAAI | 1024 | 512 | EN | self-host | Clássico, ainda muito usado |
 | **intfloat/e5-mistral-7b-instruct** | intfloat | 4096 | 4096 | sim | self-host | Forte em retrieval instructed |
@@ -820,14 +820,14 @@ flowchart TB
 
 | Implementação | Backer | Custo de indexar 500-pg corpus | Vantagem | Desvantagem |
 |---|---|---|---|---|
-| **Microsoft GraphRAG** | Microsoft | $50–200 | Qualidade altíssima, +26% comprehensiveness | Caro; escala 10k docs vai em 4 dígitos |
-| **LazyGraphRAG** | Microsoft | ~$0.05 | 0.1% do custo de indexação, qualidade similar | Latência de query +2–8s |
-| **LightRAG** | HKU (out/2024) | ~$0.50 | 6.000× menos tokens/query, +84% win rate | Menos relações capturadas |
+| **Microsoft GraphRAG** | Microsoft | \$50–200 | Qualidade altíssima, +26% comprehensiveness | Caro; escala 10k docs vai em 4 dígitos |
+| **LazyGraphRAG** | Microsoft | ~\$0.05 | 0.1% do custo de indexação, qualidade similar | Latência de query +2–8s |
+| **LightRAG** | HKU (out/2024) | ~\$0.50 | 6.000× menos tokens/query, +84% win rate | Menos relações capturadas |
 | **Neo4j LLM-KG-Builder** | Neo4j | varia | Grafo persistente em Neo4j, BI pronto | Setup complexo |
 | **Graphiti (Zep)** | Zep | medio | Grafo temporal (eventos com tempo) | Foco memory de agente |
 | **GraphRAG-Local-Ollama** | comunidade | grátis (GPU) | 100% on-prem | Qualidade depende do LLM local |
 
-> **Validado em web search 2026**: para 10.000 documentos, Microsoft GraphRAG indexa em **~$1.000–3.000**; LightRAG em **~$10–30**; vector RAG puro em **~$1–5**. Use GraphRAG para **base curada e estável**, não para wikis com 1000 edits/dia.
+> **Validado em web search 2026**: para 10.000 documentos, Microsoft GraphRAG indexa em **~\$1.000–3.000**; LightRAG em **~\$10–30**; vector RAG puro em **~\$1–5**. Use GraphRAG para **base curada e estável**, não para wikis com 1000 edits/dia.
 
 ### 13.4 Algoritmo de Leiden em uma frase
 
@@ -990,7 +990,7 @@ Pergunta inevitável: "se cabe tudo no contexto, **por que ainda RAG**?"
 | Motivo | Efeito |
 |---|---|
 | **Lost in the Middle** | Precisão cai ~10–30 pp em meio de 1M tokens |
-| **Custo de prefill** | 1M tokens × $0.001/1k input = $1 por query |
+| **Custo de prefill** | 1M tokens × \$0.001/1k input = \$1 por query |
 | **Latência de prefill** | TTFT de 5–30s mesmo em GPU H200 |
 | **Permissionamento** | Não dá pra colocar dados de tenant A no contexto da query do tenant B |
 | **Atualização** | Long-context exige re-feed do corpus inteiro a cada query |
@@ -1000,7 +1000,7 @@ Pergunta inevitável: "se cabe tudo no contexto, **por que ainda RAG**?"
 | Dimensão | RAG | Long-context | Híbrido (RAG + LC) |
 |---|---|---|---|
 | **Latência (10k docs corpus)** | 100–500 ms (retrieval) + 1–3s (gen) | 5–30 s prefill + gen | 100ms + 5s prefill + gen |
-| **Custo por query** | $0.001–0.01 | $0.10–1.00 | $0.05–0.20 |
+| **Custo por query** | \$0.001–0.01 | \$0.10–1.00 | \$0.05–0.20 |
 | **Precisão** | alta (chunks focados) | médio (LITM) | alta (top-N + folga) |
 | **Update incremental** | trivial (upsert) | re-feed sempre | trivial |
 | **Multi-tenant** | nativo (filtros) | difícil | nativo |
@@ -1325,31 +1325,31 @@ DSPy (Khattab et al. 2023, arXiv:2310.03714) trata prompts como **programas decl
 **Indexação (one-shot inicial):**
 
 - 10M chunks × 500 tokens médios = 5B tokens.
-- OpenAI 3-large: 5B × $0.13 / 1M = **$650**.
-- BGE-M3 self-hosted: 1× A100 por 24h = **$50**.
+- OpenAI 3-large: 5B × \$0.13 / 1M = **\$650**.
+- BGE-M3 self-hosted: 1× A100 por 24h = **\$50**.
 - Storage: 10M × 1024 dim × 4 bytes = **40 GB FP32** → **10 GB INT8**.
 
 **Operação mensal:**
 
-- Re-indexação delta: ~5% / mês = $32 OpenAI ou $2.5 self-hosted.
-- Vector DB: Qdrant Cloud cluster médio = **~$200/mês**; pgvector em RDS = **~$150/mês**; Pinecone Pod p1.x1 = **~$70/mês** (até 1M vetores; serverless).
+- Re-indexação delta: ~5% / mês = \$32 OpenAI ou \$2.5 self-hosted.
+- Vector DB: Qdrant Cloud cluster médio = **~\$200/mês**; pgvector em RDS = **~\$150/mês**; Pinecone Pod p1.x1 = **~\$70/mês** (até 1M vetores; serverless).
 
 **Por query (média):**
 
 | Etapa | Tempo | Custo (gerenciado) | Custo (self-hosted) |
 |---|---|---|---|
-| Query embedding | 5 ms | $0.0001 | ~$0 |
-| Vector retrieval (top-50) | 30 ms | incluso no DB | ~$0 |
-| Sparse retrieval | 20 ms | incluso | ~$0 |
-| Rerank top-10 | 100 ms | $0.001 (Cohere) | ~$0.0001 GPU |
-| LLM generation (Claude Sonnet 4.5, 2k in / 500 out) | 2 s | $0.014 | depende |
-| **Total/query** | **~2.2 s** | **~$0.015** | **~$0.001** |
+| Query embedding | 5 ms | \$0.0001 | ~\$0 |
+| Vector retrieval (top-50) | 30 ms | incluso no DB | ~\$0 |
+| Sparse retrieval | 20 ms | incluso | ~\$0 |
+| Rerank top-10 | 100 ms | \$0.001 (Cohere) | ~\$0.0001 GPU |
+| LLM generation (Claude Sonnet 4.5, 2k in / 500 out) | 2 s | \$0.014 | depende |
+| **Total/query** | **~2.2 s** | **~\$0.015** | **~\$0.001** |
 
-**Mensal por tenant:** 1k × 30 = 30k queries × $0.015 = **$450** (gerenciado) ou **$30** (self-hosted).
+**Mensal por tenant:** 1k × 30 = 30k queries × \$0.015 = **\$450** (gerenciado) ou **\$30** (self-hosted).
 
 ### 21.2 ROI vs fine-tune
 
-Fine-tune de Llama 3.1 70B com LoRA em 100k exemplos: ~$2.000 + ~$300/mês de inferência por tenant. Não atualiza com novos dados, não dá citação, não respeita ACL. **RAG ganha** quase sempre fora de domínio super-específico (estilo, persona).
+Fine-tune de Llama 3.1 70B com LoRA em 100k exemplos: ~\$2.000 + ~\$300/mês de inferência por tenant. Não atualiza com novos dados, não dá citação, não respeita ACL. **RAG ganha** quase sempre fora de domínio super-específico (estilo, persona).
 
 ### 21.3 Truques de redução de custo
 
@@ -1357,7 +1357,7 @@ Fine-tune de Llama 3.1 70B com LoRA em 100k exemplos: ~$2.000 + ~$300/mês de in
 - **Embedding em batch GPU**: 10× mais barato que API.
 - **Matryoshka truncate**: 1/4 do storage, ~95% do recall.
 - **Reranker open** (BGE Reranker v2) em vez de Cohere API.
-- **LLM open-weight via vLLM** (Llama 3.3 70B): $0.001/query vs $0.015 Claude.
+- **LLM open-weight via vLLM** (Llama 3.3 70B): \$0.001/query vs \$0.015 Claude.
 
 ---
 
@@ -1476,7 +1476,7 @@ Fine-tune de Llama 3.1 70B com LoRA em 100k exemplos: ~$2.000 + ~$300/mês de in
 - *GraphRAG production 2026*: Microsoft GraphRAG, LightRAG e Neo4j Graphiti dominam; LazyGraphRAG reduz custo a 0.1% com latência +2-8s; LightRAG corta tokens 6.000× por query vs GraphRAG.
 - *Ragas 2026*: experiments-first approach, suporte multi-LLM (OpenAI, Anthropic, Gemini, Ollama), métricas reference-free, sintetic test data generation.
 - *Vector DB benchmarks 2026*: Qdrant lidera latência (4ms p50, 5.100 QPS @ 10M × 1536-d); Milvus para escala extrema; Pinecone para zero-ops.
-- *Cohere Embed v4 / Voyage-3 pricing 2026*: Cohere Embed v4 a $0.10/1M tok texto, $0.0001/imagem, 1536-d, 128k contexto; Voyage-3 a $0.06/1M tok com versão multimodal-3 disponível.
+- *Cohere Embed v4 / Voyage-3 pricing 2026*: Cohere Embed v4 a \$0.10/1M tok texto, \$0.0001/imagem, 1536-d, 128k contexto; Voyage-3 a \$0.06/1M tok com versão multimodal-3 disponível.
 - *Self-RAG / CRAG 2026*: implementações maduras; CRAG entrega +36 pp em saúde, +15 pp em factualidade biográfica, +7 pp em popular Q&A.
 
 ---

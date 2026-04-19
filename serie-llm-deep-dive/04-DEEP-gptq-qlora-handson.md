@@ -34,25 +34,25 @@ GPTQ não nasceu do nada em 2022. Ele é a tradução, para o problema de **quan
 
 Em *Optimal Brain Damage* (NeurIPS 1989), Yann LeCun perguntou: **dado um modelo treinado, qual peso eu posso zerar perdendo o mínimo de qualidade?**
 
-A função de perda \(L\) é uma superfície no espaço dos pesos. Estamos num mínimo local após o treino, então o **gradiente** \(g = \nabla_w L\) é (aproximadamente) zero. Expandindo \(L\) em torno de \(w^*\) com Taylor de segunda ordem:
+A função de perda $L$ é uma superfície no espaço dos pesos. Estamos num mínimo local após o treino, então o **gradiente** $g = \nabla_w L$ é (aproximadamente) zero. Expandindo $L$ em torno de $w^*$ com Taylor de segunda ordem:
 
 $$
 L(w^* + \Delta w) \approx L(w^*) + g^T \Delta w + \tfrac{1}{2} \Delta w^T H \Delta w
 $$
 
-Como \(g \approx 0\) num mínimo, sobra:
+Como $g \approx 0$ num mínimo, sobra:
 
 $$
 \Delta L \approx \tfrac{1}{2} \Delta w^T H \Delta w
 $$
 
-A pergunta "qual peso eu zero?" vira: **escolha \(\Delta w\) (com a restrição de zerar o peso \(i\)) que minimiza a forma quadrática acima**. OBD aproxima `H` por sua diagonal (computacionalmente barato, mas perde correlações entre pesos).
+A pergunta "qual peso eu zero?" vira: **escolha $\Delta w$ (com a restrição de zerar o peso $i$) que minimiza a forma quadrática acima**. OBD aproxima `H` por sua diagonal (computacionalmente barato, mas perde correlações entre pesos).
 
 ### A.1.2 Optimal Brain Surgeon (Hassibi & Stork, 1993)
 
-Em 1993, Babak Hassibi e David Stork publicaram *Second order derivatives for network pruning: Optimal Brain Surgeon* (NeurIPS 1992/93). A contribuição: usar a **Hessiana cheia** (não só a diagonal) e, ao zerar o peso \(w_i\), **ajustar todos os outros pesos** para compensar.
+Em 1993, Babak Hassibi e David Stork publicaram *Second order derivatives for network pruning: Optimal Brain Surgeon* (NeurIPS 1992/93). A contribuição: usar a **Hessiana cheia** (não só a diagonal) e, ao zerar o peso $w_i$, **ajustar todos os outros pesos** para compensar.
 
-A solução fechada: o ajuste ótimo \(\Delta w\) ao zerar \(w_i\) é
+A solução fechada: o ajuste ótimo $\Delta w$ ao zerar $w_i$ é
 
 $$
 \Delta w = -\frac{w_i}{[H^{-1}]_{ii}} \cdot H^{-1}_{:, i}
@@ -64,7 +64,7 @@ $$
 \Delta L_i = \frac{w_i^2}{2 [H^{-1}]_{ii}}
 $$
 
-Isso é o "saliency score" do OBS: quanto **menor** \([H^{-1}]_{ii}\) (mais "rígida" aquela direção da Hessiana), **maior** o custo de mexer no peso \(i\). Inversamente, pesos em direções "moles" são candidatos baratos a serem podados.
+Isso é o "saliency score" do OBS: quanto **menor** $[H^{-1}]_{ii}$ (mais "rígida" aquela direção da Hessiana), **maior** o custo de mexer no peso $i$. Inversamente, pesos em direções "moles" são candidatos baratos a serem podados.
 
 OBS nunca foi escalável para redes modernas (calcular `H` cheia em GPT-3 é absurdo), mas plantou as duas sementes que reaparecem em GPTQ:
 
@@ -75,12 +75,12 @@ OBS nunca foi escalável para redes modernas (calcular `H` cheia em GPT-3 é abs
 
 Em 2022, Frantar e Alistarh propuseram *Optimal Brain Compression* (OBQ), generalizando OBS de **pruning** (mexer = zerar) para **quantização** (mexer = arredondar para o grid). A receita conceitual:
 
-- Escolha um peso \(w_i\) para quantizar.
-- Compute o erro \(\delta_i = w_i - q(w_i)\) onde \(q(\cdot)\) é a função de quantização (round-to-nearest no grid INT4, por exemplo).
-- Aplique o ajuste OBS: redistribua esse erro pelos pesos restantes via \(H^{-1}\).
+- Escolha um peso $w_i$ para quantizar.
+- Compute o erro $\delta_i = w_i - q(w_i)$ onde $q(\cdot)$ é a função de quantização (round-to-nearest no grid INT4, por exemplo).
+- Aplique o ajuste OBS: redistribua esse erro pelos pesos restantes via $H^{-1}$.
 - Repita para o próximo peso.
 
-OBQ funciona, mas escalar para LLMs de bilhões de parâmetros ainda era proibitivo: para cada **linha** de \(W\) (camada Linear `d_out × d_in`), precisaria refazer parte do cálculo. **GPTQ é a versão Cholesky-based, escalável, do OBQ.**
+OBQ funciona, mas escalar para LLMs de bilhões de parâmetros ainda era proibitivo: para cada **linha** de $W$ (camada Linear `d_out × d_in`), precisaria refazer parte do cálculo. **GPTQ é a versão Cholesky-based, escalável, do OBQ.**
 
 ---
 
@@ -97,7 +97,7 @@ O paper *GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Tr
 Razões pragmáticas:
 
 - A perda global precisa de **labels**, **forward completo**, **backprop** — quantização é PTQ, não treino.
-- Fazendo localmente (uma camada por vez), você só precisa de algumas centenas de **ativações de calibração** \(X\) por camada, capturadas com hooks no forward de exemplos quaisquer (WikiText, C4, dataset interno).
+- Fazendo localmente (uma camada por vez), você só precisa de algumas centenas de **ativações de calibração** $X$ por camada, capturadas com hooks no forward de exemplos quaisquer (WikiText, C4, dataset interno).
 - A composição das aproximações por camada **funciona surpreendentemente bem** na prática: PPL final fica dentro de 0.1–0.3 do FP16 em INT4.
 
 ### A.2.2 A Hessiana é compartilhada entre todas as linhas
@@ -108,29 +108,29 @@ $$
 \| X W - X \hat W \|_F^2 = \sum_{j=1}^{d_\text{out}} \| X w_{:,j} - X \hat w_{:,j} \|_2^2
 $$
 
-Para **cada coluna** (linha de saída) \(w_{:,j}\), o problema é
+Para **cada coluna** (linha de saída) $w_{:,j}$, o problema é
 
 $$
 \min_{\hat w} \| X w - X \hat w \|_2^2
 $$
 
-cuja Hessiana com respeito a \(\hat w\) é
+cuja Hessiana com respeito a $\hat w$ é
 
 $$
 H = \frac{\partial^2}{\partial \hat w^2} \| X w - X \hat w \|_2^2 = 2 X^T X \in \mathbb{R}^{d_\text{in} \times d_\text{in}}
 $$
 
-**Crucial**: \(H\) **não depende** de \(j\). É a mesma matriz `2·XᵀX` para todas as `d_out` linhas da camada! Isso significa que você calcula `H` **uma vez** por camada, inverte (com Cholesky) **uma vez**, e reutiliza a inversa para quantizar todas as `d_out` linhas em paralelo.
+**Crucial**: $H$ **não depende** de $j$. É a mesma matriz `2·XᵀX` para todas as `d_out` linhas da camada! Isso significa que você calcula `H` **uma vez** por camada, inverte (com Cholesky) **uma vez**, e reutiliza a inversa para quantizar todas as `d_out` linhas em paralelo.
 
 ### A.2.3 Por que o problema é NP-hard
 
-Quantizar uniformemente em INT4 significa restringir cada peso a um conjunto discreto de 16 valores (ou 16·n_grupos valores, com group quantization). Achar a configuração ótima de bits para minimizar o erro quadrático é um **problema combinatório**: \(16^{d_\text{in}}\) configurações por linha. Para `d_in = 4096`, isso é \(16^{4096}\) — claramente impraticável.
+Quantizar uniformemente em INT4 significa restringir cada peso a um conjunto discreto de 16 valores (ou 16·n_grupos valores, com group quantization). Achar a configuração ótima de bits para minimizar o erro quadrático é um **problema combinatório**: $16^{d_\text{in}}$ configurações por linha. Para `d_in = 4096`, isso é $16^{4096}$ — claramente impraticável.
 
 GPTQ aproxima fazendo **decisões gulosas, ordem fixa, com compensação de erro**. Não é o ótimo combinatório, mas é provadamente bom (e empiricamente excelente).
 
 ### A.2.4 Quantos exemplos de calibração?
 
-Uma das descobertas surpreendentes do paper: **128 exemplos** de calibração (sequências curtas, ~512 tokens) já são suficientes para um modelo de 175B. A intuição: \(H = 2 X^T X\) é uma matriz `d_in × d_in`. Para que ela tenha posto cheio e seja bem-condicionada, basta \(n \gg d_\text{in}\) tokens (não exemplos): 128 exemplos × 512 tokens = 65 536 amostras de ativação por camada, mais que suficiente para `d_in = 4096`.
+Uma das descobertas surpreendentes do paper: **128 exemplos** de calibração (sequências curtas, ~512 tokens) já são suficientes para um modelo de 175B. A intuição: $H = 2 X^T X$ é uma matriz `d_in × d_in`. Para que ela tenha posto cheio e seja bem-condicionada, basta $n \gg d_\text{in}$ tokens (não exemplos): 128 exemplos × 512 tokens = 65 536 amostras de ativação por camada, mais que suficiente para `d_in = 4096`.
 
 > Recomendação prática 2025/2026: 128–512 exemplos de **WikiText-2 train** ou **C4 en**, sequências de 2048 tokens, é o "default" que ainda produz os melhores números nos benchmarks comparativos.
 
@@ -138,7 +138,7 @@ Uma das descobertas surpreendentes do paper: **128 exemplos** de calibração (s
 
 ## A.3 Cholesky-based GPTQ — o algoritmo final
 
-A inovação engenheirística do paper: percorrer as colunas de \(W\) em **ordem fixa** (1, 2, …, d_in), e a cada coluna quantizada, **propagar o erro** apenas para as colunas **ainda não processadas** — usando a **fatoração de Cholesky** de \(H^{-1}\) para ler eficientemente o "vetor de propagação".
+A inovação engenheirística do paper: percorrer as colunas de $W$ em **ordem fixa** (1, 2, …, d_in), e a cada coluna quantizada, **propagar o erro** apenas para as colunas **ainda não processadas** — usando a **fatoração de Cholesky** de $H^{-1}$ para ler eficientemente o "vetor de propagação".
 
 ### A.3.1 Pseudocódigo Python comentado
 
@@ -514,7 +514,7 @@ Note: o nível `-0.0000` (e o `-0.0000` é distinto de `0.0796` no outro lado) g
 
 ### B.2.3 Block-wise quantization
 
-Cada **bloco de 64 elementos** (consecutivos no tensor flatten-row-major) tem **seu próprio scale** \(s\) (FP32 originalmente). Um peso \(w\) é codificado como:
+Cada **bloco de 64 elementos** (consecutivos no tensor flatten-row-major) tem **seu próprio scale** $s$ (FP32 originalmente). Um peso $w$ é codificado como:
 
 $$
 \text{nf4\_index} = \arg\min_k | w / s - \text{level}_k |

@@ -66,44 +66,44 @@ flowchart TB
 
 ### 2.1 Definição formal
 
-Um **vetor** é um elemento de \(\mathbb{R}^n\) — uma lista ordenada de \(n\) números reais. Notação:
+Um **vetor** é um elemento de $\mathbb{R}^n$ — uma lista ordenada de $n$ números reais. Notação:
 
-\[
+$$
 \mathbf{v} = \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_n \end{bmatrix} \in \mathbb{R}^n
-\]
+$$
 
-> **Analogia:** um vetor é uma **flecha no espaço de significado**. A direção representa "o que ela quer dizer", o comprimento representa "quão forte ela diz isso". Para um embedding GPT, cada flecha em \(\mathbb{R}^{4096}\) é a posição de um token no espaço semântico aprendido pelo modelo.
+> **Analogia:** um vetor é uma **flecha no espaço de significado**. A direção representa "o que ela quer dizer", o comprimento representa "quão forte ela diz isso". Para um embedding GPT, cada flecha em $\mathbb{R}^{4096}$ é a posição de um token no espaço semântico aprendido pelo modelo.
 
 ### 2.2 Notação coluna vs linha
 
-Por convenção em ML/álgebra linear, vetores são **coluna** (\(\mathbb{R}^{n \times 1}\)). A versão linha é o **transposto** \(\mathbf{v}^T \in \mathbb{R}^{1 \times n}\). Em PyTorch, no entanto, vetores 1D `(n,)` não têm orientação explícita — ela emerge do contexto da operação.
+Por convenção em ML/álgebra linear, vetores são **coluna** ($\mathbb{R}^{n \times 1}$). A versão linha é o **transposto** $\mathbf{v}^T \in \mathbb{R}^{1 \times n}$. Em PyTorch, no entanto, vetores 1D `(n,)` não têm orientação explícita — ela emerge do contexto da operação.
 
 ### 2.3 Operações básicas
 
 | Operação | Notação | Resultado |
 |---|---|---|
-| Soma | \(\mathbf{u} + \mathbf{v}\) | vetor componente a componente |
-| Diferença | \(\mathbf{u} - \mathbf{v}\) | vetor componente a componente |
-| Escalar | \(\alpha \mathbf{v}\) | escala cada coordenada |
-| Combinação linear | \(\alpha \mathbf{u} + \beta \mathbf{v}\) | "novo significado" entre \(\mathbf{u}\) e \(\mathbf{v}\) |
+| Soma | $\mathbf{u} + \mathbf{v}$ | vetor componente a componente |
+| Diferença | $\mathbf{u} - \mathbf{v}$ | vetor componente a componente |
+| Escalar | $\alpha \mathbf{v}$ | escala cada coordenada |
+| Combinação linear | $\alpha \mathbf{u} + \beta \mathbf{v}$ | "novo significado" entre $\mathbf{u}$ e $\mathbf{v}$ |
 
 ### 2.4 Normas — o "comprimento" da flecha
 
-Uma **norma** \(\|\cdot\|\) é uma função que atribui tamanho a um vetor. Em LLMs as três que importam são:
+Uma **norma** $\|\cdot\|$ é uma função que atribui tamanho a um vetor. Em LLMs as três que importam são:
 
-\[
+$$
 \|\mathbf{v}\|_1 = \sum_{i=1}^n |v_i| \quad \text{(L1 — soma de magnitudes)}
-\]
+$$
 
-\[
+$$
 \|\mathbf{v}\|_2 = \sqrt{\sum_{i=1}^n v_i^2} \quad \text{(L2 — euclidiana, "comprimento físico")}
-\]
+$$
 
-\[
+$$
 \|\mathbf{v}\|_\infty = \max_{i} |v_i| \quad \text{(L∞ — maior componente)}
-\]
+$$
 
-> **Intuição:** L2 é a régua escolar (Pitágoras em \(n\) dimensões). L1 é "distância de táxi em Manhattan" (só anda em ruas perpendiculares). L∞ é "qual é a coordenada mais brutal".
+> **Intuição:** L2 é a régua escolar (Pitágoras em $n$ dimensões). L1 é "distância de táxi em Manhattan" (só anda em ruas perpendiculares). L∞ é "qual é a coordenada mais brutal".
 
 A L∞ vai aparecer com força quando falarmos de **outliers em K-cache** (Post 05-DEEP) — basta um único componente gigante para arruinar uma quantização uniforme.
 
@@ -111,21 +111,21 @@ A L∞ vai aparecer com força quando falarmos de **outliers em K-cache** (Post 
 
 Pedra angular de quase tudo em LLMs:
 
-\[
+$$
 \langle \mathbf{u}, \mathbf{v} \rangle \;=\; \mathbf{u}^T \mathbf{v} \;=\; \sum_{i=1}^n u_i v_i
-\]
+$$
 
 A interpretação geométrica é o que dá poder:
 
-\[
+$$
 \langle \mathbf{u}, \mathbf{v} \rangle \;=\; \|\mathbf{u}\| \, \|\mathbf{v}\| \, \cos\theta
-\]
+$$
 
-Onde \(\theta\) é o ângulo entre as flechas. Logo:
+Onde $\theta$ é o ângulo entre as flechas. Logo:
 
-- Vetores **alinhados** → \(\cos\theta = 1\) → produto máximo positivo.
-- Vetores **ortogonais** → \(\cos\theta = 0\) → produto zero.
-- Vetores **opostos** → \(\cos\theta = -1\) → produto máximo negativo.
+- Vetores **alinhados** → $\cos\theta = 1$ → produto máximo positivo.
+- Vetores **ortogonais** → $\cos\theta = 0$ → produto zero.
+- Vetores **opostos** → $\cos\theta = -1$ → produto máximo negativo.
 
 > **Analogia:** o produto interno é o **medidor de concordância** entre duas opiniões. Se duas palavras têm embeddings com produto alto, o modelo "acha que elas falam da mesma coisa".
 
@@ -145,23 +145,23 @@ print(f"u·v = {dot}, ||u||₂ = {l2_u:.3f}, ||u||₁ = {l1_u}, ||u||∞ = {linf
 
 ### 2.6 Independência linear, base, dimensão, span, subespaço
 
-- Um conjunto \(\{\mathbf{v}_1, \dots, \mathbf{v}_k\}\) é **linearmente independente** se nenhuma flecha pode ser escrita como combinação das outras.
-- O **span** desses vetores é o conjunto de *todas* as combinações lineares: um **subespaço** de \(\mathbb{R}^n\).
+- Um conjunto $\{\mathbf{v}_1, \dots, \mathbf{v}_k\}$ é **linearmente independente** se nenhuma flecha pode ser escrita como combinação das outras.
+- O **span** desses vetores é o conjunto de *todas* as combinações lineares: um **subespaço** de $\mathbb{R}^n$.
 - Uma **base** é um conjunto linearmente independente cujo span é o espaço inteiro.
 - A **dimensão** é o tamanho da base.
 
-> **LLM aplicado:** a matriz de embeddings \(W_E \in \mathbb{R}^{V \times D}\) (V = vocabulário, D = dimensão do modelo) tem rank \(\le D\). Como \(V \gg D\) (V≈50k, D≈4096), os tokens vivem em um subespaço de dimensão \(D\) dentro de \(\mathbb{R}^V\). É por isso que tokens "rimam" semanticamente: estão espremidos no mesmo subespaço aprendido.
+> **LLM aplicado:** a matriz de embeddings $W_E \in \mathbb{R}^{V \times D}$ (V = vocabulário, D = dimensão do modelo) tem rank $\le D$. Como $V \gg D$ (V≈50k, D≈4096), os tokens vivem em um subespaço de dimensão $D$ dentro de $\mathbb{R}^V$. É por isso que tokens "rimam" semanticamente: estão espremidos no mesmo subespaço aprendido.
 
 ### 2.7 Exemplos LLM concretos
 
 | Onde aparece | O que é o vetor |
 |---|---|
-| Word2Vec / GloVe | Embedding estático do token, \(\mathbb{R}^{300}\) típico |
-| Embedding GPT | Linha de \(W_E\), \(\mathbb{R}^{4096}\) ou \(\mathbb{R}^{12288}\) |
-| Query \(Q\) numa cabeça | \(\mathbb{R}^{d_h}\), tipicamente 64–128 |
-| Key \(K\) cache | Mesma dimensão de \(Q\), armazenado por token |
-| Value \(V\) cache | \(\mathbb{R}^{d_h}\), também por token |
-| Logits de saída | \(\mathbb{R}^V\), antes do softmax final |
+| Word2Vec / GloVe | Embedding estático do token, $\mathbb{R}^{300}$ típico |
+| Embedding GPT | Linha de $W_E$, $\mathbb{R}^{4096}$ ou $\mathbb{R}^{12288}$ |
+| Query $Q$ numa cabeça | $\mathbb{R}^{d_h}$, tipicamente 64–128 |
+| Key $K$ cache | Mesma dimensão de $Q$, armazenado por token |
+| Value $V$ cache | $\mathbb{R}^{d_h}$, também por token |
+| Logits de saída | $\mathbb{R}^V$, antes do softmax final |
 
 ```mermaid
 flowchart LR
@@ -184,9 +184,9 @@ A pergunta "quão parecidos são esses dois vetores?" tem várias respostas mate
 
 ### 3.1 Cosine similarity
 
-\[
+$$
 \cos\theta \;=\; \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \, \|\mathbf{v}\|} \;\in\; [-1, +1]
-\]
+$$
 
 Mede só **direção**, ignora **magnitude**. É a métrica padrão em retrieval semântico (RAG, Post 13).
 
@@ -194,9 +194,9 @@ Mede só **direção**, ignora **magnitude**. É a métrica padrão em retrieval
 
 ### 3.2 Distância euclidiana (L2)
 
-\[
+$$
 d(\mathbf{u}, \mathbf{v}) = \|\mathbf{u} - \mathbf{v}\|_2 = \sqrt{\sum_i (u_i - v_i)^2}
-\]
+$$
 
 ### 3.3 Hamming distance (embeddings binários)
 
@@ -220,13 +220,13 @@ print(f"euclid  = {np.linalg.norm(a - b):.4f}")
 
 | Métrica | Fórmula | Faixa | Quando usar |
 |---|---|---|---|
-| Cosine | \(\frac{u \cdot v}{\|u\|\|v\|}\) | \([-1, 1]\) | Embeddings semânticos, retrieval, sentence-transformers |
-| Euclidiana | \(\|u - v\|_2\) | \([0, \infty)\) | Espaços geométricos "reais", clustering k-means |
-| Inner product | \(u \cdot v\) | \(\mathbb{R}\) | Quando magnitude é informativa, MIPS |
-| Hamming | \(\#\{i : u_i \neq v_i\}\) | \([0, n]\) | Embeddings binários, hashing |
-| Manhattan (L1) | \(\sum_i |u_i - v_i|\) | \([0, \infty)\) | Robusto a outliers, embeddings esparsos |
+| Cosine | $\frac{u \cdot v}{\|u\|\|v\|}$ | $[-1, 1]$ | Embeddings semânticos, retrieval, sentence-transformers |
+| Euclidiana | $\|u - v\|_2$ | $[0, \infty)$ | Espaços geométricos "reais", clustering k-means |
+| Inner product | $u \cdot v$ | $\mathbb{R}$ | Quando magnitude é informativa, MIPS |
+| Hamming | $\#\{i : u_i \neq v_i\}$ | $[0, n]$ | Embeddings binários, hashing |
+| Manhattan (L1) | $\sum_i |u_i - v_i|$ | $[0, \infty)$ | Robusto a outliers, embeddings esparsos |
 
-> **Observação importante (Post 12):** se você **normaliza** seus embeddings (\(\|v\|_2 = 1\)), então cosine = inner product = \(2 - \frac{1}{2}\|u-v\|_2^2\). As três métricas tornam-se equivalentes em ranking, e você pode usar a operação mais barata (inner product, que é só um `@`).
+> **Observação importante (Post 12):** se você **normaliza** seus embeddings ($\|v\|_2 = 1$), então cosine = inner product = $2 - \frac{1}{2}\|u-v\|_2^2$. As três métricas tornam-se equivalentes em ranking, e você pode usar a operação mais barata (inner product, que é só um `@`).
 
 ---
 
@@ -234,58 +234,58 @@ print(f"euclid  = {np.linalg.norm(a - b):.4f}")
 
 ### 4.1 Definição
 
-Uma **matriz** \(A \in \mathbb{R}^{m \times n}\) é um array 2D com \(m\) linhas e \(n\) colunas:
+Uma **matriz** $A \in \mathbb{R}^{m \times n}$ é um array 2D com $m$ linhas e $n$ colunas:
 
-\[
+$$
 A = \begin{bmatrix}
 a_{11} & a_{12} & \cdots & a_{1n} \\
 a_{21} & a_{22} & \cdots & a_{2n} \\
 \vdots & \vdots & \ddots & \vdots \\
 a_{m1} & a_{m2} & \cdots & a_{mn}
 \end{bmatrix}
-\]
+$$
 
-> **Analogia:** uma matriz é uma **máquina que transforma flechas em outras flechas**. Você dá um vetor \(\mathbf{x} \in \mathbb{R}^n\), ela devolve \(A\mathbf{x} \in \mathbb{R}^m\).
+> **Analogia:** uma matriz é uma **máquina que transforma flechas em outras flechas**. Você dá um vetor $\mathbf{x} \in \mathbb{R}^n$, ela devolve $A\mathbf{x} \in \mathbb{R}^m$.
 
 ### 4.2 Operações básicas
 
-- **Soma**: \((A + B)_{ij} = a_{ij} + b_{ij}\) (mesmas dimensões).
-- **Multiplicação por escalar**: \((\alpha A)_{ij} = \alpha a_{ij}\).
-- **Transposta**: \(A^T \in \mathbb{R}^{n \times m}\), \((A^T)_{ij} = a_{ji}\).
+- **Soma**: $(A + B)_{ij} = a_{ij} + b_{ij}$ (mesmas dimensões).
+- **Multiplicação por escalar**: $(\alpha A)_{ij} = \alpha a_{ij}$.
+- **Transposta**: $A^T \in \mathbb{R}^{n \times m}$, $(A^T)_{ij} = a_{ji}$.
 
 ### 4.3 Multiplicação matricial
 
-Se \(A \in \mathbb{R}^{m \times k}\) e \(B \in \mathbb{R}^{k \times n}\), então \(AB \in \mathbb{R}^{m \times n}\) com:
+Se $A \in \mathbb{R}^{m \times k}$ e $B \in \mathbb{R}^{k \times n}$, então $AB \in \mathbb{R}^{m \times n}$ com:
 
-\[
+$$
 (AB)_{ij} = \sum_{p=1}^{k} A_{ip} B_{pj}
-\]
+$$
 
-> **Intuição #1 (composição):** \(AB\) significa "primeiro aplique \(B\), depois \(A\)". É composição de funções lineares.
+> **Intuição #1 (composição):** $AB$ significa "primeiro aplique $B$, depois $A$". É composição de funções lineares.
 >
-> **Intuição #2 (linhas × colunas):** o elemento \((i,j)\) é o produto interno da linha \(i\) de \(A\) com a coluna \(j\) de \(B\).
+> **Intuição #2 (linhas × colunas):** o elemento $(i,j)$ é o produto interno da linha $i$ de $A$ com a coluna $j$ de $B$.
 >
-> **Intuição #3 (combinações):** as colunas de \(AB\) são combinações lineares das colunas de \(A\), com coeficientes vindos das colunas de \(B\).
+> **Intuição #3 (combinações):** as colunas de $AB$ são combinações lineares das colunas de $A$, com coeficientes vindos das colunas de $B$.
 
 ### 4.4 Matrizes especiais (rápido)
 
 | Matriz | Definição | Símbolo |
 |---|---|---|
-| Identidade | \(I_n\): diagonal de 1, zero fora | \(IA = AI = A\) |
-| Zero | tudo zero | \(0A = 0\) |
-| Diagonal | só elementos \(d_{ii}\) não-nulos | \(\text{diag}(d_1, \dots, d_n)\) |
+| Identidade | $I_n$: diagonal de 1, zero fora | $IA = AI = A$ |
+| Zero | tudo zero | $0A = 0$ |
+| Diagonal | só elementos $d_{ii}$ não-nulos | $\text{diag}(d_1, \dots, d_n)$ |
 
 ### 4.5 Multiplicação batched (a vida real do ML)
 
 Em ML quase nunca multiplicamos *uma* matriz por *uma* matriz. Trabalhamos com **lotes** (batch) e **cabeças** (heads). Por exemplo na atenção multi-head:
 
-\[
+$$
 Q \in \mathbb{R}^{B \times H \times L \times d_h}, \quad K \in \mathbb{R}^{B \times H \times L \times d_h}
-\]
+$$
 
-\[
+$$
 QK^T \in \mathbb{R}^{B \times H \times L \times L}
-\]
+$$
 
 Onde a multiplicação é feita "por cabeça e por batch" simultaneamente. PyTorch e NumPy (via `np.einsum` ou broadcast) fazem isso nativamente.
 
@@ -304,50 +304,50 @@ W = np.einsum('bhid,bhjd->bhij', X, X)
 print(W.shape)
 ```
 
-> **Aplicação direta (Post 01):** uma camada linear é \(y = Wx + b\). Com batch, \(Y = XW^T + b\) onde \(X \in \mathbb{R}^{B \times d_{in}}\), \(W \in \mathbb{R}^{d_{out} \times d_{in}}\), \(Y \in \mathbb{R}^{B \times d_{out}}\). Toda MLP, todo \(W_Q, W_K, W_V, W_O\) é exatamente isso.
+> **Aplicação direta (Post 01):** uma camada linear é $y = Wx + b$. Com batch, $Y = XW^T + b$ onde $X \in \mathbb{R}^{B \times d_{in}}$, $W \in \mathbb{R}^{d_{out} \times d_{in}}$, $Y \in \mathbb{R}^{B \times d_{out}}$. Toda MLP, todo $W_Q, W_K, W_V, W_O$ é exatamente isso.
 
 ---
 
 ## 5. Transformações lineares (geometria)
 
-A definição formal: \(T: \mathbb{R}^n \to \mathbb{R}^m\) é **linear** se preserva soma e multiplicação por escalar:
+A definição formal: $T: \mathbb{R}^n \to \mathbb{R}^m$ é **linear** se preserva soma e multiplicação por escalar:
 
-\[
+$$
 T(\alpha \mathbf{u} + \beta \mathbf{v}) = \alpha\, T(\mathbf{u}) + \beta\, T(\mathbf{v})
-\]
+$$
 
-**Teorema fundamental:** toda transformação linear pode ser representada por uma matriz \(A\), e vice-versa: \(T(\mathbf{x}) = A\mathbf{x}\).
+**Teorema fundamental:** toda transformação linear pode ser representada por uma matriz $A$, e vice-versa: $T(\mathbf{x}) = A\mathbf{x}$.
 
 ### 5.1 O zoológico geométrico (3Blue1Brown style)
 
-Pegue um quadrado unitário no plano (vetores base \(\mathbf{e}_1 = (1,0)\) e \(\mathbf{e}_2 = (0,1)\)). Aplique matrizes 2×2 e veja o que acontece:
+Pegue um quadrado unitário no plano (vetores base $\mathbf{e}_1 = (1,0)$ e $\mathbf{e}_2 = (0,1)$). Aplique matrizes 2×2 e veja o que acontece:
 
 | Matriz | Efeito |
 |---|---|
-| \(\begin{bmatrix} 2 & 0 \\ 0 & 2 \end{bmatrix}\) | Escala 2× (uniformemente) |
-| \(\begin{bmatrix} 2 & 0 \\ 0 & 1 \end{bmatrix}\) | Estica horizontalmente |
-| \(\begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix}\) | Rotação 90° |
-| \(\begin{bmatrix} 1 & 1 \\ 0 & 1 \end{bmatrix}\) | Cisalhamento (shear) |
-| \(\begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix}\) | Projeção no eixo x |
-| \(\begin{bmatrix} -1 & 0 \\ 0 & 1 \end{bmatrix}\) | Reflexão |
+| $\begin{bmatrix} 2 & 0 \\ 0 & 2 \end{bmatrix}$ | Escala 2× (uniformemente) |
+| $\begin{bmatrix} 2 & 0 \\ 0 & 1 \end{bmatrix}$ | Estica horizontalmente |
+| $\begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix}$ | Rotação 90° |
+| $\begin{bmatrix} 1 & 1 \\ 0 & 1 \end{bmatrix}$ | Cisalhamento (shear) |
+| $\begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix}$ | Projeção no eixo x |
+| $\begin{bmatrix} -1 & 0 \\ 0 & 1 \end{bmatrix}$ | Reflexão |
 
-> **Insight chave:** a matriz é descrita pelo **destino dos vetores base**. A primeira coluna é onde \(\mathbf{e}_1\) vai parar; a segunda coluna é onde \(\mathbf{e}_2\) vai parar. Tudo o mais segue por linearidade.
+> **Insight chave:** a matriz é descrita pelo **destino dos vetores base**. A primeira coluna é onde $\mathbf{e}_1$ vai parar; a segunda coluna é onde $\mathbf{e}_2$ vai parar. Tudo o mais segue por linearidade.
 
 ### 5.2 Composição
 
-Se \(T_1\) tem matriz \(A\) e \(T_2\) tem matriz \(B\), a composição \(T_2 \circ T_1\) tem matriz \(BA\) (atenção à ordem). Isso é exatamente o que um Transformer faz: pilha de camadas → produto de matrizes (intercalado com não-linearidades).
+Se $T_1$ tem matriz $A$ e $T_2$ tem matriz $B$, a composição $T_2 \circ T_1$ tem matriz $BA$ (atenção à ordem). Isso é exatamente o que um Transformer faz: pilha de camadas → produto de matrizes (intercalado com não-linearidades).
 
 ### 5.3 Intuição para o Transformer
 
 Cada matriz aprendida em uma LLM é **uma transformação semântica**:
 
-- \(W_Q\): "como olhar do ponto de vista de quem está perguntando"
-- \(W_K\): "como ser encontrado por quem pergunta"
-- \(W_V\): "que informação carregar"
-- \(W_O\): "como reagregar as cabeças no espaço residual"
-- \(W_{up}, W_{down}\) na MLP: "expandir para análise rica, comprimir de volta"
+- $W_Q$: "como olhar do ponto de vista de quem está perguntando"
+- $W_K$: "como ser encontrado por quem pergunta"
+- $W_V$: "que informação carregar"
+- $W_O$: "como reagregar as cabeças no espaço residual"
+- $W_{up}, W_{down}$ na MLP: "expandir para análise rica, comprimir de volta"
 
-Cada uma é uma transformação linear no espaço de \(\mathbb{R}^{4096}\). O **treinamento** é o processo de descobrir *quais* transformações mover o erro para baixo.
+Cada uma é uma transformação linear no espaço de $\mathbb{R}^{4096}$. O **treinamento** é o processo de descobrir *quais* transformações mover o erro para baixo.
 
 ---
 
@@ -355,25 +355,25 @@ Cada uma é uma transformação linear no espaço de \(\mathbb{R}^{4096}\). O **
 
 ### 6.1 Determinante
 
-O **determinante** \(\det(A)\) (para \(A\) quadrada) é um número real com interpretação geométrica clara:
+O **determinante** $\det(A)$ (para $A$ quadrada) é um número real com interpretação geométrica clara:
 
-> O fator pelo qual \(A\) escala áreas (em 2D), volumes (em 3D), hipervolumes (em \(n\)D). Sinal indica se preserva ou inverte orientação.
+> O fator pelo qual $A$ escala áreas (em 2D), volumes (em 3D), hipervolumes (em $n$D). Sinal indica se preserva ou inverte orientação.
 
-Para 2×2: \(\det\begin{bmatrix} a & b \\ c & d \end{bmatrix} = ad - bc\).
+Para 2×2: $\det\begin{bmatrix} a & b \\ c & d \end{bmatrix} = ad - bc$.
 
 ### 6.2 Singularidade e invertibilidade
 
-- \(\det(A) = 0\) → \(A\) é **singular** → "achata" o espaço, perde dimensão.
-- \(\det(A) \neq 0\) → \(A\) é **invertível** → existe \(A^{-1}\) com \(A^{-1} A = A A^{-1} = I\).
+- $\det(A) = 0$ → $A$ é **singular** → "achata" o espaço, perde dimensão.
+- $\det(A) \neq 0$ → $A$ é **invertível** → existe $A^{-1}$ com $A^{-1} A = A A^{-1} = I$.
 
 ### 6.3 Em ML, *não* calculamos a inversa
 
-Calcular \(A^{-1}\) explicitamente é caro (\(O(n^3)\)) e numericamente instável. Em vez disso, usamos:
+Calcular $A^{-1}$ explicitamente é caro ($O(n^3)$) e numericamente instável. Em vez disso, usamos:
 
-- **`solve`** para resolver \(Ax = b\) sem inverter (eliminação Gaussiana / decomposição LU).
+- **`solve`** para resolver $Ax = b$ sem inverter (eliminação Gaussiana / decomposição LU).
 - **Decomposições** (Cholesky, QR, SVD) que são mais estáveis.
 
-> **Aplicação curiosa (Post 04-DEEP / GPTQ):** o algoritmo GPTQ precisa da Hessiana inversa para escolher como quantizar pesos minimizando o erro. Em vez de calcular \(H^{-1}\), o GPTQ faz **decomposição de Cholesky** e resolve por substituição triangular — barato e numericamente estável. Veja §9 abaixo.
+> **Aplicação curiosa (Post 04-DEEP / GPTQ):** o algoritmo GPTQ precisa da Hessiana inversa para escolher como quantizar pesos minimizando o erro. Em vez de calcular $H^{-1}$, o GPTQ faz **decomposição de Cholesky** e resolve por substituição triangular — barato e numericamente estável. Veja §9 abaixo.
 
 ---
 
@@ -381,25 +381,25 @@ Calcular \(A^{-1}\) explicitamente é caro (\(O(n^3)\)) e numericamente instáve
 
 ### 7.1 Definição
 
-Um **autovetor** de \(A\) é uma direção que \(A\) **só estica/encolhe sem rotacionar**:
+Um **autovetor** de $A$ é uma direção que $A$ **só estica/encolhe sem rotacionar**:
 
-\[
+$$
 A\mathbf{v} = \lambda \mathbf{v}
-\]
+$$
 
-O escalar \(\lambda\) é o **autovalor** correspondente. Para uma matriz \(n \times n\) há até \(n\) pares \((\lambda_i, \mathbf{v}_i)\).
+O escalar $\lambda$ é o **autovalor** correspondente. Para uma matriz $n \times n$ há até $n$ pares $(\lambda_i, \mathbf{v}_i)$.
 
 > **Analogia:** no zoológico geométrico, autovetores são as "varetas mágicas" que sobrevivem à transformação intactas em direção. Tudo o mais é torcido junto.
 
 ### 7.2 Decomposição espectral (matrizes simétricas)
 
-Se \(A = A^T\) (simétrica), a álgebra linear nos dá um presente: \(A\) é diagonalizável por matriz **ortogonal**:
+Se $A = A^T$ (simétrica), a álgebra linear nos dá um presente: $A$ é diagonalizável por matriz **ortogonal**:
 
-\[
+$$
 A = Q \Lambda Q^T
-\]
+$$
 
-Onde \(Q\) tem os autovetores como colunas (ortonormais) e \(\Lambda = \text{diag}(\lambda_1, \dots, \lambda_n)\). Isso significa: aplicar \(A\) é "rotacionar para a base dos autovetores → escalar por \(\lambda_i\) em cada eixo → rotacionar de volta".
+Onde $Q$ tem os autovetores como colunas (ortonormais) e $\Lambda = \text{diag}(\lambda_1, \dots, \lambda_n)$. Isso significa: aplicar $A$ é "rotacionar para a base dos autovetores → escalar por $\lambda_i$ em cada eixo → rotacionar de volta".
 
 ### 7.3 Por que importa em LLMs
 
@@ -427,17 +427,17 @@ print("verificação Av = λv:", np.allclose(A @ vecs, vecs * vals))
 
 ### 8.1 Enunciado
 
-**Toda** matriz \(A \in \mathbb{R}^{m \times n}\) (sem nenhuma hipótese de quadrada, simétrica, ou invertível) pode ser decomposta como:
+**Toda** matriz $A \in \mathbb{R}^{m \times n}$ (sem nenhuma hipótese de quadrada, simétrica, ou invertível) pode ser decomposta como:
 
-\[
+$$
 A = U \, \Sigma \, V^T
-\]
+$$
 
 Onde:
 
-- \(U \in \mathbb{R}^{m \times m}\) é **ortogonal** (\(U^T U = I\)).
-- \(V \in \mathbb{R}^{n \times n}\) é **ortogonal**.
-- \(\Sigma \in \mathbb{R}^{m \times n}\) é **diagonal não-negativa**, com valores singulares \(\sigma_1 \ge \sigma_2 \ge \dots \ge 0\).
+- $U \in \mathbb{R}^{m \times m}$ é **ortogonal** ($U^T U = I$).
+- $V \in \mathbb{R}^{n \times n}$ é **ortogonal**.
+- $\Sigma \in \mathbb{R}^{m \times n}$ é **diagonal não-negativa**, com valores singulares $\sigma_1 \ge \sigma_2 \ge \dots \ge 0$.
 
 > **Analogia:** SVD é o **raio-X da matriz** — mostra exatamente quais direções ela amplifica, quais ela ignora, e o quão "rica" ela realmente é. Geometricamente, qualquer transformação linear é **rotação → escala nos eixos → rotação**. Toda matriz, sempre.
 
@@ -450,44 +450,44 @@ flowchart LR
     C -->|U<br/>rotação| D[Elipsoide<br/>final<br/>na imagem de A]
 ```
 
-### 8.3 Truncated SVD — a aproximação rank-\(k\)
+### 8.3 Truncated SVD — a aproximação rank-$k$
 
-Mantenha só os \(k\) maiores valores singulares:
+Mantenha só os $k$ maiores valores singulares:
 
-\[
+$$
 A_k = U_k \, \Sigma_k \, V_k^T \;\approx\; A
-\]
+$$
 
-**Teorema de Eckart–Young:** \(A_k\) é a **melhor aproximação rank-\(k\)** de \(A\) em norma de Frobenius (e em norma espectral). Não dá para fazer melhor com \(k\) vetores.
+**Teorema de Eckart–Young:** $A_k$ é a **melhor aproximação rank-$k$** de $A$ em norma de Frobenius (e em norma espectral). Não dá para fazer melhor com $k$ vetores.
 
 O erro é:
 
-\[
+$$
 \|A - A_k\|_F^2 = \sum_{i=k+1}^{r} \sigma_i^2
-\]
+$$
 
 ### 8.4 Por que SVD é central em LLM
 
 | Aplicação | Como SVD entra |
 |---|---|
-| **LoRA** (Hu et al. 2021) | Treina \(\Delta W = AB\) com \(A \in \mathbb{R}^{d \times r}, B \in \mathbb{R}^{r \times d}\), \(r \ll d\). É exatamente truncated SVD aplicado ao *update*. |
-| **MLA — Multi-head Latent Attention (DeepSeek)** | KV é projetado num espaço latente *low-rank*: \(K = W_K^{up} \cdot c, V = W_V^{up} \cdot c\), com \(c\) latente compartilhado. Reduz cache em ~10×. |
-| **Compressão de pesos** | Substituir \(W\) por \(U_k \Sigma_k V_k^T\) economiza memória se \(k(m+n) < mn\). |
+| **LoRA** (Hu et al. 2021) | Treina $\Delta W = AB$ com $A \in \mathbb{R}^{d \times r}, B \in \mathbb{R}^{r \times d}$, $r \ll d$. É exatamente truncated SVD aplicado ao *update*. |
+| **MLA — Multi-head Latent Attention (DeepSeek)** | KV é projetado num espaço latente *low-rank*: $K = W_K^{up} \cdot c, V = W_V^{up} \cdot c$, com $c$ latente compartilhado. Reduz cache em ~10×. |
+| **Compressão de pesos** | Substituir $W$ por $U_k \Sigma_k V_k^T$ economiza memória se $k(m+n) < mn$. |
 | **PCA em embeddings** | Análise de variância é SVD da matriz de embeddings centralizada. |
-| **Spectral decay explica Why low-rank works** | Pesos de redes treinadas têm "decaimento espectral" — poucos \(\sigma_i\) grandes, longa cauda pequena. |
-| **TurboQuant (Post 06)** | Geometria de \(\mathbb{R}^d\); aproveita estrutura espectral de pesos. |
+| **Spectral decay explica Why low-rank works** | Pesos de redes treinadas têm "decaimento espectral" — poucos $\sigma_i$ grandes, longa cauda pequena. |
+| **TurboQuant (Post 06)** | Geometria de $\mathbb{R}^d$; aproveita estrutura espectral de pesos. |
 
 ### 8.5 Math completa de LoRA
 
 A intuição em uma linha:
 
-> Em vez de aprender \(\Delta W \in \mathbb{R}^{d \times d}\) (\(d^2\) parâmetros), aprenda \(\Delta W = BA\) com \(A \in \mathbb{R}^{r \times d}, B \in \mathbb{R}^{d \times r}\). Você tem \(2dr\) parâmetros — para \(d=4096, r=8\), isso é **256× menos** parâmetros treináveis.
+> Em vez de aprender $\Delta W \in \mathbb{R}^{d \times d}$ ($d^2$ parâmetros), aprenda $\Delta W = BA$ com $A \in \mathbb{R}^{r \times d}, B \in \mathbb{R}^{d \times r}$. Você tem $2dr$ parâmetros — para $d=4096, r=8$, isso é **256× menos** parâmetros treináveis.
 
-\[
+$$
 W_{\text{novo}} \;=\; W_0 \;+\; \frac{\alpha}{r} B A
-\]
+$$
 
-> **Analogia:** se você quiser corrigir o conteúdo de um caderno inteiro (\(W \in \mathbb{R}^{d \times d}\)), em vez de reescrever cada página, encaixe **dois lápis finos** (\(B\) e \(A\)) que somam aos rabiscos antigos. Isso é LoRA.
+> **Analogia:** se você quiser corrigir o conteúdo de um caderno inteiro ($W \in \mathbb{R}^{d \times d}$), em vez de reescrever cada página, encaixe **dois lápis finos** ($B$ e $A$) que somam aos rabiscos antigos. Isso é LoRA.
 
 ### 8.6 Código
 
@@ -508,7 +508,7 @@ print(f"||A - A_k||_F teórico (σ)  = {err_theoretical:.4f}")
 
 ### 8.7 Spectral decay — o porquê de tudo isso funcionar
 
-Se você plotar \(\sigma_i\) em escala log para uma matriz de pesos de uma LLM treinada, verá uma queda rápida: poucos modos dominantes, longa cauda pequena. **Isso é o que torna LoRA, compressão e MLA viáveis** — a "informação útil" da matriz já vive num subespaço de dimensão muito menor que \(d\).
+Se você plotar $\sigma_i$ em escala log para uma matriz de pesos de uma LLM treinada, verá uma queda rápida: poucos modos dominantes, longa cauda pequena. **Isso é o que torna LoRA, compressão e MLA viáveis** — a "informação útil" da matriz já vive num subespaço de dimensão muito menor que $d$.
 
 ---
 
@@ -516,23 +516,23 @@ Se você plotar \(\sigma_i\) em escala log para uma matriz de pesos de uma LLM t
 
 ### 9.1 Decomposição QR
 
-\[
+$$
 A = QR
-\]
+$$
 
-Onde \(Q\) é ortogonal (\(Q^T Q = I\)) e \(R\) é triangular superior. Aplicações: solver de mínimos quadrados, base de Gram-Schmidt, cálculo de autovalores (algoritmo QR clássico).
+Onde $Q$ é ortogonal ($Q^T Q = I$) e $R$ é triangular superior. Aplicações: solver de mínimos quadrados, base de Gram-Schmidt, cálculo de autovalores (algoritmo QR clássico).
 
 ### 9.2 Decomposição de Cholesky
 
-Para \(A\) **simétrica positiva definida** (todos autovalores \(> 0\)):
+Para $A$ **simétrica positiva definida** (todos autovalores $> 0$):
 
-\[
+$$
 A = LL^T
-\]
+$$
 
-Com \(L\) triangular inferior. É **mais barata** que LU e numericamente robusta.
+Com $L$ triangular inferior. É **mais barata** que LU e numericamente robusta.
 
-> **Aplicação direta (Post 04-DEEP, GPTQ):** o GPTQ precisa repetidamente de \(H^{-1}\) (Hessiana inversa) para decidir quanto "compensar" ao quantizar cada coluna de pesos. Em vez de calcular a inversa, faz \(H = LL^T\) (Cholesky) e resolve sistemas triangulares. Resultado: estabilidade numérica e velocidade.
+> **Aplicação direta (Post 04-DEEP, GPTQ):** o GPTQ precisa repetidamente de $H^{-1}$ (Hessiana inversa) para decidir quanto "compensar" ao quantizar cada coluna de pesos. Em vez de calcular a inversa, faz $H = LL^T$ (Cholesky) e resolve sistemas triangulares. Resultado: estabilidade numérica e velocidade.
 
 ```python
 H = np.array([[4., 12., -16.],
@@ -549,9 +549,9 @@ print("L L^T == H?", np.allclose(L @ L.T, H))
 
 | Tipo | Definição | Por que importa em LLM |
 |---|---|---|
-| **Ortogonal** | \(Q^T Q = I\) | Preserva normas (\(\|Q\mathbf{x}\| = \|\mathbf{x}\|\)). Não amplifica ruído. |
-| **Rotação** | Ortogonal com \(\det = +1\) | **RoPE** (Post 07-DEEP) aplica rotações 2×2 por par de coordenadas para codificar posição. |
-| **Hadamard** | Ortogonal de entradas \(\pm 1/\sqrt{n}\) | **SpinQuant / QuaRot / TurboQuant** usam Hadamard para "embaralhar" canais e diluir outliers antes de quantizar (Post 04, 06). |
+| **Ortogonal** | $Q^T Q = I$ | Preserva normas ($\|Q\mathbf{x}\| = \|\mathbf{x}\|$). Não amplifica ruído. |
+| **Rotação** | Ortogonal com $\det = +1$ | **RoPE** (Post 07-DEEP) aplica rotações 2×2 por par de coordenadas para codificar posição. |
+| **Hadamard** | Ortogonal de entradas $\pm 1/\sqrt{n}$ | **SpinQuant / QuaRot / TurboQuant** usam Hadamard para "embaralhar" canais e diluir outliers antes de quantizar (Post 04, 06). |
 | **Sparse** | maioria de zeros | MoE, atenção esparsa (Sparse Transformers), pruning |
 | **Block-diagonal** | blocos não-zero na diagonal | Multi-head attention vista como block-diagonal, GQA |
 | **Triangular** | só superior ou inferior não-nula | Causal mask na atenção é triangular inferior; Cholesky |
@@ -559,7 +559,7 @@ print("L L^T == H?", np.allclose(L @ L.T, H))
 
 ### 10.1 Hadamard — o detergente de outliers
 
-Uma matriz de Hadamard \(H_n\) com \(H_n^T H_n = n I\) tem entradas \(\pm 1\). Multiplicar um vetor por \(H_n / \sqrt{n}\) **redistribui energia uniformemente entre as coordenadas**, sem perder informação (é ortogonal).
+Uma matriz de Hadamard $H_n$ com $H_n^T H_n = n I$ tem entradas $\pm 1$. Multiplicar um vetor por $H_n / \sqrt{n}$ **redistribui energia uniformemente entre as coordenadas**, sem perder informação (é ortogonal).
 
 > **Analogia:** Hadamard é **embaralhar as cartas** antes de avaliar a mão. Outliers ficam diluídos no resto, e a quantização uniforme passa a funcionar.
 
@@ -582,23 +582,23 @@ Note como o vetor com um outlier vira um vetor "achatado". Ao quantizar, perdemo
 
 ### 11.1 Definição
 
-\[
+$$
 \text{softmax}(\mathbf{x})_i \;=\; \frac{e^{x_i}}{\sum_{j=1}^n e^{x_j}}
-\]
+$$
 
-Mapeia \(\mathbb{R}^n\) no **simplex** (\(n-1\)-dimensional): saídas em \([0,1]\) somando 1. Pode ser interpretado como "uma distribuição de probabilidade que destaca o(s) maior(es) input(s)".
+Mapeia $\mathbb{R}^n$ no **simplex** ($n-1$-dimensional): saídas em $[0,1]$ somando 1. Pode ser interpretado como "uma distribuição de probabilidade que destaca o(s) maior(es) input(s)".
 
 > **Analogia:** softmax é o **megafone exponencial** — ele destaca o maior, mas sem zerar o resto. É um max "suave" e diferenciável.
 
 ### 11.2 Numerical stability — subtrair o max
 
-\(e^{1000}\) explode. Solução: usar a identidade
+$e^{1000}$ explode. Solução: usar a identidade
 
-\[
+$$
 \text{softmax}(\mathbf{x}) = \text{softmax}(\mathbf{x} - c)
-\]
+$$
 
-para qualquer escalar \(c\). Escolhemos \(c = \max_i x_i\):
+para qualquer escalar $c$. Escolhemos $c = \max_i x_i$:
 
 ```python
 def softmax_stable(x):
@@ -611,19 +611,19 @@ print(softmax_stable(np.array([1000., 1001., 1002.])))
 
 ### 11.3 Online softmax
 
-Quando você processa \(\mathbf{x}\) em blocos (FlashAttention, Post 02-DEEP), não tem o \(\max\) global. **Online softmax** mantém um par \((m, \ell)\) (max corrente, soma corrente) e atualiza com identidade:
+Quando você processa $\mathbf{x}$ em blocos (FlashAttention, Post 02-DEEP), não tem o $\max$ global. **Online softmax** mantém um par $(m, \ell)$ (max corrente, soma corrente) e atualiza com identidade:
 
-\[
+$$
 m^{(\text{novo})} = \max(m, \max(\text{bloco})), \quad \ell^{(\text{novo})} = \ell \cdot e^{m - m^{(\text{novo})}} + \sum_{j \in \text{bloco}} e^{x_j - m^{(\text{novo})}}
-\]
+$$
 
-Esse truque (Milakov & Gimelshein 2018) é o que torna FlashAttention possível — sem ele você teria que materializar a matriz \(QK^T\) inteira.
+Esse truque (Milakov & Gimelshein 2018) é o que torna FlashAttention possível — sem ele você teria que materializar a matriz $QK^T$ inteira.
 
 ### 11.4 Onde aparece em LLM
 
-\[
+$$
 \text{Attention}(Q, K, V) = \text{softmax}\left( \frac{QK^T}{\sqrt{d_h}} \right) V
-\]
+$$
 
 A operação central da atenção é exatamente isto. Veja Post 02 para a derivação completa.
 
@@ -633,7 +633,7 @@ A operação central da atenção é exatamente isto. Veja Post 02 para a deriva
 
 ### 12.1 Definição
 
-Um **tensor de ordem \(k\)** é um array \(k\)-dimensional. Vetor é ordem 1, matriz é ordem 2, e tudo acima é tensor "puro".
+Um **tensor de ordem $k$** é um array $k$-dimensional. Vetor é ordem 1, matriz é ordem 2, e tudo acima é tensor "puro".
 
 > **Analogia:** se matriz é "uma planilha", tensor é "uma planilha com várias abas que têm várias páginas". Cada eixo tem semântica.
 
@@ -641,12 +641,12 @@ Um **tensor de ordem \(k\)** é um array \(k\)-dimensional. Vetor é ordem 1, ma
 
 | Tensor | Shape | Significado dos eixos |
 |---|---|---|
-| Embeddings de batch | \((B, L, D)\) | batch, sequência, dimensão |
-| Q/K/V por cabeça | \((B, H, L, d_h)\) | batch, heads, seq, head dim |
-| Atenção scores | \((B, H, L, L)\) | batch, heads, query, key |
-| Logits de saída | \((B, L, V)\) | batch, seq, vocab |
-| Pesos da MLP | \((d_{ff}, D)\) | output, input |
-| KV cache acumulado | \((B, H, L_{tot}, d_h)\) | grow ao longo da geração |
+| Embeddings de batch | $(B, L, D)$ | batch, sequência, dimensão |
+| Q/K/V por cabeça | $(B, H, L, d_h)$ | batch, heads, seq, head dim |
+| Atenção scores | $(B, H, L, L)$ | batch, heads, query, key |
+| Logits de saída | $(B, L, V)$ | batch, seq, vocab |
+| Pesos da MLP | $(d_{ff}, D)$ | output, input |
+| KV cache acumulado | $(B, H, L_{tot}, d_h)$ | grow ao longo da geração |
 
 ### 12.3 Einsum — a língua-mãe das operações tensoriais
 
@@ -691,19 +691,19 @@ print("attention output shape:", out.shape)
 
 A "L2 para matrizes" — soma quadrática de todos os elementos:
 
-\[
+$$
 \|A\|_F = \sqrt{\sum_{i,j} A_{ij}^2} = \sqrt{\text{tr}(A^T A)} = \sqrt{\sum_i \sigma_i^2}
-\]
+$$
 
 A última igualdade conecta a Frobenius diretamente ao SVD: o "tamanho" de uma matriz em Frobenius é determinado pelos seus valores singulares.
 
 ### 13.2 Weight decay = L2 nos pesos
 
-Adicionar \(\frac{\lambda}{2}\|W\|_F^2\) à loss equivale, no gradiente, a empurrar pesos para zero a cada passo:
+Adicionar $\frac{\lambda}{2}\|W\|_F^2$ à loss equivale, no gradiente, a empurrar pesos para zero a cada passo:
 
-\[
+$$
 W \leftarrow W - \eta(\nabla L + \lambda W) = (1 - \eta\lambda) W - \eta \nabla L
-\]
+$$
 
 Esse é o "decay" — daí o nome. Em otimizadores modernos (AdamW), o decay é desacoplado do gradiente Adam, mas a ideia é a mesma.
 
@@ -711,27 +711,27 @@ Esse é o "decay" — daí o nome. Em otimizadores modernos (AdamW), o decay é 
 
 Para evitar exploding gradients:
 
-\[
+$$
 \mathbf{g} \leftarrow \mathbf{g} \cdot \min\!\left(1, \frac{\tau}{\|\mathbf{g}\|_2}\right)
-\]
+$$
 
-Limita a norma a \(\tau\). Padrão em treinamento de LLM.
+Limita a norma a $\tau$. Padrão em treinamento de LLM.
 
 ### 13.4 Layer Norm vs RMSNorm
 
 **LayerNorm** (Ba et al. 2016):
 
-\[
+$$
 \text{LN}(\mathbf{x}) = \gamma \cdot \frac{\mathbf{x} - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta
-\]
+$$
 
-com \(\mu = \frac{1}{d}\sum x_i, \sigma^2 = \frac{1}{d}\sum (x_i - \mu)^2\).
+com $\mu = \frac{1}{d}\sum x_i, \sigma^2 = \frac{1}{d}\sum (x_i - \mu)^2$.
 
 **RMSNorm** (Zhang & Sennrich 2019, padrão em Llama/Mistral):
 
-\[
+$$
 \text{RMSNorm}(\mathbf{x}) = \frac{\mathbf{x}}{\sqrt{\frac{1}{d}\sum_i x_i^2 + \epsilon}} \cdot \gamma
-\]
+$$
 
 A diferença: RMSNorm **não centraliza** (não subtrai média) e não tem bias. Mais barato, e na prática funciona tão bem quanto LayerNorm em LLMs (ver Post 01).
 
@@ -766,7 +766,7 @@ Em embeddings densos modernos (sentence-transformers, OpenAI ada, BGE, E5, Coher
 | Image embeddings CLIP | normalizado | cosine |
 | Hashing / binary | binário | Hamming |
 
-> **Princípio**: se \(\|u\|_2 = \|v\|_2 = 1\), então \(u \cdot v = 1 - \frac{1}{2}\|u-v\|_2^2\). Cosine, dot e euclidiana ranqueiam **igualmente**. Use a operação mais barata na sua infra (geralmente dot product, que é só `@`).
+> **Princípio**: se $\|u\|_2 = \|v\|_2 = 1$, então $u \cdot v = 1 - \frac{1}{2}\|u-v\|_2^2$. Cosine, dot e euclidiana ranqueiam **igualmente**. Use a operação mais barata na sua infra (geralmente dot product, que é só `@`).
 
 A **quantização** de embeddings (PQ, OPQ, e o TurboQuant do Post 06) busca preservar o produto interno aproximado em muito menos bits — exatamente para que retrieval continue dando o mesmo ranking gastando menos memória/banda.
 
@@ -776,19 +776,19 @@ A **quantização** de embeddings (PQ, OPQ, e o TurboQuant do Post 06) busca pre
 
 Quantização é, no fundo, uma pergunta de álgebra linear:
 
-> "Quero aproximar a operação \(y = Wx\) usando \(W\) representada em menos bits. Como minimizar o erro \(\|y - \tilde{y}\|\)?"
+> "Quero aproximar a operação $y = Wx$ usando $W$ representada em menos bits. Como minimizar o erro $\|y - \tilde{y}\|$?"
 
 ### 15.1 Por que outliers em K (Post 05) são fatais
 
-Quantização uniforme escala \([\min, \max]\) em \(2^b\) níveis. Se um único componente é gigante (outlier), o passo de quantização cresce, e os componentes "normais" perdem resolução. A norma L∞ do canal explica o estrago.
+Quantização uniforme escala $[\min, \max]$ em $2^b$ níveis. Se um único componente é gigante (outlier), o passo de quantização cresce, e os componentes "normais" perdem resolução. A norma L∞ do canal explica o estrago.
 
 ### 15.2 Como Hadamard salva o dia
 
-Como vimos em §10.1, multiplicar por \(H/\sqrt{n}\) redistribui energia. Após Hadamard, **maxabs cai dramaticamente** sem perder informação (a transformação é ortogonal e reversível). Quantizamos no novo espaço, e na hora de usar, "desfazemos" implicitamente — porque a estrutura \(W \cdot H \cdot H^T \cdot x = Wx\). É a base matemática de **SpinQuant** e **QuaRot** (Post 04) e do **TurboQuant** (Post 06), com extensões geométricas mais sofisticadas.
+Como vimos em §10.1, multiplicar por $H/\sqrt{n}$ redistribui energia. Após Hadamard, **maxabs cai dramaticamente** sem perder informação (a transformação é ortogonal e reversível). Quantizamos no novo espaço, e na hora de usar, "desfazemos" implicitamente — porque a estrutura $W \cdot H \cdot H^T \cdot x = Wx$. É a base matemática de **SpinQuant** e **QuaRot** (Post 04) e do **TurboQuant** (Post 06), com extensões geométricas mais sofisticadas.
 
 ### 15.3 Erro de aproximação tem estrutura
 
-Para \(\tilde{W} = W + E\) com \(E\) erro de quantização, a saída perturbada é \(\tilde{y} = (W + E)x = y + Ex\). O erro é \(\|Ex\|_2 \le \|E\|_2 \|x\|_2\) (norma espectral), então **estamos otimizando \(\|E\|\) sob restrição de número de bits**. SVD novamente esclarece o que é importante preservar.
+Para $\tilde{W} = W + E$ com $E$ erro de quantização, a saída perturbada é $\tilde{y} = (W + E)x = y + Ex$. O erro é $\|Ex\|_2 \le \|E\|_2 \|x\|_2$ (norma espectral), então **estamos otimizando $\|E\|$ sob restrição de número de bits**. SVD novamente esclarece o que é importante preservar.
 
 ---
 
@@ -798,15 +798,15 @@ Você verá estas identidades repetidamente em papers de LLM. Vale memorizar:
 
 | Identidade | Onde aparece |
 |---|---|
-| \(\|A\mathbf{v}\|^2 = \mathbf{v}^T A^T A \mathbf{v}\) | Análise de erro de quantização, mínimos quadrados |
-| \(\text{tr}(AB) = \text{tr}(BA)\) | Manipulação de gradientes, prova de equivalência de losses |
-| \(\langle A, B \rangle_F = \text{tr}(A^T B) = \sum_{ij} A_{ij} B_{ij}\) | Norma de Frobenius, kernel methods, regularização |
-| \(\nabla_W \|Wx - y\|^2 = 2(Wx - y)x^T\) | Backprop de camada linear |
-| \(\nabla_X \text{tr}(X^T A) = A\) | Derivação de gradiente do peso |
-| \(\nabla_X \text{tr}(X^T A X) = (A + A^T)X\) | Hessiana, formas quadráticas |
-| \((AB)^T = B^T A^T\) | Reorganizar transpostas em provas |
-| \((AB)^{-1} = B^{-1} A^{-1}\) | Inversa de produto |
-| \(\det(AB) = \det(A) \det(B)\) | Mudança de variável em normalizing flows |
+| $\|A\mathbf{v}\|^2 = \mathbf{v}^T A^T A \mathbf{v}$ | Análise de erro de quantização, mínimos quadrados |
+| $\text{tr}(AB) = \text{tr}(BA)$ | Manipulação de gradientes, prova de equivalência de losses |
+| $\langle A, B \rangle_F = \text{tr}(A^T B) = \sum_{ij} A_{ij} B_{ij}$ | Norma de Frobenius, kernel methods, regularização |
+| $\nabla_W \|Wx - y\|^2 = 2(Wx - y)x^T$ | Backprop de camada linear |
+| $\nabla_X \text{tr}(X^T A) = A$ | Derivação de gradiente do peso |
+| $\nabla_X \text{tr}(X^T A X) = (A + A^T)X$ | Hessiana, formas quadráticas |
+| $(AB)^T = B^T A^T$ | Reorganizar transpostas em provas |
+| $(AB)^{-1} = B^{-1} A^{-1}$ | Inversa de produto |
+| $\det(AB) = \det(A) \det(B)$ | Mudança de variável em normalizing flows |
 
 ---
 
@@ -829,66 +829,66 @@ Você verá estas identidades repetidamente em papers de LLM. Vale memorizar:
 
 ### 18.1 Operações vetoriais
 
-| Operação | Notação | Resultado | Custo (\(O\)) |
+| Operação | Notação | Resultado | Custo ($O$) |
 |---|---|---|---|
-| Soma | \(u + v\) | vetor | \(n\) |
-| Escalar | \(\alpha v\) | vetor | \(n\) |
-| Dot | \(u \cdot v\) | escalar | \(n\) |
-| Norma L2 | \(\|v\|_2\) | escalar | \(n\) |
-| Cosine | \(u \cdot v / (\|u\|\|v\|)\) | escalar | \(n\) |
-| Outer | \(u v^T\) | matriz \(n \times n\) | \(n^2\) |
+| Soma | $u + v$ | vetor | $n$ |
+| Escalar | $\alpha v$ | vetor | $n$ |
+| Dot | $u \cdot v$ | escalar | $n$ |
+| Norma L2 | $\|v\|_2$ | escalar | $n$ |
+| Cosine | $u \cdot v / (\|u\|\|v\|)$ | escalar | $n$ |
+| Outer | $u v^T$ | matriz $n \times n$ | $n^2$ |
 
 ### 18.2 Métricas de similaridade
 
 | Métrica | Faixa | Direção/Magnitude | Custo |
 |---|---|---|---|
-| Cosine | \([-1, 1]\) | só direção | \(O(n)\) |
-| Inner product | \(\mathbb{R}\) | ambos | \(O(n)\) |
-| L2 (euclidiana) | \([0, \infty)\) | ambos | \(O(n)\) |
-| L1 (Manhattan) | \([0, \infty)\) | ambos, robusto | \(O(n)\) |
-| Hamming | \([0, n]\) | binário | \(O(n)\) |
-| Jaccard | \([0, 1]\) | conjuntos | \(O(n)\) |
+| Cosine | $[-1, 1]$ | só direção | $O(n)$ |
+| Inner product | $\mathbb{R}$ | ambos | $O(n)$ |
+| L2 (euclidiana) | $[0, \infty)$ | ambos | $O(n)$ |
+| L1 (Manhattan) | $[0, \infty)$ | ambos, robusto | $O(n)$ |
+| Hamming | $[0, n]$ | binário | $O(n)$ |
+| Jaccard | $[0, 1]$ | conjuntos | $O(n)$ |
 
 ### 18.3 Matrizes especiais
 
 | Tipo | Propriedade | Uso em LLM |
 |---|---|---|
-| Identidade \(I\) | \(IA = A\) | Skip connections, inicialização |
-| Diagonal | só \(d_{ii}\) | Quantização por canal, RMSNorm \(\gamma\) |
-| Ortogonal \(Q\) | \(Q^T Q = I\) | Hadamard, RoPE, preserva normas |
-| Rotação | \(\det = +1\) | RoPE, embeddings esféricos |
-| Triangular | \(L\) ou \(U\) | Cholesky, máscara causal |
+| Identidade $I$ | $IA = A$ | Skip connections, inicialização |
+| Diagonal | só $d_{ii}$ | Quantização por canal, RMSNorm $\gamma$ |
+| Ortogonal $Q$ | $Q^T Q = I$ | Hadamard, RoPE, preserva normas |
+| Rotação | $\det = +1$ | RoPE, embeddings esféricos |
+| Triangular | $L$ ou $U$ | Cholesky, máscara causal |
 | Esparsa | maioria zero | MoE, sparse attention |
 | Block-diagonal | blocos | Multi-head attention |
 | Permutação | reordena | GPTQ, channel shuffle |
-| Hadamard | \(\pm 1\), ortogonal | SpinQuant, QuaRot, TurboQuant |
+| Hadamard | $\pm 1$, ortogonal | SpinQuant, QuaRot, TurboQuant |
 
 ### 18.4 Decomposições
 
 | Decomposição | Forma | Requer | Aplicações em LLM |
 |---|---|---|---|
-| **SVD** | \(A = U\Sigma V^T\) | qualquer \(A\) | LoRA, MLA, PCA, compressão |
-| **Espectral** | \(A = Q\Lambda Q^T\) | \(A\) simétrica | Hessiana, NTK, covariância |
-| **QR** | \(A = QR\) | qualquer \(A\) | Mínimos quadrados, autovalores |
-| **Cholesky** | \(A = LL^T\) | \(A\) SPD | GPTQ Hessiana, Gaussian processes |
-| **LU** | \(A = LU\) | qualquer \(A\) quadrada | Solver geral (interno) |
+| **SVD** | $A = U\Sigma V^T$ | qualquer $A$ | LoRA, MLA, PCA, compressão |
+| **Espectral** | $A = Q\Lambda Q^T$ | $A$ simétrica | Hessiana, NTK, covariância |
+| **QR** | $A = QR$ | qualquer $A$ | Mínimos quadrados, autovalores |
+| **Cholesky** | $A = LL^T$ | $A$ SPD | GPTQ Hessiana, Gaussian processes |
+| **LU** | $A = LU$ | qualquer $A$ quadrada | Solver geral (interno) |
 
 ### 18.5 Normas
 
 | Norma | Definição (vetor) | Definição (matriz) | Uso |
 |---|---|---|---|
-| L1 | \(\sum |v_i|\) | \(\max_j \sum_i |a_{ij}|\) | Esparsidade, Lasso |
-| L2 | \(\sqrt{\sum v_i^2}\) | \(\sigma_{\max}(A)\) (espectral) | Padrão, gradient clipping |
-| L∞ | \(\max_i |v_i|\) | \(\max_i \sum_j |a_{ij}|\) | Outliers |
-| Frobenius | — | \(\sqrt{\sum a_{ij}^2}\) | Weight decay, low-rank |
-| Nuclear | — | \(\sum \sigma_i\) | Convex relax. de rank |
+| L1 | $\sum |v_i|$ | $\max_j \sum_i |a_{ij}|$ | Esparsidade, Lasso |
+| L2 | $\sqrt{\sum v_i^2}$ | $\sigma_{\max}(A)$ (espectral) | Padrão, gradient clipping |
+| L∞ | $\max_i |v_i|$ | $\max_i \sum_j |a_{ij}|$ | Outliers |
+| Frobenius | — | $\sqrt{\sum a_{ij}^2}$ | Weight decay, low-rank |
+| Nuclear | — | $\sum \sigma_i$ | Convex relax. de rank |
 
 ### 18.6 Cross-reference math → posts da série
 
 | Conceito de álgebra linear | Posts onde é central |
 |---|---|
-| Multiplicação matricial \(WX\) | Post 01 (Transformer), Post 02 (Atenção) |
-| Produto interno \(QK^T\) | Post 02, Post 02-DEEP |
+| Multiplicação matricial $WX$ | Post 01 (Transformer), Post 02 (Atenção) |
+| Produto interno $QK^T$ | Post 02, Post 02-DEEP |
 | Softmax | Post 02, Post 02-DEEP (online) |
 | SVD / low-rank | Post 04, Post 06 (TurboQuant), MLA do Post 02 |
 | Cholesky | Post 04-DEEP (GPTQ) |

@@ -8,12 +8,12 @@
 
 ## TL;DR
 
-Toda LLM moderna que serve chat, RAG, agentes ou geração de código carrega, durante a inferência, uma estrutura de dados que **cresce a cada token gerado**: o **KV cache**. Ele guarda os tensores **K** (Key) e **V** (Value) de cada camada de atenção, para cada cabeça KV, para cada token já processado. Sem ele, cada nova palavra exigiria refazer a atenção sobre o prompt inteiro — geração se tornaria \(O(n^2)\) por token e \(O(n^3)\) ao longo da resposta.
+Toda LLM moderna que serve chat, RAG, agentes ou geração de código carrega, durante a inferência, uma estrutura de dados que **cresce a cada token gerado**: o **KV cache**. Ele guarda os tensores **K** (Key) e **V** (Value) de cada camada de atenção, para cada cabeça KV, para cada token já processado. Sem ele, cada nova palavra exigiria refazer a atenção sobre o prompt inteiro — geração se tornaria $O(n^2)$ por token e $O(n^3)$ ao longo da resposta.
 
 Mas o KV cache **não é grátis**:
 
 - O tamanho cresce **linearmente** com o comprimento da sequência, **multiplicativamente** com o número de camadas, cabeças KV e head_dim, e proporcionalmente ao **tamanho do batch**.
-- Em **Llama 3 70B** com **GQA (8 KV heads)**, **head_dim 128**, **80 camadas**, **FP16**, são **\(2 \times 80 \times 8 \times 128 \times 2 = 327\,680\)** bytes por token — **320 KB/token**. Para um contexto de **128k tokens**, **40 GB** apenas de cache, **por requisição**.
+- Em **Llama 3 70B** com **GQA (8 KV heads)**, **head_dim 128**, **80 camadas**, **FP16**, são **$2 \times 80 \times 8 \times 128 \times 2 = 327\,680$** bytes por token — **320 KB/token**. Para um contexto de **128k tokens**, **40 GB** apenas de cache, **por requisição**.
 - A fase de **prefill** (processar o prompt) é tipicamente **compute-bound**; a fase de **decode** (gerar token a token) é quase sempre **memory-bandwidth-bound**, dominada pela leitura de pesos e do KV cache da HBM.
 - O batching dinâmico (requisições chegando e saindo) sofria de **fragmentação interna** (sobra dentro do "slot" reservado) e **externa** (lacunas entre alocações), desperdiçando até **60–80%** da memória nos sistemas pré-vLLM.
 - **PagedAttention** (Kwon et al., **vLLM**, SOSP 2023) ataca essas duas fragmentações **importando o conceito de paginação** dos sistemas operacionais: o KV cache é dividido em **blocos físicos** de tamanho fixo (tipicamente 16 tokens), referenciados por **tabelas de blocos lógicos** por sequência. Resultado: **2–4× throughput** vs FasterTransformer/Orca, com a mesma latência.
@@ -28,35 +28,35 @@ Mas o KV cache **não é grátis**:
 
 ### 1.1. A atenção causal vista pela ótica da geração
 
-Em um decoder-only Transformer, a saída do bloco de atenção para o token na posição \(t\) é, em sua forma mais simples (uma cabeça):
+Em um decoder-only Transformer, a saída do bloco de atenção para o token na posição $t$ é, em sua forma mais simples (uma cabeça):
 
-\[
+$$
 \text{Attn}(Q_t, K_{1:t}, V_{1:t}) = \text{softmax}\!\left(\frac{Q_t K_{1:t}^\top}{\sqrt{d_k}}\right) V_{1:t}.
-\]
+$$
 
 Três observações cruciais:
 
-1. **\(Q_t\)** depende **apenas do token atual** \(t\): cada novo token recém-amostrado gera um novo vetor \(Q\).
-2. **\(K_{1:t}\)** e **\(V_{1:t}\)** são as projeções *Key* e *Value* de **todos os tokens anteriores** mais o atual.
-3. A matriz **\(K\)** e o tensor **\(V\)** dos tokens \(1, 2, \ldots, t-1\) **não mudam** quando geramos o token \(t+1\) — eles **dependem apenas dos pesos do modelo e da sequência já fixada**.
+1. **$Q_t$** depende **apenas do token atual** $t$: cada novo token recém-amostrado gera um novo vetor $Q$.
+2. **$K_{1:t}$** e **$V_{1:t}$** são as projeções *Key* e *Value* de **todos os tokens anteriores** mais o atual.
+3. A matriz **$K$** e o tensor **$V$** dos tokens $1, 2, \ldots, t-1$ **não mudam** quando geramos o token $t+1$ — eles **dependem apenas dos pesos do modelo e da sequência já fixada**.
 
-Sem cache, ao gerar o token \(t+1\), seria preciso:
+Sem cache, ao gerar o token $t+1$, seria preciso:
 
-1. Reaplicar **todas as projeções lineares** \(W_K, W_V, W_Q\) sobre **todos os \(t\) tokens** já produzidos;
-2. Recomputar o produto \(Q K^\top\) inteiro;
-3. Refazer o softmax e o produto por \(V\).
+1. Reaplicar **todas as projeções lineares** $W_K, W_V, W_Q$ sobre **todos os $t$ tokens** já produzidos;
+2. Recomputar o produto $Q K^\top$ inteiro;
+3. Refazer o softmax e o produto por $V$.
 
-Isso transforma a geração de uma sequência de **\(N\)** tokens num esforço **\(O(N^3)\)** ao longo de toda a decodificação. Para \(N = 1000\), seriam **um bilhão** de operações apenas no padrão da atenção, multiplicadas pelas constantes do modelo. Inviável.
+Isso transforma a geração de uma sequência de **$N$** tokens num esforço **$O(N^3)$** ao longo de toda a decodificação. Para $N = 1000$, seriam **um bilhão** de operações apenas no padrão da atenção, multiplicadas pelas constantes do modelo. Inviável.
 
 ### 1.2. A solução óbvia: lembrar K e V
 
-O **KV cache** materializa a observação 3: armazenamos, **em memória da GPU**, todos os \(K_i\) e \(V_i\) já calculados. A cada novo passo:
+O **KV cache** materializa a observação 3: armazenamos, **em memória da GPU**, todos os $K_i$ e $V_i$ já calculados. A cada novo passo:
 
-1. Computamos apenas os **novos** \(K_t\) e \(V_t\) do token atual;
+1. Computamos apenas os **novos** $K_t$ e $V_t$ do token atual;
 2. Adicionamos ao cache;
-3. Computamos o \(Q_t\) e o produto \(Q_t K_{1:t}^\top\) — agora **vetor × matriz**, não matriz × matriz.
+3. Computamos o $Q_t$ e o produto $Q_t K_{1:t}^\top$ — agora **vetor × matriz**, não matriz × matriz.
 
-Custo por token na fase **decode**: **\(O(N \cdot d)\)** em FLOPs, **\(O(N \cdot d)\)** em leituras da memória. A geração inteira passa de \(O(N^3)\) para **\(O(N^2)\)** — um ganho assintótico, mas também um ganho de constantes enormes, porque o compilador de atenção (FlashAttention etc.) opera sobre uma multiplicação **vetor × matriz** muito mais barata.
+Custo por token na fase **decode**: **$O(N \cdot d)$** em FLOPs, **$O(N \cdot d)$** em leituras da memória. A geração inteira passa de $O(N^3)$ para **$O(N^2)$** — um ganho assintótico, mas também um ganho de constantes enormes, porque o compilador de atenção (FlashAttention etc.) opera sobre uma multiplicação **vetor × matriz** muito mais barata.
 
 ### 1.3. Analogia: o caderno de anotações da palestrante
 
@@ -92,9 +92,9 @@ O KV cache é, portanto, **memória de estado da geração**. Tudo o que o model
 
 Para evitar confusões frequentes:
 
-- O KV cache **não armazena os pesos** do modelo (\(W_Q, W_K, W_V\)). Pesos são fixos; o cache é estado por requisição.
+- O KV cache **não armazena os pesos** do modelo ($W_Q, W_K, W_V$). Pesos são fixos; o cache é estado por requisição.
 - Ele **não armazena os logits** nem as ativações intermediárias do MLP (essas são descartadas após cada camada).
-- Ele **não armazena o token amostrado** (esse é só um inteiro; o que importa para a próxima iteração é o vetor \(K\) e \(V\) que aquele token gerou em cada camada).
+- Ele **não armazena o token amostrado** (esse é só um inteiro; o que importa para a próxima iteração é o vetor $K$ e $V$ que aquele token gerou em cada camada).
 - Ele **não está no disco**: vive em **HBM** da GPU (ou eventualmente em **CPU memory** para *offloading* / *swap*).
 - Em modelos com **GQA** ou **MQA**, ele é menor que em **MHA puro** porque várias query heads compartilham o mesmo par K/V. Em **MLA** (DeepSeek), é radicalmente menor: armazena uma representação **latente** comprimida.
 
@@ -106,38 +106,38 @@ Para evitar confusões frequentes:
 
 Para um Transformer decoder com:
 
-- **\(L\)** camadas (`num_hidden_layers`);
-- **\(H_{kv}\)** cabeças KV (`num_key_value_heads`);
-- **\(d_h\)** dimensão de cada cabeça (`head_dim`);
-- **\(s\)** comprimento da sequência atual (em tokens);
-- **\(B\)** tamanho do batch (número de requisições simultâneas);
-- **\(b\)** bytes por elemento (FP16 = 2, FP8 = 1, INT4 = 0.5).
+- **$L$** camadas (`num_hidden_layers`);
+- **$H_{kv}$** cabeças KV (`num_key_value_heads`);
+- **$d_h$** dimensão de cada cabeça (`head_dim`);
+- **$s$** comprimento da sequência atual (em tokens);
+- **$B$** tamanho do batch (número de requisições simultâneas);
+- **$b$** bytes por elemento (FP16 = 2, FP8 = 1, INT4 = 0.5).
 
-Cada camada armazena, **por token**, dois tensores: **K** e **V**. Cada um tem forma \([H_{kv}, d_h]\). Logo:
+Cada camada armazena, **por token**, dois tensores: **K** e **V**. Cada um tem forma $[H_{kv}, d_h]$. Logo:
 
-- **Bytes por token, por camada:** \(2 \cdot H_{kv} \cdot d_h \cdot b\)
-- **Bytes por token, total:** \(2 \cdot L \cdot H_{kv} \cdot d_h \cdot b\)
-- **Bytes por sequência:** \(2 \cdot L \cdot H_{kv} \cdot d_h \cdot s \cdot b\)
-- **Bytes por batch:** \(2 \cdot L \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b\)
+- **Bytes por token, por camada:** $2 \cdot H_{kv} \cdot d_h \cdot b$
+- **Bytes por token, total:** $2 \cdot L \cdot H_{kv} \cdot d_h \cdot b$
+- **Bytes por sequência:** $2 \cdot L \cdot H_{kv} \cdot d_h \cdot s \cdot b$
+- **Bytes por batch:** $2 \cdot L \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b$
 
 A fórmula canônica é:
 
-\[
+$$
 \boxed{\,\text{KV bytes} \;=\; 2 \,\cdot\, L \,\cdot\, H_{kv} \,\cdot\, d_h \,\cdot\, s \,\cdot\, B \,\cdot\, b\,}
-\]
+$$
 
-O fator **2** vem da soma de \(K\) **e** \(V\) (ambos têm a mesma forma).
+O fator **2** vem da soma de $K$ **e** $V$ (ambos têm a mesma forma).
 
 ### 2.2. Variantes de atenção e o impacto na fórmula
 
-A escolha da **arquitetura de atenção** muda \(H_{kv}\) — e, em MLA, muda a interpretação inteira da fórmula:
+A escolha da **arquitetura de atenção** muda $H_{kv}$ — e, em MLA, muda a interpretação inteira da fórmula:
 
-| Variante | \(H_{kv}\) | Observação | KV/token vs MHA |
+| Variante | $H_{kv}$ | Observação | KV/token vs MHA |
 |---|---|---|---|
-| **MHA** (Multi-Head Attention) | \(H_q\) (todas) | Cada query head tem seu próprio K/V | **1×** (referência) |
-| **MQA** (Multi-Query Attention) | **1** | Todas as queries dividem 1 par K/V | **\(1/H_q\)** |
-| **GQA-\(g\)** (Grouped-Query) | \(H_q / g\) | \(g\) queries por grupo K/V (Llama 3: \(g{=}8\)) | **\(g/H_q\)** |
-| **MLA** (Multi-Head Latent Attention, DeepSeek) | — | Cache armazena **latente comprimido** \([d_{lora}]\) + parte rotativa | **\(\sim 1/57\)** vs MHA equivalente |
+| **MHA** (Multi-Head Attention) | $H_q$ (todas) | Cada query head tem seu próprio K/V | **1×** (referência) |
+| **MQA** (Multi-Query Attention) | **1** | Todas as queries dividem 1 par K/V | **$1/H_q$** |
+| **GQA-$g$** (Grouped-Query) | $H_q / g$ | $g$ queries por grupo K/V (Llama 3: $g{=}8$) | **$g/H_q$** |
+| **MLA** (Multi-Head Latent Attention, DeepSeek) | — | Cache armazena **latente comprimido** $[d_{lora}]$ + parte rotativa | **$\sim 1/57$** vs MHA equivalente |
 
 O Post 02 explora essas variantes em detalhe; aqui usamos os números prontos.
 
@@ -149,27 +149,27 @@ Parâmetros do `Llama-3-70B` (Hugging Face `config.json`):
 
 - `num_hidden_layers = 80`
 - `num_attention_heads = 64`
-- `num_key_value_heads = 8` (GQA com \(g = 8\))
+- `num_key_value_heads = 8` (GQA com $g = 8$)
 - `head_dim = 128`
 - `hidden_size = 8192` (= 64 × 128)
 - dtype default: BF16 (= 2 bytes)
 
 **Bytes por token:**
 
-\[
+$$
 2 \times 80 \times 8 \times 128 \times 2 = 327\,680\ \text{bytes} \approx 320\ \text{KB/token}.
-\]
+$$
 
 Vamos checar o que isso significa em escalas reais:
 
 - **1 token:** 320 KB
 - **1.000 tokens:** 320 MB
-- **4.096 tokens (contexto típico):** \(\approx 1{,}28\) GB **por requisição**
-- **32.768 tokens (32k):** \(\approx 10{,}24\) GB
-- **131.072 tokens (128k):** \(\approx 40{,}96\) GB
-- **131k × batch=4:** \(\approx 164\) GB — **mais que duas H100 80 GB inteiras só de cache**.
+- **4.096 tokens (contexto típico):** $\approx 1{,}28$ GB **por requisição**
+- **32.768 tokens (32k):** $\approx 10{,}24$ GB
+- **131.072 tokens (128k):** $\approx 40{,}96$ GB
+- **131k × batch=4:** $\approx 164$ GB — **mais que duas H100 80 GB inteiras só de cache**.
 
-Comparativo: o próprio **modelo de pesos** de Llama 3 70B em BF16 ocupa \(\approx 140\) GB. Ou seja, com batch=4 a 128k, o **cache supera os pesos**. É essa a razão pela qual **LLMs longos não escalam linearmente em batch**.
+Comparativo: o próprio **modelo de pesos** de Llama 3 70B em BF16 ocupa $\approx 140$ GB. Ou seja, com batch=4 a 128k, o **cache supera os pesos**. É essa a razão pela qual **LLMs longos não escalam linearmente em batch**.
 
 ### 2.4. Cálculo concreto: Llama 3 8B
 
@@ -177,56 +177,56 @@ Comparativo: o próprio **modelo de pesos** de Llama 3 70B em BF16 ocupa \(\appr
 
 - `num_hidden_layers = 32`
 - `num_attention_heads = 32`
-- `num_key_value_heads = 8` (GQA \(g = 4\))
+- `num_key_value_heads = 8` (GQA $g = 4$)
 - `head_dim = 128`
 
 **Bytes por token:**
 
-\[
+$$
 2 \times 32 \times 8 \times 128 \times 2 = 131\,072\ \text{bytes} = 128\ \text{KB/token}.
-\]
+$$
 
 - **4k tokens:** 512 MB/req
 - **32k tokens:** 4 GB/req
 - **128k tokens:** 16 GB/req
 
-O **modelo** (BF16) ocupa \(\approx 16\) GB. Em 128k, **uma única requisição** já iguala o tamanho do modelo. Em uma A100 80 GB que carregue o 8B, sobram \(\approx 64\) GB para todo o resto — KV de várias requisições, ativações, buffers FlashAttention, alinhamento, fragmentação.
+O **modelo** (BF16) ocupa $\approx 16$ GB. Em 128k, **uma única requisição** já iguala o tamanho do modelo. Em uma A100 80 GB que carregue o 8B, sobram $\approx 64$ GB para todo o resto — KV de várias requisições, ativações, buffers FlashAttention, alinhamento, fragmentação.
 
-### 2.5. Cálculo concreto: DeepSeek-V3 com MLA (\(\approx 671\)B param.)
+### 2.5. Cálculo concreto: DeepSeek-V3 com MLA ($\approx 671$B param.)
 
-A MLA armazena, por camada e por token, **um vetor latente \(c_{KV}\) de dimensão \(d_{lora}^{KV}\)** e uma **componente rotativa de chave \(k_R\) de dimensão `qk_rope_head_dim`**. Os parâmetros de DeepSeek-V3:
+A MLA armazena, por camada e por token, **um vetor latente $c_{KV}$ de dimensão $d_{lora}^{KV}$** e uma **componente rotativa de chave $k_R$ de dimensão `qk_rope_head_dim`**. Os parâmetros de DeepSeek-V3:
 
 - `num_hidden_layers = 61`
-- `kv_lora_rank = 512` (\(d_{lora}^{KV}\))
+- `kv_lora_rank = 512` ($d_{lora}^{KV}$)
 - `qk_rope_head_dim = 64`
 - `num_attention_heads = 128`
 - `qk_nope_head_dim = 128`, `v_head_dim = 128`
 
 **Bytes por token, por camada (MLA, FP16):**
 
-\[
+$$
 (d_{lora}^{KV} + d_{rope}) \cdot b = (512 + 64) \times 2 = 1\,152\ \text{bytes}.
-\]
+$$
 
 **Bytes por token, total:**
 
-\[
+$$
 1\,152 \times 61 = 70\,272\ \text{bytes} \approx 68{,}6\ \text{KB/token}.
-\]
+$$
 
-**Para 128k tokens:** \(\approx 8{,}57\) GB. Para um modelo de **671 B** parâmetros — e pesos que, em FP8, ocupam \(\approx 700\) GB — **8.57 GB de cache** é absurdamente barato.
+**Para 128k tokens:** $\approx 8{,}57$ GB. Para um modelo de **671 B** parâmetros — e pesos que, em FP8, ocupam $\approx 700$ GB — **8.57 GB de cache** é absurdamente barato.
 
 A "aritmética alternativa" (o que seria com MHA equivalente: 128 cabeças, head_dim 128):
 
-\[
+$$
 2 \times 61 \times 128 \times 128 \times 2 = 4\,000\,768\ \text{bytes} \approx 3{,}81\ \text{MB/token}.
-\]
+$$
 
-Isto é, MLA **comprime cerca de 57×** o KV cache vs MHA equivalente (\(\frac{3{,}81 \cdot 1024}{68{,}6} \approx 57\)). É a razão técnica que permite o DeepSeek-V3 servir **128k de contexto em larga escala**.
+Isto é, MLA **comprime cerca de 57×** o KV cache vs MHA equivalente ($\frac{3{,}81 \cdot 1024}{68{,}6} \approx 57$). É a razão técnica que permite o DeepSeek-V3 servir **128k de contexto em larga escala**.
 
 ### 2.6. Outros modelos populares
 
-| Modelo | \(L\) | \(H_{kv}\) | \(d_h\) | KV por token (FP16) |
+| Modelo | $L$ | $H_{kv}$ | $d_h$ | KV por token (FP16) |
 |---|---|---|---|---|
 | **Llama 3 8B** | 32 | 8 | 128 | 128 KB |
 | **Llama 3 70B** | 80 | 8 | 128 | 320 KB |
@@ -293,9 +293,9 @@ flowchart TB
 
 A estrutura interna do KV cache, vista como um tensor 5D:
 
-\[
+$$
 \text{KV} \in \mathbb{R}^{B \times L \times 2 \times H_{kv} \times s \times d_h},
-\]
+$$
 
 onde o eixo "2" carrega K e V. O *layout* de memória varia por framework (HF Transformers: `[batch, kv_head, seq, head_dim]` por camada; FlashAttention quer `[batch, seq, kv_head, head_dim]` para coalescência; vLLM impõe um layout próprio orientado a páginas — veja §7).
 
@@ -336,7 +336,7 @@ flowchart TB
     batch --> layers --> heads --> tokens --> cell
 ```
 
-Cada **célula folha** desse tensor é um par de vetores de tamanho \(d_h\) (128, normalmente). É a multiplicação dos quatro eixos exteriores por essa célula que gera os números absurdos da tabela acima.
+Cada **célula folha** desse tensor é um par de vetores de tamanho $d_h$ (128, normalmente). É a multiplicação dos quatro eixos exteriores por essa célula que gera os números absurdos da tabela acima.
 
 ---
 
@@ -346,11 +346,11 @@ A geração com LLM tem **duas fases** com perfis computacionais radicalmente di
 
 ### 4.1. Prefill (a ingestão do prompt)
 
-Quando uma requisição chega com um prompt de \(N\) tokens, o sistema precisa:
+Quando uma requisição chega com um prompt de $N$ tokens, o sistema precisa:
 
-1. Embeddar os \(N\) tokens em \(N\) vetores;
-2. Passar pelo modelo **camada por camada**, computando atenção entre **todos os pares** \((Q_i, K_j)\) com \(j \le i\) (causal);
-3. **Materializar** o KV cache para todos os \(N\) tokens (uma vez só);
+1. Embeddar os $N$ tokens em $N$ vetores;
+2. Passar pelo modelo **camada por camada**, computando atenção entre **todos os pares** $(Q_i, K_j)$ com $j \le i$ (causal);
+3. **Materializar** o KV cache para todos os $N$ tokens (uma vez só);
 4. Produzir o **primeiro token** da resposta.
 
 Como tudo é feito de uma vez, o prefill é uma **multiplicação matriz × matriz** "grossa" — alta intensidade aritmética. **GPUs adoram** isso. O prefill é tipicamente **compute-bound**.
@@ -362,8 +362,8 @@ Como tudo é feito de uma vez, o prefill é uma **multiplicação matriz × matr
 A partir do segundo token, o sistema entra em **decode**: uma iteração por token gerado. Cada iteração:
 
 1. Pega o **último token amostrado** (1 token!);
-2. Computa um vetor \(Q_t\), um \(K_t\) e um \(V_t\);
-3. Faz atenção entre \(Q_t\) (1 vetor) e **todo o KV cache** (\(s\) vetores);
+2. Computa um vetor $Q_t$, um $K_t$ e um $V_t$;
+3. Faz atenção entre $Q_t$ (1 vetor) e **todo o KV cache** ($s$ vetores);
 4. Passa pelo MLP;
 5. Amostra o próximo token.
 
@@ -415,12 +415,12 @@ Otimizações típicas:
 |---|---|---|
 | Tokens processados por iteração | **N** (prompt todo) | **1** |
 | Padrão de matriz | Matriz × matriz (alta) | Vetor × matriz (baixa) |
-| Intensidade aritmética (FLOPs/byte) | **Alta** (dezenas a centenas) | **Baixa** (\(\approx 1\)–10) |
+| Intensidade aritmética (FLOPs/byte) | **Alta** (dezenas a centenas) | **Baixa** ($\approx 1$–10) |
 | Bottleneck dominante | **Compute** (TFLOPs) | **Memória** (HBM bandwidth) |
 | Custo do KV cache | Cria o cache (write) | Lê o cache (read), cresce 1 token |
 | Métrica de SLO | **TTFT** | **ITL/TPOT** |
 | Escala com batch | **Bem** (mais GPU saturada) | **Razoável** (lê pesos 1 vez para o batch inteiro) |
-| Escala com contexto | **Ruim** (\(O(N^2)\) sem flashattn, \(O(N \cdot d)\) com) | **Linear** em \(s\) acumulado |
+| Escala com contexto | **Ruim** ($O(N^2)$ sem flashattn, $O(N \cdot d)$ com) | **Linear** em $s$ acumulado |
 | Otimizações canônicas | Chunked prefill, FlashAttention, TP | Continuous batching, PagedAttention, spec. decoding, KV quant |
 | Quem domina os ciclos quando o sistema está saudável | **Tensor cores** | **HBM controllers** |
 | Frameworks com suporte ideal | TensorRT-LLM, vLLM | vLLM, TGI, SGLang |
@@ -441,55 +441,55 @@ Esse contraste de fases é **a observação fundamental** que abriu a porta para
 
 ### 5.1. Roofline em 30 segundos
 
-O **modelo roofline** (Williams, Waterman, Patterson, 2009) é uma forma gráfica simples de identificar gargalos. Plote no eixo \(x\) a **intensidade aritmética** (FLOPs/byte) e no eixo \(y\) o **desempenho** (FLOPs/s). Há dois "telhados":
+O **modelo roofline** (Williams, Waterman, Patterson, 2009) é uma forma gráfica simples de identificar gargalos. Plote no eixo $x$ a **intensidade aritmética** (FLOPs/byte) e no eixo $y$ o **desempenho** (FLOPs/s). Há dois "telhados":
 
-- **Telhado de compute:** \(P_{\max}\) — os TFLOPs/s de pico da GPU (ex.: H100 SXM = 989 TFLOPs/s em BF16).
-- **Telhado de memória:** \(B \cdot I\) — onde \(B\) é a banda de HBM (ex.: H100 = 3,35 TB/s) e \(I\) é a intensidade aritmética.
+- **Telhado de compute:** $P_{\max}$ — os TFLOPs/s de pico da GPU (ex.: H100 SXM = 989 TFLOPs/s em BF16).
+- **Telhado de memória:** $B \cdot I$ — onde $B$ é a banda de HBM (ex.: H100 = 3,35 TB/s) e $I$ é a intensidade aritmética.
 
-A curva real fica abaixo desses dois telhados. Se sua intensidade está **à esquerda** do ponto de cruzamento (\(P_{\max} / B\)), você é **memory-bound**. À direita, **compute-bound**.
+A curva real fica abaixo desses dois telhados. Se sua intensidade está **à esquerda** do ponto de cruzamento ($P_{\max} / B$), você é **memory-bound**. À direita, **compute-bound**.
 
-Para H100: \(\frac{989 \text{ TFLOPs/s}}{3{,}35 \text{ TB/s}} \approx 295\) FLOPs/byte. Tudo abaixo de **\(\approx 300\) FLOPs/byte é memory-bound**.
+Para H100: $\frac{989 \text{ TFLOPs/s}}{3{,}35 \text{ TB/s}} \approx 295$ FLOPs/byte. Tudo abaixo de **$\approx 300$ FLOPs/byte é memory-bound**.
 
 ### 5.2. Intensidade aritmética da atenção em decode
 
-Considere um único passo de decode em uma camada de atenção GQA com batch \(B\) e contexto acumulado \(s\):
+Considere um único passo de decode em uma camada de atenção GQA com batch $B$ e contexto acumulado $s$:
 
-- **Bytes lidos do KV cache** por camada: \(2 \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b\)
-- **FLOPs da atenção** por camada (vetor × matriz): \(\sim 4 \cdot H_q \cdot d_h \cdot s \cdot B\) (incluindo softmax + V)
+- **Bytes lidos do KV cache** por camada: $2 \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b$
+- **FLOPs da atenção** por camada (vetor × matriz): $\sim 4 \cdot H_q \cdot d_h \cdot s \cdot B$ (incluindo softmax + V)
 
 Intensidade aritmética da atenção:
 
-\[
+$$
 I_{\text{attn}} \approx \frac{4 \cdot H_q \cdot d_h \cdot s \cdot B}{2 \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b} = \frac{2 H_q}{H_{kv} \cdot b}.
-\]
+$$
 
-Para Llama 3 70B (\(H_q = 64, H_{kv} = 8\), FP16 \(b = 2\)):
+Para Llama 3 70B ($H_q = 64, H_{kv} = 8$, FP16 $b = 2$):
 
-\[
+$$
 I_{\text{attn}} \approx \frac{2 \times 64}{8 \times 2} = 8 \text{ FLOPs/byte}.
-\]
+$$
 
-**Bem abaixo dos 295** do telhado da H100. Logo, atenção em decode é **fortemente memory-bound**. E note algo lindo: a intensidade **não depende de \(s\)** — toda vez que dobra \(s\), dobram os bytes lidos **e** os FLOPs proporcionalmente. O que ajuda é **aumentar \(B\)** (continuous batching!) ou usar **MQA** (\(H_{kv} = 1\) leva a \(I = 64\) FLOPs/byte — ainda memory-bound, mas 8× melhor).
+**Bem abaixo dos 295** do telhado da H100. Logo, atenção em decode é **fortemente memory-bound**. E note algo lindo: a intensidade **não depende de $s$** — toda vez que dobra $s$, dobram os bytes lidos **e** os FLOPs proporcionalmente. O que ajuda é **aumentar $B$** (continuous batching!) ou usar **MQA** ($H_{kv} = 1$ leva a $I = 64$ FLOPs/byte — ainda memory-bound, mas 8× melhor).
 
 ### 5.3. Intensidade aritmética da parte MLP em decode
 
-Para a parte MLP (matriz × vetor), com pesos de \(M\) bytes:
+Para a parte MLP (matriz × vetor), com pesos de $M$ bytes:
 
-\[
+$$
 I_{\text{mlp,decode}} \approx \frac{2 \cdot d_{model}^2 \cdot B}{d_{model}^2 \cdot b} = \frac{2 B}{b}.
-\]
+$$
 
-Para batch=1 em FP16: \(I = 1\) FLOP/byte. Catastroficamente memory-bound. Para batch=128, \(I = 128\). Ainda longe dos 295 da H100, mas **já 128× melhor** — aqui mora a razão pela qual **agrupar requisições** é o caminho.
+Para batch=1 em FP16: $I = 1$ FLOP/byte. Catastroficamente memory-bound. Para batch=128, $I = 128$. Ainda longe dos 295 da H100, mas **já 128× melhor** — aqui mora a razão pela qual **agrupar requisições** é o caminho.
 
 ### 5.4. Implicações de design
 
-1. **Quantização de pesos** (Post 04) ataca diretamente o decode: ao reduzir \(b\) (de 2 bytes FP16 para 0.5 bytes INT4), reduz proporcionalmente os bytes lidos, dobrando ou quadruplicando a intensidade aritmética e aproximando do telhado de compute.
+1. **Quantização de pesos** (Post 04) ataca diretamente o decode: ao reduzir $b$ (de 2 bytes FP16 para 0.5 bytes INT4), reduz proporcionalmente os bytes lidos, dobrando ou quadruplicando a intensidade aritmética e aproximando do telhado de compute.
 
-2. **Quantização de KV cache** (Post 05) ataca o lado de memória: reduz os bytes lidos do KV durante a atenção, e — talvez mais importante — **permite mais requests no batch**, aumentando \(B\) e portanto a intensidade aritmética efetiva via roofline batch.
+2. **Quantização de KV cache** (Post 05) ataca o lado de memória: reduz os bytes lidos do KV durante a atenção, e — talvez mais importante — **permite mais requests no batch**, aumentando $B$ e portanto a intensidade aritmética efetiva via roofline batch.
 
 3. **Speculative decoding** transforma N passos sequenciais de decode em 1 passo "verificador" com N tokens em paralelo — efetivamente **transforma decode em mini-prefill**, jogando-o de volta para a região compute-bound.
 
-4. **MLA** (DeepSeek) muda o numerador e denominador da fórmula da atenção; o cache latente reduz drasticamente os bytes, e o "cache" passa a representar parcialmente \(W_K^{up}, W_V^{up}\) absorvidos via fusão. Resultado: atenção mais barata e cache mais barato.
+4. **MLA** (DeepSeek) muda o numerador e denominador da fórmula da atenção; o cache latente reduz drasticamente os bytes, e o "cache" passa a representar parcialmente $W_K^{up}, W_V^{up}$ absorvidos via fusão. Resultado: atenção mais barata e cache mais barato.
 
 ```mermaid
 flowchart LR
@@ -586,22 +586,22 @@ Resultado: fragmentação externa **zero**, fragmentação interna **no máximo 
 
 Um **bloco físico** armazena, **para uma camada e uma cabeça KV**:
 
-\[
+$$
 \text{block} \in \mathbb{R}^{\text{block\_size} \times d_h} \quad \text{para } K, \text{e mais um para } V.
-\]
+$$
 
-Tamanho típico de bloco: **16 tokens**. Para Llama 3 70B (FP16, \(d_h = 128\)):
+Tamanho típico de bloco: **16 tokens**. Para Llama 3 70B (FP16, $d_h = 128$):
 
-- Bytes por bloco K: \(16 \times 128 \times 2 = 4\,096\) bytes.
+- Bytes por bloco K: $16 \times 128 \times 2 = 4\,096$ bytes.
 - Bytes por bloco V: idem.
 - **Por camada e por cabeça KV: 8 KB**.
-- Para todas as 80 camadas e 8 KV heads: \(8 \text{ KB} \times 80 \times 8 = 5\,120 \text{ KB} = 5\) MB **por bloco lógico de 16 tokens**.
+- Para todas as 80 camadas e 8 KV heads: $8 \text{ KB} \times 80 \times 8 = 5\,120 \text{ KB} = 5$ MB **por bloco lógico de 16 tokens**.
 
 Que confere com o cálculo: 320 KB/token × 16 tokens = 5.120 KB. ✅
 
 ### 7.3. A tabela de blocos (block table)
 
-Cada **sequência** mantém uma estrutura de tamanho \(\lceil s / \text{block\_size} \rceil\):
+Cada **sequência** mantém uma estrutura de tamanho $\lceil s / \text{block\_size} \rceil$:
 
 ```
 seq_id = 42:
@@ -667,7 +667,7 @@ flowchart TB
     classDef livre fill:#eee,stroke:#999
 ```
 
-A genialidade aqui é dupla: (1) **arrays lógicos contíguos** se mapeiam para **posições físicas espalhadas**, eliminando fragmentação externa; (2) os **blocos podem ser compartilhados** — a mesma página física \(P_3\) pode aparecer na block table de **duas sequências diferentes**, porque é o **prefixo comum**. Esse mecanismo é a base do **prefix caching** (§8.2).
+A genialidade aqui é dupla: (1) **arrays lógicos contíguos** se mapeiam para **posições físicas espalhadas**, eliminando fragmentação externa; (2) os **blocos podem ser compartilhados** — a mesma página física $P_3$ pode aparecer na block table de **duas sequências diferentes**, porque é o **prefixo comum**. Esse mecanismo é a base do **prefix caching** (§8.2).
 
 ### 7.6. Ganhos reportados
 
@@ -681,7 +681,7 @@ E o vLLM virou o de-facto standard de inferência open-source. SGLang, TGI e Ten
 
 ### 7.7. Copy-on-Write para beam search e parallel sampling
 
-Beam search e amostragem paralela (\(n>1\)) precisam manter **várias hipóteses** que partem do mesmo prefixo. Com slots fixos, isso significava **duplicar** todo o KV. PagedAttention permite **CoW**:
+Beam search e amostragem paralela ($n>1$) precisam manter **várias hipóteses** que partem do mesmo prefixo. Com slots fixos, isso significava **duplicar** todo o KV. PagedAttention permite **CoW**:
 
 1. As várias hipóteses começam **apontando para os mesmos blocos físicos** (RefCount > 1).
 2. Quando uma hipótese diverge e quer **escrever** num bloco compartilhado, o bloco é **clonado** (copia para um novo bloco físico) e a tabela é atualizada.
@@ -733,7 +733,7 @@ sequenceDiagram
     Note over GPU: ... (continua, slots sempre cheios)
 ```
 
-**Selective batching:** Orca também observou que **operações sem dependência da posição** (Linear, GeLU, LayerNorm) podem ser batched sem problemas — suas formas são uniformes. Já a **atenção** é **per-request** (cada request tem seu \(s\) próprio), e era processada **sequencialmente**. Hoje, com **paged attention + variable-length kernels** (FlashAttention 2 com `cu_seqlens`), a atenção também é batched eficientemente.
+**Selective batching:** Orca também observou que **operações sem dependência da posição** (Linear, GeLU, LayerNorm) podem ser batched sem problemas — suas formas são uniformes. Já a **atenção** é **per-request** (cada request tem seu $s$ próprio), e era processada **sequencialmente**. Hoje, com **paged attention + variable-length kernels** (FlashAttention 2 com `cu_seqlens`), a atenção também é batched eficientemente.
 
 **Ganho reportado:** **36,9× throughput** no GPT-3 175B vs FasterTransformer, mantida a latência.
 
@@ -747,7 +747,7 @@ Em workloads modernos, **prompts compartilham prefixos** com altíssima frequên
 - **RAG:** as instruções e os documentos retrieve podem se repetir entre queries.
 - **Tree-of-thought / self-consistency:** múltiplas decodificações partem do mesmo prefixo.
 
-**Insight central:** se duas requests compartilham **\(p\) tokens de prefixo**, o KV cache desses \(p\) tokens é **idêntico** (assumindo prompts idênticos byte-a-byte). Então, **podemos calcular uma vez e reutilizar**.
+**Insight central:** se duas requests compartilham **$p$ tokens de prefixo**, o KV cache desses $p$ tokens é **idêntico** (assumindo prompts idênticos byte-a-byte). Então, **podemos calcular uma vez e reutilizar**.
 
 #### 8.2.1. APC (Automatic Prefix Caching) no vLLM
 
@@ -987,7 +987,7 @@ Não. Há outras abordagens:
 
 **Sim, na prática usa-se os dois ao mesmo tempo:**
 
-- **FlashAttention** é uma forma de calcular **a atenção em si** sem materializar a matriz \(QK^\top\), usando *online softmax* e *tiling*.
+- **FlashAttention** é uma forma de calcular **a atenção em si** sem materializar a matriz $QK^\top$, usando *online softmax* e *tiling*.
 - **PagedAttention** é uma forma de **gerenciar a memória do KV cache** com indireção em blocos.
 
 vLLM implementa PagedAttention sobre kernels FlashAttention (ou FlashInfer, ou os próprios), aproveitando o melhor dos dois: layout em blocos (paged) + cálculo eficiente sem materialização (flash).
@@ -1006,24 +1006,24 @@ O `n_ctx` (ou `max_position_embeddings`) é o **limite arquitetônico** do model
 
 ### 12.1. Cabe Llama 3 70B em 1×H100 80 GB?
 
-- Pesos BF16: \(\approx 140\) GB. ❌ **Não cabe** em uma H100 80 GB.
-- Pesos FP8: \(\approx 70\) GB. ✅ Cabe, sobra \(\approx 10\) GB.
+- Pesos BF16: $\approx 140$ GB. ❌ **Não cabe** em uma H100 80 GB.
+- Pesos FP8: $\approx 70$ GB. ✅ Cabe, sobra $\approx 10$ GB.
 - KV em 4k tokens: 1,28 GB/req. → caberiam ~7 requests na sobra. Throughput baixíssimo.
-- Conclusão: para Llama 3 70B sério, **2× H100** com tensor parallelism, ou **1× B200/MI300X** (192 GB). Ou modelo quantizado em INT4 (\(\approx 35\) GB) com bastante folga para KV.
+- Conclusão: para Llama 3 70B sério, **2× H100** com tensor parallelism, ou **1× B200/MI300X** (192 GB). Ou modelo quantizado em INT4 ($\approx 35$ GB) com bastante folga para KV.
 
 ### 12.2. Quantos batch concorrentes em Llama 3 8B BF16, contexto 8k, 1×A100 80GB?
 
 - Pesos BF16: 16 GB.
 - KV por request a 8k: 128 KB × 8192 = 1,0 GB.
-- Sobra para KV: \(\approx 80 \times 0{,}9 - 16 = 56\) GB (com `gpu_memory_utilization=0.9`).
-- Capacidade teórica: \(\lfloor 56 / 1{,}0 \rfloor = 56\) requests simultâneas em 8k.
+- Sobra para KV: $\approx 80 \times 0{,}9 - 16 = 56$ GB (com `gpu_memory_utilization=0.9`).
+- Capacidade teórica: $\lfloor 56 / 1{,}0 \rfloor = 56$ requests simultâneas em 8k.
 - Na prática: 30–45 (ativações, fragmentação residual em blocos parciais, scheduling overhead).
 
 ### 12.3. DeepSeek-V3 a 128k em 8×H100 80GB
 
-- Pesos FP8: \(\approx 700\) GB → cabe em 8× H100 com TP=8 (87,5 GB por GPU).
-- KV/req em 128k: 8,57 GB total → \(\approx\) 1,07 GB por GPU com TP=8.
-- Sobra por GPU: \(\approx 80 \times 0{,}9 - 87{,}5\) → **negativo**. Precisaríamos de **mais GPUs** (16, 32) ou esperar Blackwell B200.
+- Pesos FP8: $\approx 700$ GB → cabe em 8× H100 com TP=8 (87,5 GB por GPU).
+- KV/req em 128k: 8,57 GB total → $\approx$ 1,07 GB por GPU com TP=8.
+- Sobra por GPU: $\approx 80 \times 0{,}9 - 87{,}5$ → **negativo**. Precisaríamos de **mais GPUs** (16, 32) ou esperar Blackwell B200.
 - Em prática, DeepSeek-V3 a 128k pede **16+ H100** ou **8× B200**.
 
 ### 12.4. Custo mensal estimado: API com prefix caching vs sem
@@ -1033,18 +1033,18 @@ Considere um chatbot com:
 - 1.000.000 requests/mês.
 - Prompt médio: 4.000 tokens (sendo 3.500 fixos como system+context).
 - Resposta média: 500 tokens.
-- Modelo Anthropic Claude Sonnet (preço hipotético: $3/MTok input, $15/MTok output, cached input $0,30/MTok).
+- Modelo Anthropic Claude Sonnet (preço hipotético: \$3/MTok input, \$15/MTok output, cached input \$0,30/MTok).
 
 **Sem caching:**
-- Input: \(4{.}000 \times 1{.}000{.}000 = 4 \times 10^9\) tokens → 4.000 MTok × $3 = **$12.000**.
-- Output: \(500 \times 10^6\) tokens → 500 MTok × $15 = **$7.500**.
-- **Total: $19.500/mês.**
+- Input: $4{.}000 \times 1{.}000{.}000 = 4 \times 10^9$ tokens → 4.000 MTok × \$3 = **\$12.000**.
+- Output: $500 \times 10^6$ tokens → 500 MTok × \$15 = **\$7.500**.
+- **Total: \$19.500/mês.**
 
 **Com prefix caching** (3.500 tokens fixos cached):
-- Input cached: \(3{.}500 \times 10^6\) → 3.500 MTok × $0,30 = **$1.050**.
-- Input fresh: \(500 \times 10^6\) → 500 MTok × $3 = **$1.500**.
-- Output: **$7.500**.
-- **Total: $10.050/mês.** Economia de **48%**.
+- Input cached: $3{.}500 \times 10^6$ → 3.500 MTok × \$0,30 = **\$1.050**.
+- Input fresh: $500 \times 10^6$ → 500 MTok × \$3 = **\$1.500**.
+- Output: **\$7.500**.
+- **Total: \$10.050/mês.** Economia de **48%**.
 
 (Os números exatos variam por provider e modelo; o padrão de economia se mantém.)
 
@@ -1072,7 +1072,7 @@ A jornada desde o caderno conceitual de §1.4 até o pool de blocos do PagedAtte
 
 O importante para fixar:
 
-1. **A fórmula do tamanho** é dura e não tem como fugir: \(2 \cdot L \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b\). Toda otimização ataca um desses termos.
+1. **A fórmula do tamanho** é dura e não tem como fugir: $2 \cdot L \cdot H_{kv} \cdot d_h \cdot s \cdot B \cdot b$. Toda otimização ataca um desses termos.
 2. **Prefill e decode são duas máquinas dentro de uma**. Tratar como uma só é desperdiçar GPU.
 3. **PagedAttention** importou a paginação do SO para a GPU e **virou o padrão** em 18 meses.
 4. **Continuous batching + prefix caching** transformaram o serving de LLM de "um stream por GPU" para "centenas de streams por GPU".

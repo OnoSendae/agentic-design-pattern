@@ -8,23 +8,24 @@ Referência de **1 página** (expandir conforme necessidade). Valores são **ord
 
 Para **uma** sequência, **sem batch**, precisão **FP16** (2 bytes/elem), atenção **MHA/GQA** clássica:
 
-\[
+$$
 \text{KV\_bytes} \approx 2 \times L \times H_{kv} \times d_h \times T \times 2
-\]
+$$
 
 Onde:
 
-- \(L\) = número de **camadas** com atenção  
-- \(H_{kv}\) = número de **cabeças KV** (em GQA, \(H_{kv} < H_q\))  
-- \(d_h\) = **head dim** (tipicamente \(d_{\text{model}} / H_q\))  
-- \(T\) = **tokens** no contexto (prompt + gerados)  
+- $L$ = número de **camadas** com atenção  
+- $H_{kv}$ = número de **cabeças KV** (em GQA, $H_{kv} < H_q$)  
+- $d_h$ = **head dim** (tipicamente $d_{\text{model}} / H_q$)  
+- $T$ = **tokens** no contexto (prompt + gerados)  
 - Fator **2** = tensores **K** e **V**  
 - Fator final **2** = bytes por elemento em FP16  
 
 **Regra rápida (FP16):**  
-\[
+
+$$
 \text{KV\_bytes/token} \approx 4 \times L \times H_{kv} \times d_h
-\]
+$$
 
 **BF16/FP16:** mesmo tamanho (2 bytes). **FP8:** ~metade se tudo em FP8 de 1 byte por elem (depende de layout e kernels).
 
@@ -35,10 +36,12 @@ Onde:
 ## 2. Tamanho dos pesos (ordem de ideia)
 
 Modelo em **FP16/BF16** (2 bytes/param):  
-\[
+
+$$
 \text{Pesos\_GB} \approx \frac{N \times 2}{10^9}
-\]
-(\(N\) = parâmetros totais.)
+$$
+
+($N$ = parâmetros totais.)
 
 **INT4** (~0,5 byte/param médio, depende de empacotamento): ordem de **~0,5 × N** bytes + overhead de metadados.
 

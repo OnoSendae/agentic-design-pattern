@@ -27,7 +27,7 @@ Escalona a **logits** antes do softmax: temperatura **maior** = distribuição m
 
 ### 4. Por que dizem que atenção é O(n²)?
 
-Na forma densa padrão, para \(n\) tokens você materializa scores de tamanho **\(n \times n\)** (por cabeça/camada) — isso explode em memória e FLOPs para sequências longas. Há variantes **esparsas** ou **locais** que reduzem isso.  
+Na forma densa padrão, para $n$ tokens você materializa scores de tamanho **$n \times n$** (por cabeça/camada) — isso explode em memória e FLOPs para sequências longas. Há variantes **esparsas** ou **locais** que reduzem isso.  
 → Post [02](./02-attention-mha-mqa-gqa-mla-flashattention.md).
 
 ### 5. Qual a diferença entre MHA, MQA e GQA?
@@ -117,7 +117,7 @@ Técnicas como **YaRN**, **Position Interpolation**, **LongRoPE**, ou mudar o mo
 
 ### 18. Mamba substitui Transformer?
 
-**Depende.** SSMs (ex. **Mamba**) têm custo subquadrático em \(n\) em certos regimes, mas ecossistema, tooling e “qualidade geral” ainda competem com Transformers em muitos cenários. Há **híbridos** (Jamba).  
+**Depende.** SSMs (ex. **Mamba**) têm custo subquadrático em $n$ em certos regimes, mas ecossistema, tooling e “qualidade geral” ainda competem com Transformers em muitos cenários. Há **híbridos** (Jamba).  
 → Post [07](./07-contexto-longo-rope-yarn-ring-streaming.md).
 
 ---

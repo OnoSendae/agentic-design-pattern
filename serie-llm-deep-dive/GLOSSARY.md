@@ -140,7 +140,7 @@ Definições curtas em **Português (BR)**; termos em inglês mantidos quando s�
 
 | Termo | Definição | Post |
 |-------|-----------|------|
-| **Shannon lower bound** (no paper TurboQuant) | Limite de taxa–distorção ligado a \(4^{-b}\) para certas quantizações esféricas. | [06](./06-turboquant-deep-dive-polar-jl-lloydmax.md), [../turboquant-docs/04-shannon-lower-bound.md](turboquant/04-shannon-lower-bound.md) |
+| **Shannon lower bound** (no paper TurboQuant) | Limite de taxa–distorção ligado a $4^{-b}$ para certas quantizações esféricas. | [06](./06-turboquant-deep-dive-polar-jl-lloydmax.md), [../turboquant-docs/04-shannon-lower-bound.md](turboquant/04-shannon-lower-bound.md) |
 | **Sink tokens** (*attention sinks*) | Primeiros tokens que concentram atenção residual; base do **StreamingLLM** para janelas longas. | [07](./07-contexto-longo-rope-yarn-ring-streaming.md) |
 | **Sliding Window Attention** | Atenção restrita a uma janela local (Mistral, etc.). | [02](./02-attention-mha-mqa-gqa-mla-flashattention.md), [07](./07-contexto-longo-rope-yarn-ring-streaming.md) |
 | **Speculative decoding** | Modelo pequeno propõe tokens; modelo grande verifica em lote — pode aumentar tokens/s. | [08](./08-alem-quantizacao-sparsity-speculative-moe-distillation.md) |

@@ -65,32 +65,36 @@ O quantizador MSE-ótimo **rotaciona aleatoriamente** vetores *d*-dimensionais; 
 
 ## 1.1 Definição do problema
 
-Objetivo: projetar um mapa de quantização \(Q : \mathbb{R}^d \to \{0,1\}^B\). Se \(B = b \cdot d\) para \(b \geq 0\), o quantizador tem **largura de bits** média \(b\) por coordenada real. Exige-se um mapa inverso \(Q^{-1} : \{0,1\}^B \to \mathbb{R}^d\) para **desquantização** aproximada. O mapa é **lossy**; busca-se minimizar distorção com foco em **MSE** e **distorção de produto interno**, **sem** hipótese sobre a distribuição dos dados (**pior caso**). O quantizador pode ser **aleatorizado**; usa-se distorção **esperada** sobre a aleatoriedade.
+Objetivo: projetar um mapa de quantização $Q : \mathbb{R}^d \to \{0,1\}^B$. Se $B = b \cdot d$ para $b \geq 0$, o quantizador tem **largura de bits** média $b$ por coordenada real. Exige-se um mapa inverso $Q^{-1} : \{0,1\}^B \to \mathbb{R}^d$ para **desquantização** aproximada. O mapa é **lossy**; busca-se minimizar distorção com foco em **MSE** e **distorção de produto interno**, **sem** hipótese sobre a distribuição dos dados (**pior caso**). O quantizador pode ser **aleatorizado**; usa-se distorção **esperada** sobre a aleatoriedade.
 
-Definições (vetores \(x, y \in \mathbb{R}^d\), pior caso):
+Definições (vetores $x, y \in \mathbb{R}^d$, pior caso):
 
 - **MSE:**  
-  \[
-  D_{\text{mse}} := \mathbb{E}_Q\left[\left\|x - Q^{-1}(Q(x))\right\|_2^2\right] \quad \text{(Eq. 1)}
-  \]
+  
+
+$$
+D_{\text{mse}} := \mathbb{E}_Q\left[\left\|x - Q^{-1}(Q(x))\right\|_2^2\right] \quad \text{(Eq. 1)}
+$$
 
 - **Erro de produto interno:**  
-  \[
-  D_{\text{prod}} := \mathbb{E}_Q\left[\left(\langle y,x\rangle - \langle y, Q^{-1}(Q(x))\rangle\right)^2\right] \quad \text{(Eq. 2)}
-  \]
+  
+
+$$
+D_{\text{prod}} := \mathbb{E}_Q\left[\left(\langle y,x\rangle - \langle y, Q^{-1}(Q(x))\rangle\right)^2\right] \quad \text{(Eq. 2)}
+$$
 
 Para quantizadores de produto interno, exige-se **não-viés**:
 
-\[
+$$
 \mathbb{E}_Q\left[\langle y, Q^{-1}(Q(x))\rangle\right] = \langle y, x\rangle
-\]
+$$
 
-Buscam-se quantizadores computacionalmente eficientes \(Q_{\text{mse}}\) e \(Q_{\text{prod}}\) com cotas ótimas para cada \(b\), com \(Q_{\text{prod}}\) não viesado.
+Buscam-se quantizadores computacionalmente eficientes $Q_{\text{mse}}$ e $Q_{\text{prod}}$ com cotas ótimas para cada $b$, com $Q_{\text{prod}}$ não viesado.
 
-**Primitivas** para \(n\) vetores \(x_1,\ldots,x_n\):
+**Primitivas** para $n$ vetores $x_1,\ldots,x_n$:
 
-- **Quant:** quantiza o conjunto e calcula \(Q(x_1),\ldots,Q(x_n)\).  
-- **DeQuant:** dado o conjunto quantizado, reconstrói \(Q^{-1}(Q(x_i))\) para qualquer \(i\).
+- **Quant:** quantiza o conjunto e calcula $Q(x_1),\ldots,Q(x_n)$.  
+- **DeQuant:** dado o conjunto quantizado, reconstrói $Q^{-1}(Q(x_i))$ para qualquer $i$.
 
 ---
 
@@ -112,25 +116,25 @@ Buscam-se quantizadores computacionalmente eficientes \(Q_{\text{mse}}\) e \(Q_{
 
 Minimiza a distorção MSE da Eq. (1). **Rotação aleatória** induz distribuição **Beta** por coordenada; em dimensão alta, cada coordenada aproxima **Gaussiana** e coordenadas distintas ficam **quase independentes** [55], permitindo quantização escalar ótima **por coordenada** (*Max–Lloyd*, *codebooks* pré-computados).
 
-**Teorema 1 (escopo):** o TurboQuant MSE \(Q_{\text{mse}} : \mathbb{R}^d \to \{0,1\}^{b\cdot d}\) para \(\|x\|_2=1\) satisfaz, entre outras cotas,
+**Teorema 1 (escopo):** o TurboQuant MSE $Q_{\text{mse}} : \mathbb{R}^d \to \{0,1\}^{b\cdot d}$ para $\|x\|_2=1$ satisfaz, entre outras cotas,
 
-\[
+$$
 D_{\text{mse}}(Q_{\text{mse}}) \leq \frac{\sqrt{3\pi}}{2} \cdot \frac{1}{4^b}
-\]
+$$
 
-e valores aproximados para \(b=1,2,3,4\): \(0{,}36,\ 0{,}117,\ 0{,}03,\ 0{,}009\). Norma unitária é padrão; normas gerais podem ser armazenadas em precisão flutuante para reescala.
+e valores aproximados para $b=1,2,3,4$: $0{,}36,\ 0{,}117,\ 0{,}03,\ 0{,}009$. Norma unitária é padrão; normas gerais podem ser armazenadas em precisão flutuante para reescala.
 
 ### TurboQuant para produto interno
 
-Quantizadores MSE são **viesados** para o produto interno. Solução: usar \(Q_{\text{mse}}\) com **\(b-1\)** bits e aplicar **QJL** [62] no resíduo.
+Quantizadores MSE são **viesados** para o produto interno. Solução: usar $Q_{\text{mse}}$ com **$b-1$** bits e aplicar **QJL** [62] no resíduo.
 
-**Teorema 2 (escopo):** o TurboQuant produto \(Q_{\text{prod}}\) é **não viesado** e limita \(D_{\text{prod}}\) com fator \(\|y\|_2^2/d\) vezes \(1/4^b\) (com constante \(\sqrt{3}\pi^2\) na forma do artigo). Valores refinados para \(b=1,\ldots,4\) conforme o texto original.
+**Teorema 2 (escopo):** o TurboQuant produto $Q_{\text{prod}}$ é **não viesado** e limita $D_{\text{prod}}$ com fator $\|y\|_2^2/d$ vezes $1/4^b$ (com constante $\sqrt{3}\pi^2$ na forma do artigo). Valores refinados para $b=1,\ldots,4$ conforme o texto original.
 
 ### Limites inferiores
 
-**Teorema 3:** via limite inferior de Shannon e princípio minimax de Yao, para qualquer algoritmo aleatorizado \(Q\) com largura \(b\), existem instâncias difíceis com cotas do tipo \(1/4^b\) para MSE e \(\|y\|^2_2/(d\,4^b)\) para produto interno (ver artigo para enunciado exato).
+**Teorema 3:** via limite inferior de Shannon e princípio minimax de Yao, para qualquer algoritmo aleatorizado $Q$ com largura $b$, existem instâncias difíceis com cotas do tipo $1/4^b$ para MSE e $\|y\|^2_2/(d\,4^b)$ para produto interno (ver artigo para enunciado exato).
 
-O TurboQuant fica a fator **\(\sqrt{3\pi}/2 \approx 2{,}7\)** do limite informação-teórico no MSE; para \(b=1\), o fator cai para perto de **1,45**.
+O TurboQuant fica a fator **$\sqrt{3\pi}/2 \approx 2{,}7$** do limite informação-teórico no MSE; para $b=1$, o fator cai para perto de **1,45**.
 
 ### Experimentos (prévia)
 
@@ -142,24 +146,24 @@ O TurboQuant fica a fator **\(\sqrt{3\pi}/2 \approx 2{,}7\)** do limite informa�
 
 ## 2 Preliminares
 
-**Notação:** vetores em negrito (\(\mathbf{x}\), \(\mathbf{y}\)); matrizes em negrito maiúsculo (\(\mathbf{M}\)); fatia \(\mathbf{x}_{i:j}\); linha \(\mathbf{M}_{i,:}\); esfera unitária \(\mathbb{S}^{d-1}\); entropia diferencial \(h(x)\); informação mútua \(I(x;y)=h(x)-h(x|y)\).
+**Notação:** vetores em negrito ($\mathbf{x}$, $\mathbf{y}$); matrizes em negrito maiúsculo ($\mathbf{M}$); fatia $\mathbf{x}_{i:j}$; linha $\mathbf{M}_{i,:}$; esfera unitária $\mathbb{S}^{d-1}$; entropia diferencial $h(x)$; informação mútua $I(x;y)=h(x)-h(x|y)$.
 
-### Lema 1 (distribuição da coordenada em \(\mathbb{S}^{d-1}\))
+### Lema 1 (distribuição da coordenada em $\mathbb{S}^{d-1}$)
 
-Se \(\mathbf{x}\) é uniforme em \(\mathbb{S}^{d-1}\), cada coordenada \(x_j\) segue a densidade Beta (forma fechada no artigo). Em altas dimensões, aproxima-se \(\mathcal{N}(0,1/d)\).
+Se $\mathbf{x}$ é uniforme em $\mathbb{S}^{d-1}$, cada coordenada $x_j$ segue a densidade Beta (forma fechada no artigo). Em altas dimensões, aproxima-se $\mathcal{N}(0,1/d)$.
 
 ### 2.1 Limite inferior de Shannon (SLB)
 
-**Lema 2 (SLB):** para fonte \(\mathbf{x}\) com entropia \(h(\mathbf{x})\) e taxa de bits total \(B\), a distorção MSE ótima obedece à cota clássica (ver [14]).
+**Lema 2 (SLB):** para fonte $\mathbf{x}$ com entropia $h(\mathbf{x})$ e taxa de bits total $B$, a distorção MSE ótima obedece à cota clássica (ver [14]).
 
-**Lema 3 (SLB na esfera):** para \(\mathbf{x}\) uniforme em \(\mathbb{S}^{d-1}\), \(D(B) \geq 2^{-2B/d}\).
+**Lema 3 (SLB na esfera):** para $\mathbf{x}$ uniforme em $\mathbb{S}^{d-1}$, $D(B) \geq 2^{-2B/d}$.
 
 ### 2.2 QJL: quantização de produto interno com 1 bit
 
 **Definição 1 (QJL):**  
-\(Q_{\text{qjl}}(\mathbf{x}) = \operatorname{sign}(\mathbf{S}\mathbf{x})\) com \(\mathbf{S}\) Gaussiana i.i.d.; desquantização \(\mathbf{Q}_{\text{qjl}}^{-1}(\mathbf{z}) \propto \mathbf{S}^\top \mathbf{z}\) (escala \(\sqrt{\pi/2}/\sqrt{d}\) como no artigo).
+$Q_{\text{qjl}}(\mathbf{x}) = \operatorname{sign}(\mathbf{S}\mathbf{x})$ com $\mathbf{S}$ Gaussiana i.i.d.; desquantização $\mathbf{Q}_{\text{qjl}}^{-1}(\mathbf{z}) \propto \mathbf{S}^\top \mathbf{z}$ (escala $\sqrt{\pi/2}/\sqrt{d}$ como no artigo).
 
-**Lema 4:** estimador **não viesado** e cota de variância \(\frac{\pi}{2d}\|\mathbf{y}\|_2^2\) (detalhes nas Eqs. (3) do original).
+**Lema 4:** estimador **não viesado** e cota de variância $\frac{\pi}{2d}\|\mathbf{y}\|_2^2$ (detalhes nas Eqs. (3) do original).
 
 ---
 
@@ -169,35 +173,35 @@ Dois algoritmos: (i) MSE; (ii) produto interno não viesado. **§3.3** prova lim
 
 ### 3.1 TurboQuant MSE ótimo
 
-Rotação **\(\boldsymbol{\Pi}\)**, coordenadas com densidade \(f_X\) na \([-1,1]\); particionar \([-1,1]\) em \(2^b\) intervalos (solução de *k-means* 1D / Voronoi [42]). Custo escalar ótimo \(C(f_X,b)\) (Eq. 4 no artigo). Centroides para \(b=1,2\) em termos de \(d\) conforme o texto.
+Rotação **$\boldsymbol{\Pi}$**, coordenadas com densidade $f_X$ na $[-1,1]$; particionar $[-1,1]$ em $2^b$ intervalos (solução de *k-means* 1D / Voronoi [42]). Custo escalar ótimo $C(f_X,b)$ (Eq. 4 no artigo). Centroides para $b=1,2$ em termos de $d$ conforme o texto.
 
-**Algoritmo 1 — TurboQuant\(_{\text{mse}}\)** (resumo em PT-BR)
+**Algoritmo 1 — TurboQuant$_{\text{mse}}$** (resumo em PT-BR)
 
 | Passo | Descrição |
 |--------|-----------|
-| Entrada | Dimensão \(d\), largura de bits \(b\) |
-| 1 | Gerar matriz de rotação aleatória \(\boldsymbol{\Pi} \in \mathbb{R}^{d\times d}\) |
-| 2 | Construir *codebook*: centroides \(c_1,\ldots,c_{2^b}\) que minimizam o custo MSE (Eq. 4) |
-| **Quant\(_{\text{mse}}\)(\(x\))** | \(\mathbf{y} \leftarrow \boldsymbol{\Pi}x\); para cada \(j\), guardar índice do centróide mais próximo de \(y_j\) |
-| **DeQuant\(_{\text{mse}}\)** | Reconstruir \(\tilde{\mathbf{y}}\) pelos centroides; \(\tilde{\mathbf{x}} \leftarrow \boldsymbol{\Pi}^\top \tilde{\mathbf{y}}\) |
+| Entrada | Dimensão $d$, largura de bits $b$ |
+| 1 | Gerar matriz de rotação aleatória $\boldsymbol{\Pi} \in \mathbb{R}^{d\times d}$ |
+| 2 | Construir *codebook*: centroides $c_1,\ldots,c_{2^b}$ que minimizam o custo MSE (Eq. 4) |
+| **Quant$_{\text{mse}}$($x$)** | $\mathbf{y} \leftarrow \boldsymbol{\Pi}x$; para cada $j$, guardar índice do centróide mais próximo de $y_j$ |
+| **DeQuant$_{\text{mse}}$** | Reconstruir $\tilde{\mathbf{y}}$ pelos centroides; $\tilde{\mathbf{x}} \leftarrow \boldsymbol{\Pi}^\top \tilde{\mathbf{y}}$ |
 
-*Codificação entrópica dos índices* pode reduzir bits médios (~5% em \(b=4\)); os autores omitiram por simplicidade.
+*Codificação entrópica dos índices* pode reduzir bits médios (~5% em $b=4$); os autores omitiram por simplicidade.
 
 ### 3.2 TurboQuant para produto interno
 
-Combina \(Q_{\text{mse}}\) com **\(b-1\)** bits e **QJL** no resíduo \(\mathbf{r} = x - Q_{\text{mse}}^{-1}(Q_{\text{mse}}(x))\). Para \(b=1\), o viés \(2/\pi\) do caminho puramente MSE é ilustrado no artigo.
+Combina $Q_{\text{mse}}$ com **$b-1$** bits e **QJL** no resíduo $\mathbf{r} = x - Q_{\text{mse}}^{-1}(Q_{\text{mse}}(x))$. Para $b=1$, o viés $2/\pi$ do caminho puramente MSE é ilustrado no artigo.
 
-**Algoritmo 2 — TurboQuant\(_{\text{prod}}\)** (resumo)
+**Algoritmo 2 — TurboQuant$_{\text{prod}}$** (resumo)
 
 | Passo | Descrição |
 |--------|-----------|
-| Entrada | \(d\), \(b\) |
-| 1 | Instanciar TurboQuant\(_{\text{mse}}\) com largura \(b-1\) |
-| 2 | Amostrar \(\mathbf{S}\) Gaussiana \(d\times d\) |
-| **Quant\(_{\text{prod}}\)** | Obter índices MSE; resíduo \(\mathbf{r}\); \(q_{\text{qjl}} \leftarrow \operatorname{sign}(\mathbf{S}\mathbf{r})\); saída \((\text{idx}, q_{\text{qjl}}, \|\mathbf{r}\|_2)\) |
-| **DeQuant\(_{\text{prod}}\)** | Somar reconstrução MSE com termo QJL escalado por \(\|\mathbf{r}\|_2\) |
+| Entrada | $d$, $b$ |
+| 1 | Instanciar TurboQuant$_{\text{mse}}$ com largura $b-1$ |
+| 2 | Amostrar $\mathbf{S}$ Gaussiana $d\times d$ |
+| **Quant$_{\text{prod}}$** | Obter índices MSE; resíduo $\mathbf{r}$; $q_{\text{qjl}} \leftarrow \operatorname{sign}(\mathbf{S}\mathbf{r})$; saída $(\text{idx}, q_{\text{qjl}}, \|\mathbf{r}\|_2)$ |
+| **DeQuant$_{\text{prod}}$** | Somar reconstrução MSE com termo QJL escalado por $\|\mathbf{r}\|_2$ |
 
-**Teorema 2:** não-viés de \(\langle y,\tilde{x}\rangle\) e cota de \(D_{\text{prod}}\); prova por esperança condicional (dado \(\tilde{x}_{\text{mse}}\)) e lei da esperança total.
+**Teorema 2:** não-viés de $\langle y,\tilde{x}\rangle$ e cota de $D_{\text{prod}}$; prova por esperança condicional (dado $\tilde{x}_{\text{mse}}$) e lei da esperança total.
 
 ### 3.3 Limites inferiores
 
@@ -212,7 +216,7 @@ Combina \(Q_{\text{mse}}\) com **\(b-1\)** bits e **QJL** no resíduo \(\mathbf{
 
 ### 4.1 Validação empírica
 
-Dataset **DBpedia Entities** com *embeddings* 1536-D (OpenAI). 100 mil pontos de treino, 1 mil consultas. Comparar **TurboQuant\(_{\text{prod}}\)** e **TurboQuant\(_{\text{mse}}\)** na estimativa de produto interno. Aumentar \(b\) reduz variância em ambos; apenas **prod** permanece não viesado. Texto extraído do PDF inclui rótulos soltos das **Figuras 1–3** (*histogramas*, cotas superior/inferior teóricas).
+Dataset **DBpedia Entities** com *embeddings* 1536-D (OpenAI). 100 mil pontos de treino, 1 mil consultas. Comparar **TurboQuant$_{\text{prod}}$** e **TurboQuant$_{\text{mse}}$** na estimativa de produto interno. Aumentar $b$ reduz variância em ambos; apenas **prod** permanece não viesado. Texto extraído do PDF inclui rótulos soltos das **Figuras 1–3** (*histogramas*, cotas superior/inferior teóricas).
 
 ### 4.2 *Needle-in-a-haystack*
 
@@ -222,11 +226,11 @@ Benchmark de recuperação de frase oculta em documento longo [32]. Modelo **Lla
 
 **LongBench** / **LongBench-E** [10]: QA, resumo, *few-shot*, código, etc. Modelos **Llama-3.1-8B-Instruct** e **Ministral-7B-Instruct**. O método quantiza também durante geração em fluxo (**diferente** de KIVI/PolarQuant em certos detalhes). **Tabela 1** (scores por tarefa): TurboQuant 2,5 e 3,5 bits competitivos; estratégia de **outliers** em canais [63, 51] — ex.: 32 canais a 3 bits e 96 a 2 bits → média 2,5 bits/canal em 128 canais.
 
-**Tabela 2:** tempos de quantização (s) — PQ e RabitQ muito maiores que TurboQuant em \(d\in\{200,1536,3072\}\) com 4 bits.
+**Tabela 2:** tempos de quantização (s) — PQ e RabitQ muito maiores que TurboQuant em $d\in\{200,1536,3072\}$ com 4 bits.
 
 ### 4.4 Vizinho mais próximo
 
-DBpedia em 1536-D e 3072-D [links Hugging Face no original]; **GloVe** \(d=200\) [45]. 100k treino, 1k consultas (10k consultas no GloVe). Comparar **PQ**, **RabitQ** [22], **TurboQuant**; métrica **recall@k** (top-*k* aproximado contém o verdadeiro top-1 de produto interno). **Figura 5:** *recall* superior para TurboQuant em 2 e 4 bits. Discussão de implementação PQ (AVX2, LUT256 vs LUT16) e limitações de vetorização do RabitQ.
+DBpedia em 1536-D e 3072-D [links Hugging Face no original]; **GloVe** $d=200$ [45]. 100k treino, 1k consultas (10k consultas no GloVe). Comparar **PQ**, **RabitQ** [22], **TurboQuant**; métrica **recall@k** (top-*k* aproximado contém o verdadeiro top-1 de produto interno). **Figura 5:** *recall* superior para TurboQuant em 2 e 4 bits. Discussão de implementação PQ (AVX2, LUT256 vs LUT16) e limitações de vetorização do RabitQ.
 
 ---
 
@@ -234,8 +238,8 @@ DBpedia em 1536-D e 3072-D [links Hugging Face no original]; **GloVe** \(d=200\)
 
 | ID | Legenda (PT-BR) |
 |----|------------------|
-| Fig. 1 | Distribuição do erro de **TurboQuant\(_{\text{prod}}\)** vs **\(_{\text{mse}}\)** na estimativa do produto interno. |
-| Fig. 2 | Variância do erro de produto interno estável em **prod**; em **mse** depende do produto interno médio (\(b=2\)). |
+| Fig. 1 | Distribuição do erro de **TurboQuant$_{\text{prod}}$** vs **$_{\text{mse}}$** na estimativa do produto interno. |
+| Fig. 2 | Variância do erro de produto interno estável em **prod**; em **mse** depende do produto interno médio ($b=2$). |
 | Fig. 3 | Erro de produto interno e MSE vs cotas teóricas por largura de bits. |
 | Fig. 4 | *Needle-in-a-haystack* para Llama-3.1-8B: TurboQuant iguala *baseline* sem compressão apesar de >4× quantização. |
 | Fig. 5 | *Recall* em GloVe (200D) e OpenAI3 (1536D, 3072D). |

@@ -1,8 +1,8 @@
-# Post 4 — Hardware builds para inferência local (R$ 5k a R$ 200k+): do Civic ao DGX
+# Post 4 — Hardware builds para inferência local (R\$ 5k a R\$ 200k+): do Civic ao DGX
 
 > Sub-série **Inferência local**, post 4. Aqui paramos de falar de software (llama.cpp, MLX, Ollama) e começamos a falar de **ferro**: que máquina comprar, como montar, quanto gasta de luz, quanto faz de tok/s e quando vale a pena trocar tudo por uma assinatura de API.
 >
-> Posicionamento: este é o post que você manda para o amigo que pergunta "tô pensando em montar uma máquina pra rodar LLM local, o que compro?". Ele cobre do **estudante de R$ 5k** até o **CTO de startup com R$ 250k+** comprando 4× H100 usadas.
+> Posicionamento: este é o post que você manda para o amigo que pergunta "tô pensando em montar uma máquina pra rodar LLM local, o que compro?". Ele cobre do **estudante de R\$ 5k** até o **CTO de startup com R\$ 250k+** comprando 4× H100 usadas.
 >
 > Pré-requisitos: Post 10 da série principal ([hardware H100/H200/B100/B200/MI300X/TPU/Apple/Groq](../10-hardware-h100-h200-b100-b200-mi300x-tpu-apple-groq.md)), Post 1 da sub-série (build llama.cpp), Post 2 (MLX no Mac), Post 3 (Ollama/LM Studio/Open WebUI).
 
@@ -13,15 +13,15 @@
 1. [Por que pensar hardware antes de modelo](#1-por-que-pensar-hardware-antes-de-modelo)
 2. [Recap da física: BW, TFLOPs, VRAM, KV](#2-recap-da-física-bw-tflops-vram-kv)
 3. [Tier dos orçamentos: hierarquia das máquinas](#3-tier-dos-orçamentos-hierarquia-das-máquinas)
-4. [Build A — Estudante feliz (R$ 5–8k)](#4-build-a--estudante-feliz-r-58k)
-5. [Build B — Hobbyist sério com RTX 3090 (R$ 12–18k)](#5-build-b--hobbyist-sério-com-rtx-3090-r-1218k)
-6. [Build C — Mac Mini M4 Pro 64GB (R$ 18–22k)](#6-build-c--mac-mini-m4-pro-64gb-r-1822k)
-7. [Build D — Power user PC com RTX 5090 (R$ 30–45k)](#7-build-d--power-user-pc-com-rtx-5090-r-3045k)
-8. [Build E — Mac Studio M3 Ultra 192–256GB (R$ 50–80k)](#8-build-e--mac-studio-m3-ultra-192256gb-r-5080k)
-9. [Build F — 2× RTX 5090 para vLLM (R$ 70–90k)](#9-build-f--2-rtx-5090-para-vllm-r-7090k)
-10. [Build G — RTX Pro 6000 Blackwell 96GB (R$ 80–120k)](#10-build-g--rtx-pro-6000-blackwell-96gb-r-80120k)
-11. [Build H — Empresa pequena: 4× H100 80GB usado (R$ 250–400k)](#11-build-h--empresa-pequena-4-h100-80gb-usado-r-250400k)
-12. [Build retro — Tesla P40 (R$ 4–8k, MoE-friendly)](#12-build-retro--tesla-p40-r-48k-moe-friendly)
+4. [Build A — Estudante feliz (R\$ 5–8k)](#4-build-a--estudante-feliz-r-58k)
+5. [Build B — Hobbyist sério com RTX 3090 (R\$ 12–18k)](#5-build-b--hobbyist-sério-com-rtx-3090-r-1218k)
+6. [Build C — Mac Mini M4 Pro 64GB (R\$ 18–22k)](#6-build-c--mac-mini-m4-pro-64gb-r-1822k)
+7. [Build D — Power user PC com RTX 5090 (R\$ 30–45k)](#7-build-d--power-user-pc-com-rtx-5090-r-3045k)
+8. [Build E — Mac Studio M3 Ultra 192–256GB (R\$ 50–80k)](#8-build-e--mac-studio-m3-ultra-192256gb-r-5080k)
+9. [Build F — 2× RTX 5090 para vLLM (R\$ 70–90k)](#9-build-f--2-rtx-5090-para-vllm-r-7090k)
+10. [Build G — RTX Pro 6000 Blackwell 96GB (R\$ 80–120k)](#10-build-g--rtx-pro-6000-blackwell-96gb-r-80120k)
+11. [Build H — Empresa pequena: 4× H100 80GB usado (R\$ 250–400k)](#11-build-h--empresa-pequena-4-h100-80gb-usado-r-250400k)
+12. [Build retro — Tesla P40 (R\$ 4–8k, MoE-friendly)](#12-build-retro--tesla-p40-r-48k-moe-friendly)
 13. [CPU-only: Threadripper 12-channel para Kimi K2 e V3](#13-cpu-only-threadripper-12-channel-para-kimi-k2-e-v3)
 14. [Tabela master: build × modelos × tok/s × custo](#14-tabela-master-build--modelos--toks--custo)
 15. [PSU, cooling, gabinete: a parte que ninguém posta no Reddit](#15-psu-cooling-gabinete-a-parte-que-ninguém-posta-no-reddit)
@@ -109,12 +109,12 @@ Detalhado em [Post 10](../10-hardware-h100-h200-b100-b200-mi300x-tpu-apple-groq.
 
 | Tier | Apelido | Faixa R$ | Hardware típico | Modelo "topo" servível |
 |---|---|---|---|---|
-| 0 | Free / Estudante | R$ 0 (já tem) | Laptop M-series ou gaming PC | 7B–13B Q4 |
-| 1 | Hobbyist | R$ 5–15k | Gaming PC RTX 3060/4070 ou Mac Mini M4 Pro | 14B Q4 |
-| 2 | Power user | R$ 15–40k | RTX 3090/4080/5090 ou Mac Studio M3 Ultra base | 32B Q4–Q8 |
-| 3 | Pro / startup | R$ 40–150k | 2× 4090/5090 ou RTX Pro 6000 Blackwell ou Mac Studio M3 Ultra 256GB | 70B FP8, 120B Q4, 235B MoE Q4 |
-| 4 | Empresa séria | R$ 150–600k | 1–4× H100/H200, 1× MI300X, NVIDIA Spark | 235B FP8, V3 671B Q4, Kimi K2 1T offload |
-| 5 | Lab / cluster | R$ 600k+ | 8× H200, 2× MI300X, DGX H100/B200 | Qualquer coisa em produção |
+| 0 | Free / Estudante | R\$ 0 (já tem) | Laptop M-series ou gaming PC | 7B–13B Q4 |
+| 1 | Hobbyist | R\$ 5–15k | Gaming PC RTX 3060/4070 ou Mac Mini M4 Pro | 14B Q4 |
+| 2 | Power user | R\$ 15–40k | RTX 3090/4080/5090 ou Mac Studio M3 Ultra base | 32B Q4–Q8 |
+| 3 | Pro / startup | R\$ 40–150k | 2× 4090/5090 ou RTX Pro 6000 Blackwell ou Mac Studio M3 Ultra 256GB | 70B FP8, 120B Q4, 235B MoE Q4 |
+| 4 | Empresa séria | R\$ 150–600k | 1–4× H100/H200, 1× MI300X, NVIDIA Spark | 235B FP8, V3 671B Q4, Kimi K2 1T offload |
+| 5 | Lab / cluster | R\$ 600k+ | 8× H200, 2× MI300X, DGX H100/B200 | Qualquer coisa em produção |
 
 **Modelos comuns por tier (rough):**
 
@@ -129,7 +129,7 @@ Detalhado em [Post 10](../10-hardware-h100-h200-b100-b200-mi300x-tpu-apple-groq.
 
 ---
 
-## 4. Build A — "Estudante feliz" (R$ 5–8k)
+## 4. Build A — "Estudante feliz" (R\$ 5–8k)
 
 > **Analogia:** Civic 2010 com motor revisado. Não vai ganhar corrida, mas anda no trânsito todo dia sem reclamar.
 
@@ -137,15 +137,15 @@ Detalhado em [Post 10](../10-hardware-h100-h200-b100-b200-mi300x-tpu-apple-groq.
 
 | Componente | Modelo | Preço (BR, ~2026) |
 |---|---|---|
-| CPU | Ryzen 5 7600 (6c/12t, AM5) | R$ 1.100 |
-| Cooler | DeepCool AK400 | R$ 200 |
-| MoBo | B650M-A AsRock/Gigabyte | R$ 900 |
-| RAM | 32GB DDR5 5600 (2×16) Kingston Fury | R$ 700 |
-| GPU | **RTX 3060 12GB** usada (ou RTX 4070 12GB se o orçamento subir) | R$ 1.200–2.500 |
-| SSD | 1TB NVMe Gen4 (KingSpec/Kingston NV2) | R$ 350 |
-| PSU | 650W 80+ Bronze Corsair CX650 | R$ 400 |
-| Gabinete | Lian Li Lancool 205 / NZXT H510 budget | R$ 350 |
-| **Total** | | **R$ 5.200–6.500** |
+| CPU | Ryzen 5 7600 (6c/12t, AM5) | R\$ 1.100 |
+| Cooler | DeepCool AK400 | R\$ 200 |
+| MoBo | B650M-A AsRock/Gigabyte | R\$ 900 |
+| RAM | 32GB DDR5 5600 (2×16) Kingston Fury | R\$ 700 |
+| GPU | **RTX 3060 12GB** usada (ou RTX 4070 12GB se o orçamento subir) | R\$ 1.200–2.500 |
+| SSD | 1TB NVMe Gen4 (KingSpec/Kingston NV2) | R\$ 350 |
+| PSU | 650W 80+ Bronze Corsair CX650 | R\$ 400 |
+| Gabinete | Lian Li Lancool 205 / NZXT H510 budget | R\$ 350 |
+| **Total** | | **R\$ 5.200–6.500** |
 
 ### Modelos servíveis
 
@@ -164,25 +164,25 @@ Detalhado em [Post 10](../10-hardware-h100-h200-b100-b200-mi300x-tpu-apple-groq.
 
 ---
 
-## 5. Build B — "Hobbyist sério" com RTX 3090 (R$ 12–18k)
+## 5. Build B — "Hobbyist sério" com RTX 3090 (R\$ 12–18k)
 
 > **Analogia:** RTX 3090 usada é o **Civic 2010 turbo**: parece velho, ninguém posta foto no Instagram, mas é o melhor custo/VRAM do mercado em 2026.
 
-Confirmado pela pesquisa: a 3090 usada gira em **US$ 600–850 (~R$ 3.500–5.500)** com 24GB de VRAM e ~936 GB/s de BW. Isso dá **~R$ 30/GB de VRAM**, contra ~R$ 145/GB de uma 5090 nova.
+Confirmado pela pesquisa: a 3090 usada gira em **US\$ 600–850 (~R\$ 3.500–5.500)** com 24GB de VRAM e ~936 GB/s de BW. Isso dá **~R\$ 30/GB de VRAM**, contra ~R\$ 145/GB de uma 5090 nova.
 
 ### Componentes
 
 | Componente | Modelo | Preço (BR) |
 |---|---|---|
-| CPU | Ryzen 7 7700X (8c/16t) | R$ 1.700 |
-| Cooler | AIO 240mm Lian Li Galahad | R$ 700 |
-| MoBo | X670 ATX (MSI Pro X670-P) | R$ 1.700 |
-| RAM | 64GB DDR5 6000 CL30 (2×32) G.Skill Flare X5 | R$ 1.500 |
-| GPU | **RTX 3090 24GB usada** (ou RTX 4080 Super 16GB nova) | R$ 4.500 |
-| SSD | 2TB NVMe Gen4 (WD SN850X / Samsung 990 Pro) | R$ 900 |
-| PSU | 1000W 80+ Gold Corsair RM1000x ATX 3.0 | R$ 1.300 |
-| Gabinete | Fractal Meshify 2 / Lian Li Lancool 216 | R$ 800 |
-| **Total** | | **R$ 13.100** (com 3090 usada) |
+| CPU | Ryzen 7 7700X (8c/16t) | R\$ 1.700 |
+| Cooler | AIO 240mm Lian Li Galahad | R\$ 700 |
+| MoBo | X670 ATX (MSI Pro X670-P) | R\$ 1.700 |
+| RAM | 64GB DDR5 6000 CL30 (2×32) G.Skill Flare X5 | R\$ 1.500 |
+| GPU | **RTX 3090 24GB usada** (ou RTX 4080 Super 16GB nova) | R\$ 4.500 |
+| SSD | 2TB NVMe Gen4 (WD SN850X / Samsung 990 Pro) | R\$ 900 |
+| PSU | 1000W 80+ Gold Corsair RM1000x ATX 3.0 | R\$ 1.300 |
+| Gabinete | Fractal Meshify 2 / Lian Li Lancool 216 | R\$ 800 |
+| **Total** | | **R\$ 13.100** (com 3090 usada) |
 
 ### Modelos servíveis (RTX 3090 24GB)
 
@@ -204,11 +204,11 @@ Confirmado pela pesquisa: a 3090 usada gira em **US$ 600–850 (~R$ 3.500–5.50
 
 ---
 
-## 6. Build C — Mac Mini M4 Pro 64GB (R$ 18–22k)
+## 6. Build C — Mac Mini M4 Pro 64GB (R\$ 18–22k)
 
 > **Analogia:** carro elétrico compacto premium. Silencioso, eficiente, pequeno, e o "porta-malas" (RAM) é grande pelo tamanho da carroceria.
 
-Mac Mini M4 Pro com 64GB unified memory e SSD 1TB sai por aproximadamente R$ 22.000 na Apple BR (R$ 18k em câmbio favorável + alguma promo na Apple US importando). 12-core CPU, 16-core GPU, **273 GB/s** de bandwidth.
+Mac Mini M4 Pro com 64GB unified memory e SSD 1TB sai por aproximadamente R\$ 22.000 na Apple BR (R\$ 18k em câmbio favorável + alguma promo na Apple US importando). 12-core CPU, 16-core GPU, **273 GB/s** de bandwidth.
 
 ### Componentes
 
@@ -236,32 +236,32 @@ Não tem componente. É uma caixa fechada. Você compra, abre, liga, instala MLX
 | Load | 350W (GPU) | ~50W |
 | Ruído | 40–50 dB | <25 dB |
 | Footprint | Torre | 12×12×5 cm |
-| Preço Brasil (2026) | R$ 13k (3090 usada) | R$ 22k (Mac novo) |
+| Preço Brasil (2026) | R\$ 13k (3090 usada) | R\$ 22k (Mac novo) |
 
 **Decisão:** se você quer **quantidade de VRAM** (rodar 70B nativo) e ambiente silencioso, M4 Pro 64GB ganha. Se você quer **velocidade de decode** em 32B e custo menor, RTX 3090 ganha.
 
 ---
 
-## 7. Build D — "Power user PC" com RTX 5090 (R$ 30–45k)
+## 7. Build D — "Power user PC" com RTX 5090 (R\$ 30–45k)
 
 > **Analogia:** Porsche 911 GTS. Acelera muito, gasta combustível, e você vai ouvir os vizinhos reclamando do barulho.
 
-A RTX 5090 nova fica em US$ 2.000–4.000 (~R$ 11k–22k em BR considerando dólar e impostos), com 32GB GDDR7 e ~1792 GB/s. **3.1× mais rápida que a 3090** em Llama 3.1 8B inferência.
+A RTX 5090 nova fica em US\$ 2.000–4.000 (~R\$ 11k–22k em BR considerando dólar e impostos), com 32GB GDDR7 e ~1792 GB/s. **3.1× mais rápida que a 3090** em Llama 3.1 8B inferência.
 
 ### Componentes
 
 | Componente | Modelo | Preço (BR) |
 |---|---|---|
-| CPU | Ryzen 9 7950X3D (16c/32t) ou Threadripper PRO 7965WX (24c) | R$ 5.500 / R$ 18.000 |
-| Cooler | AIO 360mm (NZXT Kraken Elite 360) | R$ 1.400 |
-| MoBo | X670E Hero / WRX90 (TR PRO) | R$ 4.500 / R$ 12.000 |
-| RAM | 128GB DDR5 6000 (4×32) ou 256GB DDR5 5600 ECC RDIMM (TR PRO) | R$ 3.500 / R$ 14.000 |
-| GPU | RTX 5090 32GB FE/AIB | R$ 18.000–25.000 |
-| SSD | 4TB NVMe Gen5 (Crucial T705 / Samsung 9100 Pro) | R$ 2.800 |
-| PSU | 1500W 80+ Platinum ATX 3.0 (Corsair AX1500i) | R$ 3.500 |
-| Gabinete | Phanteks Enthoo Pro 2 Server / Fractal Meshify 2 XL | R$ 1.500 |
-| **Total Ryzen** | | **~R$ 40.000** |
-| **Total TR PRO** | | **~R$ 80.000** |
+| CPU | Ryzen 9 7950X3D (16c/32t) ou Threadripper PRO 7965WX (24c) | R\$ 5.500 / R\$ 18.000 |
+| Cooler | AIO 360mm (NZXT Kraken Elite 360) | R\$ 1.400 |
+| MoBo | X670E Hero / WRX90 (TR PRO) | R\$ 4.500 / R\$ 12.000 |
+| RAM | 128GB DDR5 6000 (4×32) ou 256GB DDR5 5600 ECC RDIMM (TR PRO) | R\$ 3.500 / R\$ 14.000 |
+| GPU | RTX 5090 32GB FE/AIB | R\$ 18.000–25.000 |
+| SSD | 4TB NVMe Gen5 (Crucial T705 / Samsung 9100 Pro) | R\$ 2.800 |
+| PSU | 1500W 80+ Platinum ATX 3.0 (Corsair AX1500i) | R\$ 3.500 |
+| Gabinete | Phanteks Enthoo Pro 2 Server / Fractal Meshify 2 XL | R\$ 1.500 |
+| **Total Ryzen** | | **~R\$ 40.000** |
+| **Total TR PRO** | | **~R\$ 80.000** |
 
 ### Modelos servíveis (RTX 5090 32GB)
 
@@ -277,7 +277,7 @@ A RTX 5090 nova fica em US$ 2.000–4.000 (~R$ 11k–22k em BR considerando dól
 
 ---
 
-## 8. Build E — Mac Studio M3 Ultra 192–256GB (R$ 50–80k)
+## 8. Build E — Mac Studio M3 Ultra 192–256GB (R\$ 50–80k)
 
 > **Analogia:** Tesla Model S Plaid com porta-malas absurdo. Não acelera tão bruto quanto a 5090, mas leva uma família inteira (de pesos) sem reclamar.
 
@@ -291,7 +291,7 @@ Confirmado: M4 Ultra **ainda não existe** em 2026 (M4 Max teto 128GB). O Mac St
 | GPU cores | 60 (base) ou 80 (top) |
 | Memória unified | 96 / 192 / 256 / 512 GB |
 | Memory BW | 819 GB/s |
-| Preço Apple BR (256GB) | R$ 75.000–85.000 |
+| Preço Apple BR (256GB) | R\$ 75.000–85.000 |
 | Idle | ~30W |
 | Load | ~150–250W |
 
@@ -308,13 +308,13 @@ Confirmado: M4 Ultra **ainda não existe** em 2026 (M4 Max teto 128GB). O Mac St
 | DeepSeek V3 671B | Q4 | llama.cpp | ~380GB | 5–8 (com offload) |
 | Kimi K2 1T | Q3 | llama.cpp | ~450GB | swap, marginal |
 
-**Por que Mac Ultra é único no mercado:** ele é a **única forma legal e disponível** de ter 192–256 GB de "VRAM" em uma única caixa por menos de R$ 100k. Comparativo: 256GB de VRAM em GPU dedicada exigiria 4× RTX Pro 6000 Blackwell (~R$ 200k só de GPU) ou 3× H100 80GB (~R$ 300k+).
+**Por que Mac Ultra é único no mercado:** ele é a **única forma legal e disponível** de ter 192–256 GB de "VRAM" em uma única caixa por menos de R\$ 100k. Comparativo: 256GB de VRAM em GPU dedicada exigiria 4× RTX Pro 6000 Blackwell (~R\$ 200k só de GPU) ou 3× H100 80GB (~R\$ 300k+).
 
 **Trade-off:** prefill é lento (faltam tensor cores potentes para batch grande). Para chat single-user com contexto até 32k, é ouro. Para serving multi-user, vLLM em 5090 ganha em latência.
 
 ---
 
-## 9. Build F — 2× RTX 5090 para vLLM (R$ 70–90k)
+## 9. Build F — 2× RTX 5090 para vLLM (R\$ 70–90k)
 
 > **Analogia:** dois Porsche em paralelo. Você gasta o dobro em combustível, mas pode levar 8 pessoas (continuous batching) ao invés de 4.
 
@@ -322,15 +322,15 @@ Confirmado: M4 Ultra **ainda não existe** em 2026 (M4 Max teto 128GB). O Mac St
 
 | Componente | Modelo | Preço |
 |---|---|---|
-| CPU | Threadripper PRO 7965WX (24c) | R$ 18.000 |
-| MoBo | ASUS Pro WS WRX90E-Sage (7× PCIe 5.0 x16) | R$ 14.000 |
-| RAM | 256GB DDR5 5600 ECC RDIMM (8× 32GB) | R$ 14.000 |
-| GPU | 2× RTX 5090 32GB | R$ 36.000–50.000 |
-| PSU | 2000W 80+ Titanium (Super Flower Leadex Titanium 2000W) | R$ 5.500 |
-| SSD | 4TB NVMe Gen5 + 8TB NVMe Gen4 (modelos) | R$ 5.000 |
-| Cooler | TR PRO custom + dual GPU air gap | R$ 1.800 |
-| Gabinete | Phanteks Enthoo Pro 2 Server | R$ 2.000 |
-| **Total** | | **~R$ 96.000** |
+| CPU | Threadripper PRO 7965WX (24c) | R\$ 18.000 |
+| MoBo | ASUS Pro WS WRX90E-Sage (7× PCIe 5.0 x16) | R\$ 14.000 |
+| RAM | 256GB DDR5 5600 ECC RDIMM (8× 32GB) | R\$ 14.000 |
+| GPU | 2× RTX 5090 32GB | R\$ 36.000–50.000 |
+| PSU | 2000W 80+ Titanium (Super Flower Leadex Titanium 2000W) | R\$ 5.500 |
+| SSD | 4TB NVMe Gen5 + 8TB NVMe Gen4 (modelos) | R\$ 5.000 |
+| Cooler | TR PRO custom + dual GPU air gap | R\$ 1.800 |
+| Gabinete | Phanteks Enthoo Pro 2 Server | R\$ 2.000 |
+| **Total** | | **~R\$ 96.000** |
 
 ### Caveat: NVLink ausente nas RTX 5090
 
@@ -350,24 +350,24 @@ A NVIDIA **não pôs NVLink na RTX 5090**. Tensor parallelism (TP=2) acontece vi
 
 ---
 
-## 10. Build G — RTX Pro 6000 Blackwell 96GB (R$ 80–120k)
+## 10. Build G — RTX Pro 6000 Blackwell 96GB (R\$ 80–120k)
 
 > **Analogia:** Jaguar XJR sedã. Não tão expressivo quanto o Porsche dobrado, mas leva 7 passageiros confortavelmente em uma única máquina.
 
-Confirmado pela pesquisa: **RTX Pro 6000 Blackwell Workstation Edition** com **96GB GDDR7**, **1790 GB/s** de bandwidth, 600W TDP, ~US$ 8.800 (~R$ 50.000 no BR considerando importação).
+Confirmado pela pesquisa: **RTX Pro 6000 Blackwell Workstation Edition** com **96GB GDDR7**, **1790 GB/s** de bandwidth, 600W TDP, ~US\$ 8.800 (~R\$ 50.000 no BR considerando importação).
 
 ### Componentes
 
 | Componente | Modelo | Preço |
 |---|---|---|
-| CPU | Threadripper PRO 7965WX | R$ 18.000 |
-| MoBo | ASUS Pro WS WRX90E-Sage | R$ 14.000 |
-| RAM | 128GB DDR5 5600 ECC | R$ 7.500 |
-| GPU | RTX Pro 6000 Blackwell 96GB | R$ 50.000 |
-| PSU | 1600W 80+ Platinum | R$ 4.000 |
-| SSD | 4TB NVMe Gen5 | R$ 2.800 |
-| Cooler + gabinete + acessórios | | R$ 4.000 |
-| **Total** | | **~R$ 100.000** |
+| CPU | Threadripper PRO 7965WX | R\$ 18.000 |
+| MoBo | ASUS Pro WS WRX90E-Sage | R\$ 14.000 |
+| RAM | 128GB DDR5 5600 ECC | R\$ 7.500 |
+| GPU | RTX Pro 6000 Blackwell 96GB | R\$ 50.000 |
+| PSU | 1600W 80+ Platinum | R\$ 4.000 |
+| SSD | 4TB NVMe Gen5 | R\$ 2.800 |
+| Cooler + gabinete + acessórios | | R\$ 4.000 |
+| **Total** | | **~R\$ 100.000** |
 
 ### Modelos servíveis (96GB single GPU)
 
@@ -387,28 +387,28 @@ Confirmado pela pesquisa: **RTX Pro 6000 Blackwell Workstation Edition** com **9
 
 ---
 
-## 11. Build H — Empresa pequena: 4× H100 80GB usado (R$ 250–400k)
+## 11. Build H — Empresa pequena: 4× H100 80GB usado (R\$ 250–400k)
 
 > **Analogia:** frota corporativa de SUVs blindados. Caro de comprar, caro de manter, mas é o único veículo aceito na portaria do prédio importante.
 
 ### Cenário
 
-Mercado secundário de H100 está abrindo em 2026 (clouds atualizando para H200/B200). H100 SXM 80GB usada gira em US$ 18–25k (~R$ 100–140k). 4 GPUs = ~R$ 500k de GPU + chassi.
+Mercado secundário de H100 está abrindo em 2026 (clouds atualizando para H200/B200). H100 SXM 80GB usada gira em US\$ 18–25k (~R\$ 100–140k). 4 GPUs = ~R\$ 500k de GPU + chassi.
 
 ### Componentes (chassi server)
 
 | Componente | Modelo | Preço (USD/BR) |
 |---|---|---|
-| Chassi 4U GPU server | SuperMicro AS-4125GS-TNRT (PCIe Gen5 GPU sled) | US$ 8.000 / R$ 45k |
-| CPUs | 2× EPYC 9354 (32c) | R$ 50k |
-| RAM | 768GB DDR5 ECC RDIMM (12 channel × 2 sockets) | R$ 80k |
-| GPUs | 4× H100 SXM 80GB usadas | R$ 500k |
-| Storage | 8TB NVMe Gen5 + 32TB SATA backup | R$ 25k |
-| Network | Mellanox 100GbE NIC | R$ 8k |
-| PDU + UPS | APC SmartUPS 5kVA + PDU | R$ 18k |
-| **Total** | | **~R$ 700k** |
+| Chassi 4U GPU server | SuperMicro AS-4125GS-TNRT (PCIe Gen5 GPU sled) | US\$ 8.000 / R\$ 45k |
+| CPUs | 2× EPYC 9354 (32c) | R\$ 50k |
+| RAM | 768GB DDR5 ECC RDIMM (12 channel × 2 sockets) | R\$ 80k |
+| GPUs | 4× H100 SXM 80GB usadas | R\$ 500k |
+| Storage | 8TB NVMe Gen5 + 32TB SATA backup | R\$ 25k |
+| Network | Mellanox 100GbE NIC | R\$ 8k |
+| PDU + UPS | APC SmartUPS 5kVA + PDU | R\$ 18k |
+| **Total** | | **~R\$ 700k** |
 
-(Alternativa mais barata: DGX A100 320GB usada por ~US$ 80k = R$ 450k.)
+(Alternativa mais barata: DGX A100 320GB usada por ~US\$ 80k = R\$ 450k.)
 
 ### Modelos servíveis (4× H100 80GB = 320GB efetivo)
 
@@ -424,21 +424,21 @@ Mercado secundário de H100 está abrindo em 2026 (clouds atualizando para H200/
 
 ---
 
-## 12. Build retro — Tesla P40 (R$ 4–8k, MoE-friendly)
+## 12. Build retro — Tesla P40 (R\$ 4–8k, MoE-friendly)
 
 > **Analogia:** comprar 4 Fuscas 1980 ao invés de 1 Civic 2020. Cabe muita gente no estacionamento, mas só anda na velocidade da rua.
 
-Confirmado: P40 24GB usada por **US$ 150–250 (~R$ 1.000–1.500)** cada. 12 TFLOPs FP32, 250W, **sem tensor cores**, **sem FP16/BF16 nativo** (emula em FP32, ~21% mais lento).
+Confirmado: P40 24GB usada por **US\$ 150–250 (~R\$ 1.000–1.500)** cada. 12 TFLOPs FP32, 250W, **sem tensor cores**, **sem FP16/BF16 nativo** (emula em FP32, ~21% mais lento).
 
 ### Build "8× P40 Frankenstein"
 
 | Componente | Modelo | Preço |
 |---|---|---|
-| Server velho | HP ProLiant DL580 G9 / Dell R730 (4U) | R$ 4.000 (mercado livre) |
-| GPUs | 8× P40 24GB usadas | R$ 8.000–12.000 |
-| Adapters PCIe + cooling shroud | NF-A4x20 fan + 3D print bracket | R$ 600 |
+| Server velho | HP ProLiant DL580 G9 / Dell R730 (4U) | R\$ 4.000 (mercado livre) |
+| GPUs | 8× P40 24GB usadas | R\$ 8.000–12.000 |
+| Adapters PCIe + cooling shroud | NF-A4x20 fan + 3D print bracket | R\$ 600 |
 | PSU upgrade (server geralmente já tem 1600W+) | redundante | included |
-| **Total** | | **~R$ 12.000–17.000** |
+| **Total** | | **~R\$ 12.000–17.000** |
 
 ### Modelos servíveis
 
@@ -465,13 +465,13 @@ Confirmado pela pesquisa AMD: **Threadripper PRO 9995WX (96c) com quad-channel**
 
 | Componente | Modelo | Preço |
 |---|---|---|
-| CPU | Threadripper PRO 7995WX (96c, base) ou 9995WX (96c, refresh) | R$ 90.000 |
-| MoBo | ASUS Pro WS WRX90E-Sage (8 canais) | R$ 14.000 |
-| RAM | 1.5TB DDR5 ECC RDIMM (12× 128GB) | R$ 90.000 |
-| SSD | 8TB NVMe Gen5 | R$ 6.000 |
-| PSU | 1600W Platinum | R$ 4.000 |
-| Cooler + gabinete | TR PRO chiller custom | R$ 5.000 |
-| **Total** | | **~R$ 210.000** |
+| CPU | Threadripper PRO 7995WX (96c, base) ou 9995WX (96c, refresh) | R\$ 90.000 |
+| MoBo | ASUS Pro WS WRX90E-Sage (8 canais) | R\$ 14.000 |
+| RAM | 1.5TB DDR5 ECC RDIMM (12× 128GB) | R\$ 90.000 |
+| SSD | 8TB NVMe Gen5 | R\$ 6.000 |
+| PSU | 1600W Platinum | R\$ 4.000 |
+| Cooler + gabinete | TR PRO chiller custom | R\$ 5.000 |
+| **Total** | | **~R\$ 210.000** |
 
 ### Performance (CPU-only, llama.cpp / ik_llama.cpp)
 
@@ -484,7 +484,7 @@ Confirmado pela pesquisa AMD: **Threadripper PRO 9995WX (96c) com quad-channel**
 
 **Vantagem:** roda **qualquer modelo** open. Único limitante é RAM. **Desvantagem:** prefill 30–50× mais lento que GPU; batch limitado; latência alta.
 
-**Cluster trick (AMD Ryzen AI Max+ 395):** comprovado pela pesquisa, 4 nós de Ryzen AI Max+ 395 com 128GB/cada rodam Kimi K2.5 1T via **llama.cpp RPC** distribuído. Custo: ~R$ 80k total. Dá ~7–12 tok/s de decode. **Cult, mas funciona.**
+**Cluster trick (AMD Ryzen AI Max+ 395):** comprovado pela pesquisa, 4 nós de Ryzen AI Max+ 395 com 128GB/cada rodam Kimi K2.5 1T via **llama.cpp RPC** distribuído. Custo: ~R\$ 80k total. Dá ~7–12 tok/s de decode. **Cult, mas funciona.**
 
 ---
 
@@ -552,7 +552,7 @@ Tabela mestre consolidada (decode tok/s, single batch). Valores ~2026, MLX/vLLM/
 | Empresa pequena multi-dev | 10GbE em workstations | Multi-user + transferência rápida de modelos |
 | Server em prod | 25GbE / 100GbE | NCCL all-reduce em multi-node, RAG distribuído |
 
-**Tip BR:** ASUS RT-AX86U / TP-Link AX73 já dão WiFi 6 decente. Para 10GbE, switch MikroTik CRS305-1G-4S+IN custa ~R$ 1.500.
+**Tip BR:** ASUS RT-AX86U / TP-Link AX73 já dão WiFi 6 decente. Para 10GbE, switch MikroTik CRS305-1G-4S+IN custa ~R\$ 1.500.
 
 ---
 
@@ -595,20 +595,20 @@ echo 'export HF_HOME=/mnt/storage/hf-cache' >> ~/.zshrc
 
 ## 18. Energia e clima — realidade brasileira
 
-Custo médio kWh em 2026 (residencial SP/RJ): **R$ 0.85–1.05**. Bandeira vermelha estoura para R$ 1.20+.
+Custo médio kWh em 2026 (residencial SP/RJ): **R\$ 0.85–1.05**. Bandeira vermelha estoura para R\$ 1.20+.
 
 ### Consumo médio por build
 
-| Build | Idle (W) | Inferência ativa (W) | 8h/dia inferência (kWh/mês) | R$/mês (R$ 0.95/kWh) |
+| Build | Idle (W) | Inferência ativa (W) | 8h/dia inferência (kWh/mês) | R$/mês (R\$ 0.95/kWh) |
 |---|---|---|---|---|
-| A — Estudante | 80 | 350 | 84 | R$ 80 |
-| B — 3090 | 100 | 600 | 144 | R$ 137 |
-| C — Mac Mini M4 Pro | 10 | 100 | 24 | R$ 23 |
-| D — RTX 5090 | 80 | 900 | 216 | R$ 205 |
-| E — Mac Studio M3 Ultra | 30 | 250 | 60 | R$ 57 |
-| F — 2× RTX 5090 | 150 | 1.500 | 360 | R$ 342 |
-| G — RTX Pro 6000 | 80 | 900 | 216 | R$ 205 |
-| H — 4× H100 | 400 | 3.500 | 840 | R$ 798 |
+| A — Estudante | 80 | 350 | 84 | R\$ 80 |
+| B — 3090 | 100 | 600 | 144 | R\$ 137 |
+| C — Mac Mini M4 Pro | 10 | 100 | 24 | R\$ 23 |
+| D — RTX 5090 | 80 | 900 | 216 | R\$ 205 |
+| E — Mac Studio M3 Ultra | 30 | 250 | 60 | R\$ 57 |
+| F — 2× RTX 5090 | 150 | 1.500 | 360 | R\$ 342 |
+| G — RTX Pro 6000 | 80 | 900 | 216 | R\$ 205 |
+| H — 4× H100 | 400 | 3.500 | 840 | R\$ 798 |
 
 **Diferença Mac vs PC:** o Mac M4 Pro consome **~10× menos** que um build com RTX 5090 idle. Para uso intermitente (dev solo), o Mac paga a conta de luz da diferença em 6–8 meses.
 
@@ -621,8 +621,8 @@ Custo médio kWh em 2026 (residencial SP/RJ): **R$ 0.85–1.05**. Bandeira verme
 ### UPS
 
 - **Obrigatório** para servers (H100, Pro 6000, dual-GPU). Quedas momentâneas = corrupção de inferência ativa, no pior caso disco.
-- Residencial: APC Back-UPS 1500VA (R$ 1.500) cobre até build D por 5–10 min.
-- Server: APC SmartUPS 5kVA (R$ 18k) com bypass + bateria estendida.
+- Residencial: APC Back-UPS 1500VA (R\$ 1.500) cobre até build D por 5–10 min.
+- Server: APC SmartUPS 5kVA (R\$ 18k) com bypass + bateria estendida.
 
 ---
 
@@ -813,14 +813,14 @@ sudo powermetrics --samplers smc -i 1000 -n 5
 
 #### Cenário 1 — Dev solo, 1M tokens/dia
 
-- API DeepSeek V3 / Anthropic Sonnet: ~US$ 1–3/dia = **~R$ 200/mês**.
-- Build B (RTX 3090): **R$ 13.000 + R$ 137/mês** = R$ 1.300 a mais que API por ano + custo upfront.
+- API DeepSeek V3 / Anthropic Sonnet: ~US\$ 1–3/dia = **~R\$ 200/mês**.
+- Build B (RTX 3090): **R\$ 13.000 + R\$ 137/mês** = R\$ 1.300 a mais que API por ano + custo upfront.
 - **Veredito:** API ganha a curto/médio prazo. Build só faz sentido por privacy ou uso muito específico.
 
 #### Cenário 2 — Equipe 5 devs, uso heavy (5–10M tokens/dia agregado)
 
-- API: ~US$ 15–30/dia = **R$ 2.500–4.500/mês** = **R$ 30k–55k/ano**.
-- Build F (2× RTX 5090) ou G (RTX Pro 6000): **R$ 96k–100k + R$ 3.500/ano luz**.
+- API: ~US\$ 15–30/dia = **R\$ 2.500–4.500/mês** = **R\$ 30k–55k/ano**.
+- Build F (2× RTX 5090) ou G (RTX Pro 6000): **R\$ 96k–100k + R\$ 3.500/ano luz**.
 - **Break-even em 18–24 meses.**
 - **Veredito:** equipe estável, API custa equivalente a um dev junior em 2 anos. Build paga.
 
@@ -835,11 +835,11 @@ sudo powermetrics --samplers smc -i 1000 -n 5
 
 | Cenário | API hosted (12m) | Build local (12m) | Diferença | Decisão |
 |---|---|---|---|---|
-| Dev solo casual | R$ 600 | R$ 13k upfront + R$ 1.6k luz | -R$ 14k | API |
-| Dev solo heavy + privacy | R$ 4k | R$ 22k Mac + R$ 0.3k luz | -R$ 18k | Privacy decide |
-| Equipe 5 devs | R$ 35k | R$ 96k + R$ 4k luz | break-even ~14 meses | Build (long-term) |
-| Equipe 15 devs | R$ 110k | R$ 200k + R$ 8k luz | break-even ~12 meses | Build |
-| Empresa enterprise privacy | n/a (vetada) | R$ 700k + R$ 10k luz | n/a | Build (mandatório) |
+| Dev solo casual | R\$ 600 | R\$ 13k upfront + R\$ 1.6k luz | -R\$ 14k | API |
+| Dev solo heavy + privacy | R\$ 4k | R\$ 22k Mac + R\$ 0.3k luz | -R\$ 18k | Privacy decide |
+| Equipe 5 devs | R\$ 35k | R\$ 96k + R\$ 4k luz | break-even ~14 meses | Build (long-term) |
+| Equipe 15 devs | R\$ 110k | R\$ 200k + R\$ 8k luz | break-even ~12 meses | Build |
+| Empresa enterprise privacy | n/a (vetada) | R\$ 700k + R\$ 10k luz | n/a | Build (mandatório) |
 
 ### Diagrama ROI
 
@@ -869,8 +869,8 @@ flowchart LR
 
 | Tendência | O que está rolando | Impacto para você |
 |---|---|---|
-| **RTX 5090 mainstream** | Estoque normalizou, preço caindo (~US$ 2.000 base) | Build D virou padrão de power user |
-| **RTX Pro 6000 Blackwell** | 96GB GDDR7, 1790 GB/s, US$ 8.800 | Build G é o novo "single GPU king" |
+| **RTX 5090 mainstream** | Estoque normalizou, preço caindo (~US\$ 2.000 base) | Build D virou padrão de power user |
+| **RTX Pro 6000 Blackwell** | 96GB GDDR7, 1790 GB/s, US\$ 8.800 | Build G é o novo "single GPU king" |
 | **Strix Halo (AMD)** | Ryzen AI Max+ 395, NPU + iGPU 40 CU, 128GB unified mem | Mini-PCs com 60+ tok/s em 32B Q4. Cluster RPC viável para K2 |
 | **Lunar Lake (Intel)** | NPU 48 TOPS + Xe2 iGPU forte | Laptops ganhando inferência decente até 14B Q4 |
 | **NVIDIA Spark / DGX Station** | GB10 / B200 desktop, 128–384 GB unified | Tier 3-4 reescrito quando lançar nos EUA |
@@ -925,11 +925,11 @@ flowchart LR
 
 ### WebSearch confirmado (2026)
 
-- RTX 3090: ~US$ 600–850 usada, 24GB, 936 GB/s, $30/GB-VRAM (melhor custo-benefício).
+- RTX 3090: ~US\$ 600–850 usada, 24GB, 936 GB/s, \$30/GB-VRAM (melhor custo-benefício).
 - RTX 5090: 32GB GDDR7, ~1792 GB/s, 3.1× mais rápida que 3090 em 8B; sem NVLink.
 - Mac M3 Ultra 256GB: 819 GB/s, 50 tok/s em 7B Q4, top em MLX.
 - RTX Pro 6000 Blackwell: 96GB GDDR7, 1790 GB/s, gpt-oss 120B a ~99 tok/s @ 128k ctx.
-- Tesla P40: US$ 150–250 usada, 24GB, sem tensor cores, niche para MoE com llama.cpp.
+- Tesla P40: US\$ 150–250 usada, 24GB, sem tensor cores, niche para MoE com llama.cpp.
 - AMD Threadripper PRO: 8/12-channel DDR5 transforma performance llama.cpp; quad-channel é gargalo em 96 cores.
 
 ---
@@ -937,14 +937,14 @@ flowchart LR
 ## TL;DR do post
 
 - **VRAM** é teto, **BW** é velocidade, **TFLOPs** é prefill, **PCIe + DDR** é offload.
-- **Sub-R$ 10k:** Build A (RTX 3060/4070), serve 7B–14B com folga.
-- **R$ 13k:** **RTX 3090 24GB usada continua imbatível em custo/VRAM** (Build B). Roda 32B Q4 confortável.
-- **R$ 22k:** **Mac Mini M4 Pro 64GB** (Build C). Silencioso, eficiente, roda 70B Q4 em ~10 tok/s.
-- **R$ 40k:** RTX 5090 32GB (Build D). FP8 ativa, vLLM single-user feliz, MoE com offload via `--n-cpu-moe`.
-- **R$ 80k:** Mac Studio M3 Ultra 256GB (Build E). Único jeito de ter 256 GB de "VRAM" por menos de R$ 100k.
-- **R$ 96k:** 2× RTX 5090 com vLLM TP=2 (Build F). Multi-user batching, sem NVLink mas funciona.
-- **R$ 100k:** RTX Pro 6000 Blackwell 96GB (Build G). Single GPU king de 2026 para 70B/120B nativo.
-- **R$ 250k+:** 4× H100 server (Build H). Quando privacy ou escala manda.
+- **Sub-R\$ 10k:** Build A (RTX 3060/4070), serve 7B–14B com folga.
+- **R\$ 13k:** **RTX 3090 24GB usada continua imbatível em custo/VRAM** (Build B). Roda 32B Q4 confortável.
+- **R\$ 22k:** **Mac Mini M4 Pro 64GB** (Build C). Silencioso, eficiente, roda 70B Q4 em ~10 tok/s.
+- **R\$ 40k:** RTX 5090 32GB (Build D). FP8 ativa, vLLM single-user feliz, MoE com offload via `--n-cpu-moe`.
+- **R\$ 80k:** Mac Studio M3 Ultra 256GB (Build E). Único jeito de ter 256 GB de "VRAM" por menos de R\$ 100k.
+- **R\$ 96k:** 2× RTX 5090 com vLLM TP=2 (Build F). Multi-user batching, sem NVLink mas funciona.
+- **R\$ 100k:** RTX Pro 6000 Blackwell 96GB (Build G). Single GPU king de 2026 para 70B/120B nativo.
+- **R\$ 250k+:** 4× H100 server (Build H). Quando privacy ou escala manda.
 - **API ainda ganha** se você for dev solo com <5M tokens/dia. Build paga em **equipe 5+ devs** ou **privacy obrigatória**.
 - Pasta térmica, PSU 80+ Gold, gabinete com airflow e UPS para builds top — **a parte chata que define se sua máquina vai durar 5 anos ou pifar em 18 meses**.
 

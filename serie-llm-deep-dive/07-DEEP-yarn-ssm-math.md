@@ -32,41 +32,41 @@ Su et al. (*RoFormer*, arXiv:2104.09864, 2021) propuseram codificar posição **
 
 Trabalhamos com pares de coordenadas. Para um vetor de dimensão `d_head` (par), agrupamos em `d_head/2` pares `(x_{2i}, x_{2i+1})`. Para a posição `m` e o par `i`, a matriz de rotação é:
 
-\[
+$$
 R_{\theta_i,m} = \begin{bmatrix} \cos(m\theta_i) & -\sin(m\theta_i) \\ \sin(m\theta_i) & \cos(m\theta_i) \end{bmatrix}
-\]
+$$
 
 Onde:
 
-\[
+$$
 \theta_i = \text{base}^{-2i/d}, \quad \text{base padrão} = 10000, \quad i = 0, 1, \ldots, d/2 - 1
-\]
+$$
 
 A matriz de rotação completa para o vetor inteiro é **bloco-diagonal** com `d/2` blocos 2×2:
 
-\[
+$$
 R_m = \mathrm{diag}\Big(R_{\theta_0,m},\, R_{\theta_1,m},\, \ldots,\, R_{\theta_{d/2-1},m}\Big)
-\]
+$$
 
 Aplicação em Q e K:
 
-\[
+$$
 Q'_m = R_m\, Q_m, \qquad K'_n = R_n\, K_n
-\]
+$$
 
 ### A.1.2. A propriedade fundamental: dependência apenas em (m − n)
 
 O produto interno entre Q rotacionado na posição `m` e K rotacionado na posição `n`:
 
-\[
+$$
 \langle Q'_m, K'_n \rangle = (R_m Q_m)^T (R_n K_n) = Q_m^T R_m^T R_n K_n
-\]
+$$
 
 Como rotações são ortogonais e bloco-diagonais, `R_m^T R_n = R_{n-m}` (rotação líquida pela diferença). Então:
 
-\[
+$$
 \langle Q'_m, K'_n \rangle = Q_m^T R_{n-m} K_n
-\]
+$$
 
 > **Insight crítico:** o score de atenção depende **apenas** da diferença `(m − n)`, não dos valores absolutos `m` e `n`. RoPE é um encoding **absoluto** que produz **comportamento relativo**. Essa é a beleza matemática que faz funcionar.
 
@@ -137,9 +137,9 @@ A escolha `base = 10000` cria um **espectro logarítmico** de frequências. Vamo
 
 Para o par `i`, a velocidade angular é `θ_i = 10000^(-2i/d)`. O **período** (wavelength em tokens) é:
 
-\[
+$$
 \lambda_i = \frac{2\pi}{\theta_i} = 2\pi \cdot 10000^{2i/d}
-\]
+$$
 
 | `i`   | `2i/d`   | `θ_i = 10000^(-2i/d)` | `λ_i = 2π/θ_i` (tokens) | Comportamento |
 |-------|----------|------------------------|--------------------------|---------------|
@@ -202,21 +202,21 @@ flowchart LR
 
 Definimos o fator de escala:
 
-\[
+$$
 s = \frac{L_{\text{test}}}{L_{\text{train}}}
-\]
+$$
 
 Substituímos `m` por `m/s` antes de aplicar RoPE:
 
-\[
+$$
 m \mapsto m \cdot \frac{L_{\text{train}}}{L_{\text{test}}} = \frac{m}{s}
-\]
+$$
 
 Equivalentemente, ajustamos `θ_i`:
 
-\[
+$$
 \theta_i^{\text{PI}} = \frac{\theta_i}{s}
-\]
+$$
 
 Todas as wavelengths viram `s` vezes maiores: o "relógio rápido" agora completa uma volta a cada `6·s` tokens em vez de `6`.
 
@@ -253,13 +253,13 @@ Empiricamente: PI com fine-tune de poucos passos funciona até `s ≈ 4–8`. Se
 
 Em vez de `θ_i^{new} = θ_i / s`, ajusta-se:
 
-\[
+$$
 \text{base}_{\text{new}} = \text{base} \cdot s^{\,d/(d-2)}
-\]
+$$
 
-\[
+$$
 \theta_i^{\text{NTK}} = \text{base}_{\text{new}}^{-2i/d} = \text{base}^{-2i/d} \cdot s^{-2i/(d-2)}
-\]
+$$
 
 Comparando:
 
@@ -297,9 +297,9 @@ Refinamento explícito: **identificar quais dimensões precisam de interpolaçã
 
 Define-se uma rampa γ(λ) e mistura-se as duas estratégias:
 
-\[
+$$
 \theta_i^{\text{by-parts}} = (1 - \gamma_i) \cdot \theta_i + \gamma_i \cdot \frac{\theta_i}{s}
-\]
+$$
 
 Com γ depende de `λ_i` — a forma exata é o que o YaRN consolida abaixo.
 
@@ -323,39 +323,39 @@ Hyperparams (defaults do paper):
 
 Limiares:
 
-\[
+$$
 \lambda_{\text{lo}} = \frac{L_{\text{train}}}{2\pi \cdot \beta}, \qquad \lambda_{\text{hi}} = \frac{L_{\text{train}}}{2\pi \cdot \alpha}
-\]
+$$
 
 Para `L_train = 4096`, `β=32`, `α=1`:
 
-\[
+$$
 \lambda_{\text{lo}} \approx 20.4, \qquad \lambda_{\text{hi}} \approx 651.9
-\]
+$$
 
 Função γ:
 
-\[
+$$
 \gamma(\lambda) = \begin{cases}
 0 & \text{se } \lambda < \lambda_{\text{lo}} \quad \text{(alta freq, EXTRAPOLA)} \\
 1 & \text{se } \lambda > \lambda_{\text{hi}} \quad \text{(baixa freq, INTERPOLA via PI)} \\
 \dfrac{\lambda - \lambda_{\text{lo}}}{\lambda_{\text{hi}} - \lambda_{\text{lo}}} & \text{caso contrário (RAMPA suave)}
 \end{cases}
-\]
+$$
 
 Aplicada por dimensão:
 
-\[
+$$
 \theta_i^{\text{YaRN}} = (1 - \gamma(\lambda_i)) \cdot \theta_i + \gamma(\lambda_i) \cdot \frac{\theta_i}{s}
-\]
+$$
 
 ### A.7.2. Attention scaling (a parte "esquecida")
 
 Empiricamente, mesmo corrigindo as frequências, a atenção em contextos longos perde **entropia**: distribui-se de forma muito plana ou muito picuda. YaRN corrige multiplicando logits da atenção por:
 
-\[
+$$
 \sqrt{t}, \quad \text{onde} \quad t = 0.1 \cdot \ln(s) + 1
-\]
+$$
 
 Equivalente a multiplicar Q ou K por `t^{1/4}`. Para `s = 8`: `t ≈ 1.21`. Para `s = 32`: `t ≈ 1.35`. É um ajuste pequeno mas mensurável em perplexidade.
 
@@ -515,12 +515,13 @@ A partir daqui mudamos de assunto: em vez de "como ajustar atenção quadrática
 
 A teoria de controle clássico (Kalman 1960, Wiener) define um sistema linear contínuo:
 
-\[
+$$
 h'(t) = A\, h(t) + B\, x(t)
-\]
-\[
+$$
+
+$$
 y(t) = C\, h(t) + D\, x(t)
-\]
+$$
 
 Onde:
 
@@ -558,27 +559,29 @@ LLMs trabalham com sequências **discretas**: `x_1, x_2, ..., x_L`. Precisamos d
 
 ### B.2.1. Fórmulas ZOH
 
-\[
+$$
 \bar{A} = \exp(\Delta\, A)
-\]
-\[
+$$
+
+$$
 \bar{B} = (\Delta\, A)^{-1}\big(\exp(\Delta\, A) - I\big)\, \Delta\, B
-\]
+$$
 
 Na prática, com aproximação de primeira ordem (Mamba usa essa simplificação):
 
-\[
+$$
 \bar{A} \approx \exp(\Delta\, A), \qquad \bar{B} \approx \Delta\, B
-\]
+$$
 
 ### B.2.2. Recorrência discreta
 
-\[
+$$
 h_t = \bar{A}\, h_{t-1} + \bar{B}\, x_t
-\]
-\[
+$$
+
+$$
 y_t = C\, h_t \quad (+\, D\, x_t)
-\]
+$$
 
 > **Observação chave:** essa recorrência é **O(1) em memória** (só guarda h_t) e **O(N) em compute por passo**. Para uma sequência de tamanho L: O(L·N) total. **Linear**, não quadrático.
 
@@ -588,30 +591,33 @@ y_t = C\, h_t \quad (+\, D\, x_t)
 
 A recorrência é sequencial → ruim para treinar em GPU. Mas podemos **desenrolar** a recorrência:
 
-\[
+$$
 h_1 = \bar{B}\, x_1
-\]
-\[
+$$
+
+$$
 h_2 = \bar{A}\bar{B}\, x_1 + \bar{B}\, x_2
-\]
-\[
+$$
+
+$$
 h_3 = \bar{A}^2\bar{B}\, x_1 + \bar{A}\bar{B}\, x_2 + \bar{B}\, x_3
-\]
-\[
+$$
+
+$$
 h_t = \sum_{k=1}^{t} \bar{A}^{t-k}\, \bar{B}\, x_k
-\]
+$$
 
 Aplicando C:
 
-\[
+$$
 y_t = \sum_{k=1}^{t} C\, \bar{A}^{t-k}\, \bar{B}\, x_k = \sum_{k=1}^{t} \bar{K}_{t-k}\, x_k
-\]
+$$
 
 Onde definimos o **kernel convolucional**:
 
-\[
+$$
 \bar{K}_i = C\, \bar{A}^i\, \bar{B}, \quad \bar{K} \in \mathbb{R}^L
-\]
+$$
 
 Ou seja, **y = K̄ ∗ x** (convolução causal em 1D).
 
@@ -672,13 +678,13 @@ Se `A` é uma matriz aprendida sem estrutura:
 
 HiPPO deriva analiticamente a matriz `A` que **aproxima ótimamente** a função de entrada recente em uma base de polinômios (Legendre). Forma específica (HiPPO-LegS):
 
-\[
+$$
 A_{nk} = \begin{cases}
 -(2n+1)^{1/2}(2k+1)^{1/2} & \text{se } n > k \\
 -(n+1) & \text{se } n = k \\
 0 & \text{se } n < k
 \end{cases}
-\]
+$$
 
 Essa matriz **preserva memória de longa duração** porque é derivada para minimizar erro de aproximação. S4 usa uma forma diagonalizada dessa matriz (HiPPO normal + low-rank correction) que permite computar o kernel em **O(N log L)**.
 
@@ -704,20 +710,21 @@ Comparação com atenção: a atenção é altamente seletiva — para cada quer
 
 Torne `B`, `C`, `Δ` **funções da entrada** `x_t`:
 
-\[
+$$
 B_t = \text{Linear}_B(x_t), \quad C_t = \text{Linear}_C(x_t), \quad \Delta_t = \text{softplus}(\text{Linear}_\Delta(x_t))
-\]
+$$
 
 `A` continua sendo uma matriz aprendida fixa (compartilhada entre tokens), mas a discretização `Ā_t = exp(Δ_t · A)` e `B̄_t = Δ_t · B_t` agora **dependem do token**.
 
 Recorrência selectiva:
 
-\[
+$$
 h_t = \bar{A}_t\, h_{t-1} + \bar{B}_t\, x_t
-\]
-\[
+$$
+
+$$
 y_t = C_t\, h_t
-\]
+$$
 
 ### B.5.3. Trade-off: perde a forma de convolução
 
@@ -836,9 +843,9 @@ Comparação direta com bloco Transformer:
 
 O paper mostra que **uma classe de SSMs** (com matriz A escalar `A = a · I`) é matematicamente **equivalente** a uma forma de atenção mascarada com **matriz semi-separável**. Ou seja:
 
-\[
+$$
 \text{SSM com A escalar} \equiv \text{atenção com máscara estruturada}
-\]
+$$
 
 Implicações práticas:
 
@@ -851,9 +858,9 @@ Implicações práticas:
 
 Bloco SSM equivalente à atenção mascarada:
 
-\[
+$$
 Y = \text{SSD}(X) = (L \odot Q K^T)\, V
-\]
+$$
 
 Onde `L` é uma **matriz semi-separável de rank 1** (é o produto exterior `1 · 1^T` mascarado triangular, modulado pelos `Δ_t`). Isso lembra muito **Linear Attention** com kernel feature map — não é coincidência.
 

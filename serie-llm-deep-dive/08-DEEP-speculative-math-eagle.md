@@ -6,7 +6,7 @@
 
 Este documento é dividido em duas partes complementares:
 
-- **Parte A** trata o speculative decoding como um **algoritmo de Monte Carlo com correção de viés**. Provamos por que ele preserva exatamente a distribuição do target, deduzimos a probabilidade de aceitação esperada e montamos o speedup teórico em função de \(\alpha\) e \(K\).
+- **Parte A** trata o speculative decoding como um **algoritmo de Monte Carlo com correção de viés**. Provamos por que ele preserva exatamente a distribuição do target, deduzimos a probabilidade de aceitação esperada e montamos o speedup teórico em função de $\alpha$ e $K$.
 - **Parte B** percorre as variantes modernas — EAGLE-1/2/3, Medusa, Lookahead, Self-speculative, MTP do DeepSeek-V3 — comparando arquiteturas, custos de treino, ganhos reportados e como combinar com KV quant, paged attention e MoE.
 
 Nada aqui é "mais um truque": speculative decoding é o **único método de aceleração de decoding lossless** que preserva exatamente a distribuição original do modelo. Entender por quê é ganhar uma intuição forte sobre amostragem em geral.
@@ -50,11 +50,11 @@ Nada aqui é "mais um truque": speculative decoding é o **único método de ace
 
 Os ingredientes são:
 
-- **Modelo target \(M\):** o modelo grande, lento, autoritativo (ex.: Llama-3.1-70B). Sua distribuição autoregressiva \(p(x_t \mid x_{<t})\) é a "verdade" que queremos preservar.
-- **Modelo draft \(d\):** modelo pequeno e rápido (ex.: Llama-3.1-8B, ou uma MTP head, ou EAGLE head) com distribuição \(q(x_t \mid x_{<t})\).
-- **Bloco de \(K\) tokens propostos:** o draft gera \(K\) tokens autoregressivos sequenciais.
-- **Verificação paralela:** o target faz **um forward pass** processando os \(K+1\) prefixos em paralelo (como prefill), retornando \(K+1\) distribuições.
-- **Aceitação token-a-token:** comparamos \(p\) vs \(q\) em cada posição; aceitamos se \(p \ge q\), senão sorteamos.
+- **Modelo target $M$:** o modelo grande, lento, autoritativo (ex.: Llama-3.1-70B). Sua distribuição autoregressiva $p(x_t \mid x_{<t})$ é a "verdade" que queremos preservar.
+- **Modelo draft $d$:** modelo pequeno e rápido (ex.: Llama-3.1-8B, ou uma MTP head, ou EAGLE head) com distribuição $q(x_t \mid x_{<t})$.
+- **Bloco de $K$ tokens propostos:** o draft gera $K$ tokens autoregressivos sequenciais.
+- **Verificação paralela:** o target faz **um forward pass** processando os $K+1$ prefixos em paralelo (como prefill), retornando $K+1$ distribuições.
+- **Aceitação token-a-token:** comparamos $p$ vs $q$ em cada posição; aceitamos se $p \ge q$, senão sorteamos.
 
 Por que isso pode ser mais rápido? Porque o **decoding** com batch=1 é **memory-bound**: o gargalo é ler os pesos do modelo da HBM, não os FLOPs. Ler os pesos para gerar 1 token ou 5 tokens custa quase o mesmo. Logo, **verificar 5 tokens em paralelo no target ≈ custo de gerar 1 token autoregressivo**. Se conseguirmos aceitar 3 tokens em média, ganhamos ~3×.
 
@@ -78,27 +78,28 @@ sequenceDiagram
     end
 ```
 
-A regra "**i-1 aceitos + 1 corrigido**" é o coração do algoritmo. Os tokens \(i+1, \dots, K\) propostos pelo draft são **descartados**, porque o contexto deles assume que o token \(i\) era aquele do draft (rejeitado), o que invalida a sequência.
+A regra "**i-1 aceitos + 1 corrigido**" é o coração do algoritmo. Os tokens $i+1, \dots, K$ propostos pelo draft são **descartados**, porque o contexto deles assume que o token $i$ era aquele do draft (rejeitado), o que invalida a sequência.
 
 ---
 
 ## 2. A garantia matemática (Leviathan / Chen)
 
 **Teorema (Leviathan et al. 2022; Chen et al. 2023):**
-A distribuição da sequência de saída do speculative decoding com aceitação/rejeição correta é **exatamente igual** à distribuição da geração autoregressiva do target \(M\) com a mesma temperatura/sampling.
+A distribuição da sequência de saída do speculative decoding com aceitação/rejeição correta é **exatamente igual** à distribuição da geração autoregressiva do target $M$ com a mesma temperatura/sampling.
 
-Em símbolos: para qualquer prefixo \(x_{<t}\) e qualquer token \(x\),
-\[
+Em símbolos: para qualquer prefixo $x_{<t}$ e qualquer token $x$,
+
+$$
 P_{\text{spec}}(x_t = x \mid x_{<t}) \;=\; p(x \mid x_{<t}).
-\]
+$$
 
-**Por que isso é não-trivial?** Considere um esquema **ingênuo**: "aceito o token \(x\) do draft sse \(p(x) \ge q(x)\)". Isso enviesa! Tokens onde \(p\) é alto seriam favorecidos demais; tokens com \(p < q\) nunca apareceriam. Repetições, refrões, padrões "fáceis" do draft seriam super-amostrados.
+**Por que isso é não-trivial?** Considere um esquema **ingênuo**: "aceito o token $x$ do draft sse $p(x) \ge q(x)$". Isso enviesa! Tokens onde $p$ é alto seriam favorecidos demais; tokens com $p < q$ nunca apareceriam. Repetições, refrões, padrões "fáceis" do draft seriam super-amostrados.
 
 A correção precisa três engrenagens trabalhando em conjunto:
 
-1. **Aceitação probabilística** (não determinística) com probabilidade \(\min(1, p/q)\).
-2. **Distribuição residual** quando rejeitamos: amostramos do "que sobrou" entre \(p\) e \(q\), normalizado.
-3. **Descarte das propostas pós-rejeição:** os tokens \(i+1..K\) caem fora porque seu contexto era condicional num token rejeitado.
+1. **Aceitação probabilística** (não determinística) com probabilidade $\min(1, p/q)$.
+2. **Distribuição residual** quando rejeitamos: amostramos do "que sobrou" entre $p$ e $q$, normalizado.
+3. **Descarte das propostas pós-rejeição:** os tokens $i+1..K$ caem fora porque seu contexto era condicional num token rejeitado.
 
 Trocar qualquer uma dessas três por um atalho ingênuo **introduz viés**. Veremos a seguir o algoritmo exato e a prova.
 
@@ -108,149 +109,166 @@ Trocar qualquer uma dessas três por um atalho ingênuo **introduz viés**. Vere
 
 ### 3.1 Pseudo-código formal
 
-Dado contexto \(c = x_{<t}\), proposta \(\tilde{x}_1, \dots, \tilde{x}_K\) sampleada do draft e distribuições do target \(p_i = p(\cdot \mid c, \tilde{x}_1, \dots, \tilde{x}_{i-1})\) e do draft \(q_i\), para cada \(i = 1, \dots, K\):
+Dado contexto $c = x_{<t}$, proposta $\tilde{x}_1, \dots, \tilde{x}_K$ sampleada do draft e distribuições do target $p_i = p(\cdot \mid c, \tilde{x}_1, \dots, \tilde{x}_{i-1})$ e do draft $q_i$, para cada $i = 1, \dots, K$:
 
-1. Calcule \(r = U(0,1)\).
-2. Seja \(\tilde{x} = \tilde{x}_i\). Aceite se
-   \[
-   r \;<\; \min\!\left(1, \frac{p_i(\tilde{x})}{q_i(\tilde{x})}\right).
-   \]
-3. Se aceitou: avance para \(i+1\).
+1. Calcule $r = U(0,1)$.
+2. Seja $\tilde{x} = \tilde{x}_i$. Aceite se
+   
+
+$$
+r \;<\; \min\!\left(1, \frac{p_i(\tilde{x})}{q_i(\tilde{x})}\right).
+$$
+
+3. Se aceitou: avance para $i+1$.
 4. Se rejeitou: defina a **distribuição residual**
-   \[
-   p'_i(x) \;=\; \frac{\big[p_i(x) - q_i(x)\big]_+}{Z}, \quad Z = \sum_y \big[p_i(y) - q_i(y)\big]_+
-   \]
-   onde \([z]_+ = \max(0, z)\). Amostre \(x'_i \sim p'_i\) e **emita \(x'_i\) como o token \(t+i-1\)**, descartando \(\tilde{x}_{i+1..K}\).
-5. Se aceitou todos os \(K\): emita também um **token bônus** \(x_{K+1} \sim p_{K+1}\) (a distribuição do target no próximo passo, "de graça" porque já calculamos).
+   
+
+$$
+p'_i(x) \;=\; \frac{\big[p_i(x) - q_i(x)\big]_+}{Z}, \quad Z = \sum_y \big[p_i(y) - q_i(y)\big]_+
+$$
+
+   onde $[z]_+ = \max(0, z)$. Amostre $x'_i \sim p'_i$ e **emita $x'_i$ como o token $t+i-1$**, descartando $\tilde{x}_{i+1..K}$.
+5. Se aceitou todos os $K$: emita também um **token bônus** $x_{K+1} \sim p_{K+1}$ (a distribuição do target no próximo passo, "de graça" porque já calculamos).
 
 Resultado: emite entre **1 e K+1 tokens novos** por iteração de SD.
 
-### 3.2 Por que aceitar com prob \(\min(1, p/q)\)?
+### 3.2 Por que aceitar com prob $\min(1, p/q)$?
 
-Essa é a **regra de Metropolis–Hastings com proposta independente \(q\) e alvo \(p\)** — só que aplicada a **uma única amostra**, não a uma cadeia de Markov. A propriedade "amostra resultante é distribuída como \(p\)" é o que torna o método correto. Vamos prová-la.
+Essa é a **regra de Metropolis–Hastings com proposta independente $q$ e alvo $p$** — só que aplicada a **uma única amostra**, não a uma cadeia de Markov. A propriedade "amostra resultante é distribuída como $p$" é o que torna o método correto. Vamos prová-la.
 
 ---
 
 ## 4. Prova de correção (1 token)
 
-Vamos provar que, para um único token, \(P(\text{output} = x) = p(x)\), assumindo:
-- Draft propõe \(\tilde{x} \sim q\).
-- Aceitação probabilística com prob \(\min(1, p(\tilde{x})/q(\tilde{x}))\).
-- Em caso de rejeição, amostra do residual \(p'\).
+Vamos provar que, para um único token, $P(\text{output} = x) = p(x)$, assumindo:
+- Draft propõe $\tilde{x} \sim q$.
+- Aceitação probabilística com prob $\min(1, p(\tilde{x})/q(\tilde{x}))$.
+- Em caso de rejeição, amostra do residual $p'$.
 
 ### 4.1 Decomposição em dois eventos disjuntos
 
-Para qualquer token \(x\), o evento "output = \(x\)" pode acontecer de duas formas mutuamente exclusivas:
+Para qualquer token $x$, o evento "output = $x$" pode acontecer de duas formas mutuamente exclusivas:
 
-- **(A)** O draft propôs exatamente \(\tilde{x} = x\) **e** foi aceito.
-- **(B)** O draft propôs algum \(\tilde{x} = y\) (qualquer \(y\), inclusive \(y = x\)) **e** foi rejeitado, **e então** o residual sorteou \(x\).
+- **(A)** O draft propôs exatamente $\tilde{x} = x$ **e** foi aceito.
+- **(B)** O draft propôs algum $\tilde{x} = y$ (qualquer $y$, inclusive $y = x$) **e** foi rejeitado, **e então** o residual sorteou $x$.
 
 Logo:
-\[
+
+$$
 P(\text{output} = x) \;=\; P(A) + P(B).
-\]
+$$
 
-### 4.2 Calculando \(P(A)\)
+### 4.2 Calculando $P(A)$
 
-\[
+$$
 P(A) \;=\; q(x) \cdot \min\!\left(1, \frac{p(x)}{q(x)}\right) \;=\; \min\big(q(x),\, p(x)\big).
-\]
+$$
 
 Casos:
-- Se \(p(x) \ge q(x)\): \(\min = q(x)\), e \(p(x)/q(x) \ge 1\), aceitação garantida → \(P(A) = q(x)\).
-- Se \(p(x) < q(x)\): \(\min = p(x)\), aceitação probabilística → \(P(A) = q(x) \cdot p(x)/q(x) = p(x)\).
+- Se $p(x) \ge q(x)$: $\min = q(x)$, e $p(x)/q(x) \ge 1$, aceitação garantida → $P(A) = q(x)$.
+- Se $p(x) < q(x)$: $\min = p(x)$, aceitação probabilística → $P(A) = q(x) \cdot p(x)/q(x) = p(x)$.
 
-Em ambos os casos, \(P(A) = \min(p(x), q(x))\).
+Em ambos os casos, $P(A) = \min(p(x), q(x))$.
 
-### 4.3 Calculando \(P(B)\)
+### 4.3 Calculando $P(B)$
 
-\(P(B) = P(\text{rejeitou alguma proposta}) \cdot P(\text{residual amostrou } x \mid \text{rejeitou})\).
+$P(B) = P(\text{rejeitou alguma proposta}) \cdot P(\text{residual amostrou } x \mid \text{rejeitou})$.
 
 **Probabilidade de rejeitar (qualquer proposta):**
-\[
-P(\text{rej}) \;=\; \sum_y q(y) \cdot \left(1 - \min\!\left(1, \frac{p(y)}{q(y)}\right)\right).
-\]
 
-Para cada \(y\):
-- Se \(p(y) \ge q(y)\): \(1 - 1 = 0\), termo nulo.
-- Se \(p(y) < q(y)\): \(1 - p(y)/q(y)\), e \(q(y) \cdot (1 - p(y)/q(y)) = q(y) - p(y) = [q(y) - p(y)]_+\).
+$$
+P(\text{rej}) \;=\; \sum_y q(y) \cdot \left(1 - \min\!\left(1, \frac{p(y)}{q(y)}\right)\right).
+$$
+
+Para cada $y$:
+- Se $p(y) \ge q(y)$: $1 - 1 = 0$, termo nulo.
+- Se $p(y) < q(y)$: $1 - p(y)/q(y)$, e $q(y) \cdot (1 - p(y)/q(y)) = q(y) - p(y) = [q(y) - p(y)]_+$.
 
 Portanto:
-\[
+
+$$
 P(\text{rej}) \;=\; \sum_y \big[q(y) - p(y)\big]_+.
-\]
+$$
 
-**Identidade chave:** as massas "que sobram" de cada lado são iguais, porque \(\sum p = \sum q = 1\):
-\[
+**Identidade chave:** as massas "que sobram" de cada lado são iguais, porque $\sum p = \sum q = 1$:
+
+$$
 \sum_y \big[q(y) - p(y)\big]_+ \;=\; \sum_y \big[p(y) - q(y)\big]_+ \;=\; Z.
-\]
+$$
 
-Verifique: \(\sum_y (p(y) - q(y)) = 0\). Separando em partes positivas e negativas: \(\sum_y [p-q]_+ - \sum_y [q-p]_+ = 0\), logo iguais. Esse é o "buraco" entre \(p\) e \(q\), também conhecido como **distância de variação total** \(\mathrm{TV}(p,q) = \tfrac{1}{2} \sum_y |p(y)-q(y)| = Z\).
+Verifique: $\sum_y (p(y) - q(y)) = 0$. Separando em partes positivas e negativas: $\sum_y [p-q]_+ - \sum_y [q-p]_+ = 0$, logo iguais. Esse é o "buraco" entre $p$ e $q$, também conhecido como **distância de variação total** $\mathrm{TV}(p,q) = \tfrac{1}{2} \sum_y |p(y)-q(y)| = Z$.
 
-**Probabilidade do residual sortear \(x\):**
-\[
+**Probabilidade do residual sortear $x$:**
+
+$$
 p'(x) \;=\; \frac{[p(x) - q(x)]_+}{Z}.
-\]
+$$
 
 **Combinando:**
-\[
+
+$$
 P(B) \;=\; Z \cdot \frac{[p(x) - q(x)]_+}{Z} \;=\; [p(x) - q(x)]_+.
-\]
+$$
 
 ### 4.4 Soma final
 
-\[
+$$
 P(\text{output} = x) \;=\; P(A) + P(B) \;=\; \min(p(x), q(x)) + [p(x) - q(x)]_+.
-\]
+$$
 
 **Casos:**
-- Se \(p(x) \ge q(x)\): \(\min = q(x)\) e \([\,]_+ = p(x) - q(x)\). Soma: \(q(x) + p(x) - q(x) = p(x)\). ✓
-- Se \(p(x) < q(x)\): \(\min = p(x)\) e \([\,]_+ = 0\). Soma: \(p(x)\). ✓
+- Se $p(x) \ge q(x)$: $\min = q(x)$ e $[\,]_+ = p(x) - q(x)$. Soma: $q(x) + p(x) - q(x) = p(x)$. ✓
+- Se $p(x) < q(x)$: $\min = p(x)$ e $[\,]_+ = 0$. Soma: $p(x)$. ✓
 
-**Em ambos os casos, \(P(\text{output} = x) = p(x)\).** QED.
+**Em ambos os casos, $P(\text{output} = x) = p(x)$.** QED.
 
-> **Observação fina:** a prova generaliza para múltiplos tokens via condicionamento — após aceitar \(\tilde{x}_1, \dots, \tilde{x}_{i-1}\), o problema do token \(i\) é idêntico ao caso de 1 token, mas no contexto estendido. Por indução, toda a sequência tem a distribuição correta. A elegância é total: **a correção composicional cai gratuitamente da regra de aceitação local**.
+> **Observação fina:** a prova generaliza para múltiplos tokens via condicionamento — após aceitar $\tilde{x}_1, \dots, \tilde{x}_{i-1}$, o problema do token $i$ é idêntico ao caso de 1 token, mas no contexto estendido. Por indução, toda a sequência tem a distribuição correta. A elegância é total: **a correção composicional cai gratuitamente da regra de aceitação local**.
 
 ---
 
 ## 5. Acceptance probability esperada
 
-Definimos a **probabilidade de aceitação** \(\alpha\) (esperança sobre o draft \(q\)):
-\[
+Definimos a **probabilidade de aceitação** $\alpha$ (esperança sobre o draft $q$):
+
+$$
 \alpha \;=\; \mathbb{E}_{x \sim q}\!\left[\min\!\left(1, \frac{p(x)}{q(x)}\right)\right] \;=\; \sum_x q(x) \cdot \min\!\left(1, \frac{p(x)}{q(x)}\right) \;=\; \sum_x \min(p(x), q(x)).
-\]
+$$
 
 E pela identidade:
-\[
-\alpha \;=\; 1 - \mathrm{TV}(p, q) \;=\; 1 - \tfrac{1}{2} \sum_x |p(x) - q(x)|.
-\]
 
-> **Interpretação:** \(\alpha\) é literalmente "**1 menos a distância entre as distribuições**". Draft idêntico ao target ⇒ \(\alpha = 1\). Draft random ⇒ \(\alpha \approx 1/V\) (vocab size).
+$$
+\alpha \;=\; 1 - \mathrm{TV}(p, q) \;=\; 1 - \tfrac{1}{2} \sum_x |p(x) - q(x)|.
+$$
+
+> **Interpretação:** $\alpha$ é literalmente "**1 menos a distância entre as distribuições**". Draft idêntico ao target ⇒ $\alpha = 1$. Draft random ⇒ $\alpha \approx 1/V$ (vocab size).
 
 ### 5.1 Speedup teórico
 
 Em uma iteração de SD, gastamos:
-- 1 forward do target (custo \(C_T\)) verificando \(K\) tokens em paralelo.
-- \(K\) forwards do draft (custo total \(K \cdot C_d\)).
+- 1 forward do target (custo $C_T$) verificando $K$ tokens em paralelo.
+- $K$ forwards do draft (custo total $K \cdot C_d$).
 
-E aceitamos um número aleatório \(N \in \{0, 1, \dots, K\}\) de tokens, mais **1 token bônus** se \(N = K\). Em média, com tokens i.i.d. (aproximação clássica):
-\[
+E aceitamos um número aleatório $N \in \{0, 1, \dots, K\}$ de tokens, mais **1 token bônus** se $N = K$. Em média, com tokens i.i.d. (aproximação clássica):
+
+$$
 \mathbb{E}[N + \mathbb{1}_{N=K}] \;=\; \frac{1 - \alpha^{K+1}}{1 - \alpha}.
-\]
+$$
 
-Assumindo \(C_d \ll C_T\) (draft muito menor):
-\[
+Assumindo $C_d \ll C_T$ (draft muito menor):
+
+$$
 \text{Speedup} \;\approx\; \frac{\mathbb{E}[\text{tokens emitidos}]}{1 \text{ forward target}} \;=\; \frac{1 - \alpha^{K+1}}{1 - \alpha}.
-\]
+$$
 
 Se considerarmos o overhead do draft, fica:
-\[
+
+$$
 \text{Speedup} \;\approx\; \frac{(1 - \alpha^{K+1})/(1-\alpha)}{1 + K \cdot c}, \quad c = C_d / C_T.
-\]
+$$
 
 ### 5.2 Tabela: speedup teórico para K=4
 
-| \(\alpha\) | Tokens aceitos médios (sem bônus) | Speedup ideal (sem custo draft) | Speedup com \(c=0.1\) |
+| $\alpha$ | Tokens aceitos médios (sem bônus) | Speedup ideal (sem custo draft) | Speedup com $c=0.1$ |
 | --- | --- | --- | --- |
 | 0.50 | 1.94 | ≈ 1.94× | 1.39× |
 | 0.70 | 2.59 | ≈ 2.59× | 1.85× |
@@ -258,7 +276,7 @@ Se considerarmos o overhead do draft, fica:
 | 0.95 | 3.72 | ≈ 3.72× | 2.66× |
 | 0.99 | 3.94 | ≈ 3.94× | 2.81× |
 
-> **Observação:** para \(\alpha\) baixo (< 0.5), o speedup teórico cai rapidamente abaixo de 1.5×, e na prática o overhead do draft come o ganho. Por isso EAGLE/Medusa investem tanto em **maximizar α**.
+> **Observação:** para $\alpha$ baixo (< 0.5), o speedup teórico cai rapidamente abaixo de 1.5×, e na prática o overhead do draft come o ganho. Por isso EAGLE/Medusa investem tanto em **maximizar α**.
 
 ---
 
@@ -268,24 +286,25 @@ Se considerarmos o overhead do draft, fica:
 
 | Componente | Custo (por iteração SD) | Comentário |
 | --- | --- | --- |
-| Draft generation | \(K \cdot C_d\) | Sequencial, mas modelo pequeno (≈10× menor) |
-| Target verification | \(C_T\) (≈ 1 forward) | Paralelo, similar a 1 token de prefill com batch=K+1 |
-| Sampling (target dist) | \(O(K \cdot V)\) | Negligível na prática |
-| Residual normalize (worst case) | \(O(V)\) | 1× em caso de rejeição |
+| Draft generation | $K \cdot C_d$ | Sequencial, mas modelo pequeno (≈10× menor) |
+| Target verification | $C_T$ (≈ 1 forward) | Paralelo, similar a 1 token de prefill com batch=K+1 |
+| Sampling (target dist) | $O(K \cdot V)$ | Negligível na prática |
+| Residual normalize (worst case) | $O(V)$ | 1× em caso de rejeição |
 
-### 6.2 Escolha de \(K\)
+### 6.2 Escolha de $K$
 
-Aumentar \(K\):
+Aumentar $K$:
 - (+) Mais paralelismo no target.
 - (−) Custo do draft cresce linearmente.
-- (−) \(\alpha^K\) decresce (probabilidade de aceitar todos cai).
+- (−) $\alpha^K$ decresce (probabilidade de aceitar todos cai).
 
-Existe um \(K^\ast\) ótimo. Aproximação clássica (assumindo aceitos i.i.d.):
-\[
+Existe um $K^\ast$ ótimo. Aproximação clássica (assumindo aceitos i.i.d.):
+
+$$
 K^\ast \;\approx\; \frac{1}{1 - \alpha}.
-\]
+$$
 
-| \(\alpha\) | \(K^\ast\) | Comentário |
+| $\alpha$ | $K^\ast$ | Comentário |
 | --- | --- | --- |
 | 0.50 | 2 | Draft ruim, vale pouco esticar |
 | 0.70 | 3–4 | Sweet spot vanilla SD |
@@ -393,10 +412,10 @@ flowchart TD
 ```
 
 A EAGLE head opera **em features**, não em tokens. Cada passo do draft:
-1. Recebe a feature \(h_t\) (do target ou da iteração anterior do draft).
+1. Recebe a feature $h_t$ (do target ou da iteração anterior do draft).
 2. Roda 1 camada Transformer.
-3. Aplica o **LM head do target compartilhado** para gerar \(q(\cdot)\).
-4. Amostra \(\tilde{x}_{t+1}\), embute, soma com a próxima feature predita, e repete.
+3. Aplica o **LM head do target compartilhado** para gerar $q(\cdot)$.
+4. Amostra $\tilde{x}_{t+1}$, embute, soma com a próxima feature predita, e repete.
 
 ### 9.3 Training
 
@@ -467,7 +486,7 @@ Aceite o **caminho válido mais longo**. Em caso de empate, escolha pelo melhor 
 
 ### 10.4 Ganho teórico
 
-Com fanout \(b\) em cada nível e profundidade \(K\), o número esperado de tokens aceitos é maior que numa cadeia linear. A análise exata depende da distribuição, mas EAGLE-2 mostra empiricamente que árvores com 25–60 nós e profundidade 5–6 dão **+30–50% sobre vanilla EAGLE-1**.
+Com fanout $b$ em cada nível e profundidade $K$, o número esperado de tokens aceitos é maior que numa cadeia linear. A análise exata depende da distribuição, mas EAGLE-2 mostra empiricamente que árvores com 25–60 nós e profundidade 5–6 dão **+30–50% sobre vanilla EAGLE-1**.
 
 ---
 
@@ -528,9 +547,9 @@ Sim. EAGLE-3 não mexe na regra de aceitação/rejeição — apenas no **draft*
 
 ### 13.1 Medusa (Cai et al. 2024, arXiv:2401.10774)
 
-- **Ideia:** anexar **K cabeças LM paralelas** no topo do target. A cabeça \(k\) prediz o token \(t+k\) condicionado em \(h_t\), **sem rodar passos autoregressivos**.
+- **Ideia:** anexar **K cabeças LM paralelas** no topo do target. A cabeça $k$ prediz o token $t+k$ condicionado em $h_t$, **sem rodar passos autoregressivos**.
 - **Vantagem:** muito simples. Zero modelo extra, treino rápido (apenas as cabeças).
-- **Desvantagem:** as cabeças não veem os tokens intermediários sampleados → α decai com \(k\). Speedup típico 2.0–2.8×.
+- **Desvantagem:** as cabeças não veem os tokens intermediários sampleados → α decai com $k$. Speedup típico 2.0–2.8×.
 - **Variante Medusa-2:** ajusta o target em conjunto com as cabeças (joint fine-tuning) → +ganho.
 
 ```mermaid
@@ -570,12 +589,13 @@ flowchart TB
 
 ### 14.1 Multi-Token Prediction como objetivo de treino
 
-DeepSeek-V3 (arXiv:2412.19437) treina com **N "MTP modules" auxiliares** ligados a posições futuras. Cada MTP prediz o token \(t+k\) condicionado nos tokens reais até \(t\) (não nos sampleados — usa **teacher forcing** durante treino).
+DeepSeek-V3 (arXiv:2412.19437) treina com **N "MTP modules" auxiliares** ligados a posições futuras. Cada MTP prediz o token $t+k$ condicionado nos tokens reais até $t$ (não nos sampleados — usa **teacher forcing** durante treino).
 
 A loss total:
-\[
+
+$$
 \mathcal{L} = \mathcal{L}_{\text{main}} + \lambda \sum_{k=1}^{N} \mathcal{L}_{\text{MTP},k}.
-\]
+$$
 
 ### 14.2 Por que ajuda no treino?
 
@@ -585,8 +605,8 @@ A loss total:
 ### 14.3 Por que serve naturalmente como draft em inferência?
 
 Os MTP modules **já estão treinados** para prever tokens futuros. Na inferência:
-1. Forward normal do target → produz \(h_t\).
-2. MTP heads aplicadas em \(h_t\) → predições para \(t+1, t+2, \dots, t+N\).
+1. Forward normal do target → produz $h_t$.
+2. MTP heads aplicadas em $h_t$ → predições para $t+1, t+2, \dots, t+N$.
 3. Verifica com o target no próximo forward.
 
 ```mermaid
@@ -735,7 +755,7 @@ vllm serve meta-llama/Llama-3.1-70B-Instruct \
 | Cenário | Por quê SD perde sentido |
 | --- | --- |
 | Batch grande (≥ 16) | Target já está **compute-bound**, draft adiciona overhead sem ganho. SD brilha em batch=1 a 4. |
-| Sampling com `temperature=1.5+` | \(p\) e \(q\) ficam quase uniformes ⇒ \(\alpha\) despenca, e SD perde. |
+| Sampling com `temperature=1.5+` | $p$ e $q$ ficam quase uniformes ⇒ $\alpha$ despenca, e SD perde. |
 | Gap target/draft pequeno | Se "draft" custa quase o mesmo que target (ex.: 70B target + 32B draft), o overhead come o ganho. |
 | Tokenizadores diferentes | SD vanilla precisa **mesmo tokenizer**. EAGLE e MTP herdam o do target — sem problema. |
 | Tarefas muito específicas (out-of-distribution para o draft) | α cai para 0.4–0.5; speedup ≤ 1.3×. |
@@ -818,7 +838,7 @@ Modelos de reasoning (o1, DeepSeek-R1, QwQ, Gemini 2.5 Thinking) gastam **a maio
 
 ### 20.3 Desafios
 
-- **Sampling alto (temp=0.7–1.0):** o1 e R1 usam temperaturas altas para diversidade de raciocínio, e \(\alpha\) cai junto.
+- **Sampling alto (temp=0.7–1.0):** o1 e R1 usam temperaturas altas para diversidade de raciocínio, e $\alpha$ cai junto.
 - **Cadeias divergentes:** se o draft "vai por outro caminho", α cai cedo.
 
 ### 20.4 Pesquisa recente
@@ -954,7 +974,7 @@ test_speculative_is_correct(p, q)
 # Esperado: f_spec converge para p, dentro do erro de Monte Carlo
 ```
 
-Rode esse teste — você verá empiricamente que **SD com draft enviesado** ainda produz amostras de \(p\). É a prova do Teorema 2 em ação.
+Rode esse teste — você verá empiricamente que **SD com draft enviesado** ainda produz amostras de $p$. É a prova do Teorema 2 em ação.
 
 ---
 
@@ -1008,4 +1028,4 @@ Rode esse teste — você verá empiricamente que **SD com draft enviesado** ain
 
 ---
 
-> **Resumo executivo:** speculative decoding é o único acelerador de decoding **lossless por construção**. A prova de equivalência distribucional (Leviathan/Chen) garante que a saída tem exatamente a distribuição do target — basta seguir a regra de aceitação \(\min(1, p/q)\) e o residual sampling. Em 2025/2026, a fronteira prática é EAGLE-3 (training-time test, multi-feat fusion) com speedups de 4–6× em batch=1, e MTP do DeepSeek-V3 como exemplo elegante de "speculative grátis" embutido no próprio treino do modelo. Combine com KV quant, paged attention e chunked prefill para empilhar 8–12× sobre o baseline. Em batch alto (≥16), volte para o autoregressivo puro — SD ali já não compensa.
+> **Resumo executivo:** speculative decoding é o único acelerador de decoding **lossless por construção**. A prova de equivalência distribucional (Leviathan/Chen) garante que a saída tem exatamente a distribuição do target — basta seguir a regra de aceitação $\min(1, p/q)$ e o residual sampling. Em 2025/2026, a fronteira prática é EAGLE-3 (training-time test, multi-feat fusion) com speedups de 4–6× em batch=1, e MTP do DeepSeek-V3 como exemplo elegante de "speculative grátis" embutido no próprio treino do modelo. Combine com KV quant, paged attention e chunked prefill para empilhar 8–12× sobre o baseline. Em batch alto (≥16), volte para o autoregressivo puro — SD ali já não compensa.

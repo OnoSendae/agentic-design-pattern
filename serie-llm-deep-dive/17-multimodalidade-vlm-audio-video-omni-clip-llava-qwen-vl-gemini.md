@@ -827,10 +827,10 @@ print(f"DocVQA acc: {acc:.3f}")
 
 | Modelo | Imagem 512² | Imagem 1024² | Custo aproximado por imagem (API 2026) |
 |---|---:|---:|---:|
-| GPT-4o (high detail) | ~765 tok | ~1 105 tok | ~US$ 0.0055–0.0085 |
-| GPT-5 | similar | similar | US$ 0.005–0.010 |
-| Claude 4 Sonnet | ~750 tok | ~1 200 tok | ~US$ 0.0036–0.0058 |
-| Gemini 3 Pro | ~258 tok (low) / ~1 024 (high) | ~1 024–2 048 | US$ 0.0025–0.0070 |
+| GPT-4o (high detail) | ~765 tok | ~1 105 tok | ~US\$ 0.0055–0.0085 |
+| GPT-5 | similar | similar | US\$ 0.005–0.010 |
+| Claude 4 Sonnet | ~750 tok | ~1 200 tok | ~US\$ 0.0036–0.0058 |
+| Gemini 3 Pro | ~258 tok (low) / ~1 024 (high) | ~1 024–2 048 | US\$ 0.0025–0.0070 |
 | Qwen2.5-VL 72B (open, self-host) | ~256 | ~1 280 | custo de GPU |
 | InternVL3-78B (self-host) | ~256 | ~1 280 | custo de GPU |
 

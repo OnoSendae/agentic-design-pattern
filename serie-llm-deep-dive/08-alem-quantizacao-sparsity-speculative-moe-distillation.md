@@ -40,14 +40,14 @@ Antes de avançar, vale ter o **mapa do território** percorrido até o Post 07.
 ### 1.1. Posts 01–03 — fundação
 
 - **Post 01 — Transformer decoder‑only**: tokens → embeddings → blocos (atenção + MLP + residual + LayerNorm) → *logits*. Geração **autoregressiva**: para cada token novo o modelo é executado de ponta a ponta.
-- **Post 02 — Atenção (MHA/MQA/GQA/MLA, FlashAttention)**: o custo é \(O(N^2 d)\) em compute e \(O(N^2)\) em memória se feito de forma ingênua. Variantes reduzem o número de heads no KV (MQA/GQA) ou comprimem o KV em latente (MLA/DeepSeek). FlashAttention 1/2/3 evita materializar a matriz \(N\times N\) usando tiling em SRAM.
+- **Post 02 — Atenção (MHA/MQA/GQA/MLA, FlashAttention)**: o custo é $O(N^2 d)$ em compute e $O(N^2)$ em memória se feito de forma ingênua. Variantes reduzem o número de heads no KV (MQA/GQA) ou comprimem o KV em latente (MLA/DeepSeek). FlashAttention 1/2/3 evita materializar a matriz $N\times N$ usando tiling em SRAM.
 - **Post 03 — KV cache & PagedAttention/vLLM**: a memória do KV cresce **linearmente** com a sequência por requisição, fragmenta como heap de C, e PagedAttention resolve isso com páginas fixas de 16 tokens.
 
 ### 1.2. Posts 04–06 — quantização (o foco mais profundo)
 
 - **Post 04 — quantização de pesos**: GPTQ (Hessian‑based, INT4), AWQ (activation‑aware), bitsandbytes (NF4 / FP4 / 8‑bit), GGUF (família llama.cpp com Q4_K_M, Q5_K_M, Q6_K, IQ‑*matrix*, etc.).
 - **Post 05 — quantização de KV cache**: KIVI (per‑channel para *Keys*, per‑token para *Values*), KVQuant, CacheGen — atacando *outliers* canal a canal.
-- **Post 06 — TurboQuant em profundidade**: rotação polar + Johnson–Lindenstrauss para **gaussianizar** as distribuições; Lloyd–Max ótimo em duas variações (MSE para pesos, *inner product* para KV); cota \(4^{-b}\) para quantização não‑enviesada.
+- **Post 06 — TurboQuant em profundidade**: rotação polar + Johnson–Lindenstrauss para **gaussianizar** as distribuições; Lloyd–Max ótimo em duas variações (MSE para pesos, *inner product* para KV); cota $4^{-b}$ para quantização não‑enviesada.
 
 ### 1.3. Post 07 — contexto longo
 
@@ -57,13 +57,13 @@ Antes de avançar, vale ter o **mapa do território** percorrido até o Post 07.
 
 Para não precisar saltar entre janelas, eis as fórmulas mais importantes que vamos referenciar aqui:
 
-- **Self‑attention**: \( \mathrm{Attn}(Q,K,V) = \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V \).
-- **GQA** (Grouped Query Attention): \(H_q\) heads de query, \(H_{kv} < H_q\) heads de KV (compartilhados entre grupos). Reduz KV em \(H_q/H_{kv}\)×.
-- **KV cache size por token**: \(2 \cdot L \cdot H_{kv} \cdot d_h \cdot b\) bytes, onde \(L\) = número de camadas, \(d_h\) = dim por head, \(b\) = bytes por elemento (2 = FP16).
-- **Quantização linear por canal**: \( q_i = \mathrm{round}\!\left(\frac{x_i - z_i}{s_i}\right) \), com escala \(s_i\) e zero‑point \(z_i\) por canal/grupo.
-- **GPTQ** (loss layer‑wise): \( \min_{\hat W} \| W X - \hat W X \|^2 \), resolvido com Hessian inversa via OBS (Optimal Brain Surgeon).
+- **Self‑attention**: $\mathrm{Attn}(Q,K,V) = \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$.
+- **GQA** (Grouped Query Attention): $H_q$ heads de query, $H_{kv} < H_q$ heads de KV (compartilhados entre grupos). Reduz KV em $H_q/H_{kv}$×.
+- **KV cache size por token**: $2 \cdot L \cdot H_{kv} \cdot d_h \cdot b$ bytes, onde $L$ = número de camadas, $d_h$ = dim por head, $b$ = bytes por elemento (2 = FP16).
+- **Quantização linear por canal**: $q_i = \mathrm{round}\!\left(\frac{x_i - z_i}{s_i}\right)$, com escala $s_i$ e zero‑point $z_i$ por canal/grupo.
+- **GPTQ** (loss layer‑wise): $\min_{\hat W} \| W X - \hat W X \|^2$, resolvido com Hessian inversa via OBS (Optimal Brain Surgeon).
 - **AWQ**: escala canais cuja **ativação** tem alta norma (`scale = act_norm^α`), depois quantiza pesos uniformemente.
-- **Cota TurboQuant**: \( \mathrm{MSE}(\hat x) \leq C \cdot 4^{-b} \cdot \|x\|^2 \) para \(b\)‑bit não‑enviesado pós‑rotação polar+JL. Veja Post 06 §3.
+- **Cota TurboQuant**: $\mathrm{MSE}(\hat x) \leq C \cdot 4^{-b} \cdot \|x\|^2$ para $b$‑bit não‑enviesado pós‑rotação polar+JL. Veja Post 06 §3.
 
 Toda vez que uma fórmula nova aparecer aqui, dou referência cruzada para o post de origem.
 
@@ -71,9 +71,9 @@ Toda vez que uma fórmula nova aparecer aqui, dou referência cruzada para o pos
 
 Antes de seguir, vale fixar nomenclatura — porque cada técnica vai mexer em um eixo específico:
 
-- **TTFT** (*Time To First Token*): tempo entre o `POST /v1/chat/completions` e o **primeiro** token na rede. Domina a percepção subjetiva de latência. É majoritariamente **prefill** (custo \(O(N \cdot d^2 + N^2 d)\) para o prompt de tamanho \(N\)). PagedAttention + FlashAttention + prefix cache atacam aqui.
+- **TTFT** (*Time To First Token*): tempo entre o `POST /v1/chat/completions` e o **primeiro** token na rede. Domina a percepção subjetiva de latência. É majoritariamente **prefill** (custo $O(N \cdot d^2 + N^2 d)$ para o prompt de tamanho $N$). PagedAttention + FlashAttention + prefix cache atacam aqui.
 - **TPOT** (*Time Per Output Token*): tempo médio de cada token de saída **após** o primeiro. Domina a velocidade de *streaming* da resposta. Quase 100% **decode**, 100% memory‑bound. **Speculative decoding** ataca diretamente este eixo.
-- **TPS por usuário** (*tokens per second per user*): \(1/\text{TPOT}\). É a métrica que aparece em demos públicas (“Blackwell quebra a barreira de 1.000 TPS/usuário”).
+- **TPS por usuário** (*tokens per second per user*): $1/\text{TPOT}$. É a métrica que aparece em demos públicas (“Blackwell quebra a barreira de 1.000 TPS/usuário”).
 - **Throughput agregado** (*tokens/s do servidor*, somando todos os usuários simultâneos): cresce com o batch, mas depois satura quando vira compute‑bound. **MoE** e **PagedAttention** ajudam aqui.
 - **Goodput** (vLLM, 2024): throughput **dentro do SLA** (TPOT < X ms). Métrica honesta para SaaS.
 - **Custo por 1 M tokens output**: integra capex (GPU comprada/alugada) + opex (energia) + utilização média. É a métrica de negócio.
@@ -113,15 +113,15 @@ Considere uma H100 SXM:
 
 Para um Llama‑70B em FP16:
 - Pesos: ~140 GB
-- KV por token (GQA, 8 heads, head_dim=128, 80 camadas, 2 tensores K/V, FP16): \(2 \cdot 80 \cdot 8 \cdot 128 \cdot 2 = 327.680\) bytes ≈ **0,32 MB/token**
+- KV por token (GQA, 8 heads, head_dim=128, 80 camadas, 2 tensores K/V, FP16): $2 \cdot 80 \cdot 8 \cdot 128 \cdot 2 = 327.680$ bytes ≈ **0,32 MB/token**
 
 Numa decoda de 1 token (batch=1), o tráfego é dominado pelos **pesos**: 140 GB / 3,35 TB/s ≈ **42 ms/token** ≈ **24 tok/s**.
 
-A intensidade aritmética é \( \approx \frac{2 \cdot 70 \cdot 10^9 \text{ FLOPs}}{140 \cdot 10^9 \text{ bytes}} = 1 \text{ FLOP/byte}\) — muito abaixo da intensidade de balanço da H100 (~295 FLOPs/byte). Estamos longe à esquerda do *roofline* — sentados sobre a parede da memória.
+A intensidade aritmética é $\approx \frac{2 \cdot 70 \cdot 10^9 \text{ FLOPs}}{140 \cdot 10^9 \text{ bytes}} = 1 \text{ FLOP/byte}$ — muito abaixo da intensidade de balanço da H100 (~295 FLOPs/byte). Estamos longe à esquerda do *roofline* — sentados sobre a parede da memória.
 
 A grande sacada: as **matrizes de peso são lidas da mesma forma** se você processar 1 token ou 8 tokens em batch. Logo, se você conseguir dar ao modelo **8 candidatos** para verificar de uma vez, paga praticamente o mesmo custo de memória — e dependendo de quantos forem aceitos, sai com 2–8 tokens por passo em vez de 1.
 
-Em termos de roofline: ao agrupar \(\gamma\) candidatos, a intensidade aritmética sobe para \(\sim \gamma \cdot 1\) FLOP/byte; até saturar o tensor core, **cada token extra é praticamente grátis**. O “teto de batch” onde isso para de funcionar fica em torno de 32–64 em FP16 numa H100, dependendo do modelo. Para batch baixo (1–8), o ganho é praticamente proporcional aos tokens aceitos.
+Em termos de roofline: ao agrupar $\gamma$ candidatos, a intensidade aritmética sobe para $\sim \gamma \cdot 1$ FLOP/byte; até saturar o tensor core, **cada token extra é praticamente grátis**. O “teto de batch” onde isso para de funcionar fica em torno de 32–64 em FP16 numa H100, dependendo do modelo. Para batch baixo (1–8), o ganho é praticamente proporcional aos tokens aceitos.
 
 > **Analogia.** Numa redação, em vez de o **editor sênior** escrever palavra por palavra, um **estagiário** escreve um rascunho rápido. O sênior lê tudo de uma vez e, na maior parte do texto, só assina embaixo. Quando o estagiário escreve algo errado, o sênior corrige aquela frase e o estagiário continua dali.
 
@@ -130,26 +130,30 @@ Esse é exatamente o protocolo de speculative decoding (Leviathan et al., Google
 ### 2.2. Vanilla speculative decoding (Leviathan / DeepMind)
 
 **Setup**:
-- **Modelo target** \(M_p\) — o grande, lento, alta qualidade. Distribuição \(p(x)\).
-- **Modelo draft** \(M_q\) — pequeno, rápido, mesma vocab. Distribuição \(q(x)\).
+- **Modelo target** $M_p$ — o grande, lento, alta qualidade. Distribuição $p(x)$.
+- **Modelo draft** $M_q$ — pequeno, rápido, mesma vocab. Distribuição $q(x)$.
 
 **Loop**:
-1. O draft \(M_q\) gera **\(\gamma\) tokens** sequencialmente: \(x_1, x_2, \ldots, x_\gamma\).
-2. O target \(M_p\) processa **um único forward** sobre o prefixo + esses \(\gamma\) tokens (em batch, paralelo nas posições) e produz \(p(x_1), p(x_2), \ldots, p(x_\gamma), p(x_{\gamma+1})\).
-3. Para cada \(x_i\), aceita com probabilidade \(\min\!\left(1, \frac{p(x_i)}{q(x_i)}\right)\). Se aceitou todos, ganha mais 1 token “de bônus” amostrado de \(p(x_{\gamma+1})\). Se rejeitou na posição \(j\), reamostra \(x_j\) de uma distribuição **residual** corrigida \( \mathrm{norm}(\max(0, p - q)) \).
+1. O draft $M_q$ gera **$\gamma$ tokens** sequencialmente: $x_1, x_2, \ldots, x_\gamma$.
+2. O target $M_p$ processa **um único forward** sobre o prefixo + esses $\gamma$ tokens (em batch, paralelo nas posições) e produz $p(x_1), p(x_2), \ldots, p(x_\gamma), p(x_{\gamma+1})$.
+3. Para cada $x_i$, aceita com probabilidade $\min\!\left(1, \frac{p(x_i)}{q(x_i)}\right)$. Se aceitou todos, ganha mais 1 token “de bônus” amostrado de $p(x_{\gamma+1})$. Se rejeitou na posição $j$, reamostra $x_j$ de uma distribuição **residual** corrigida $\mathrm{norm}(\max(0, p - q))$.
 
-A propriedade fundamental (provada nos dois papers acima): a sequência aceita tem **distribuição exatamente \(p\)** — não há perda de qualidade, em nenhum sentido estatístico.
+A propriedade fundamental (provada nos dois papers acima): a sequência aceita tem **distribuição exatamente $p$** — não há perda de qualidade, em nenhum sentido estatístico.
 
 #### 2.2.1. Por que a regra de aceitação preserva a distribuição
 
-A intuição: queremos **amostrar** de \(p\) usando amostras de \(q\). Esse é o problema clássico de **rejection sampling**, mas com uma correção elegante.
+A intuição: queremos **amostrar** de $p$ usando amostras de $q$. Esse é o problema clássico de **rejection sampling**, mas com uma correção elegante.
 
-- Quando \(p(x_i) \geq q(x_i)\), aceita sempre. O draft “subestimou” a probabilidade desse token; podemos confiar na sugestão.
-- Quando \(p(x_i) < q(x_i)\), aceita com prob \(p(x_i)/q(x_i)\). O draft “superestimou”; corrigimos rebaixando proporcionalmente.
+- Quando $p(x_i) \geq q(x_i)$, aceita sempre. O draft “subestimou” a probabilidade desse token; podemos confiar na sugestão.
+- Quando $p(x_i) < q(x_i)$, aceita com prob $p(x_i)/q(x_i)$. O draft “superestimou”; corrigimos rebaixando proporcionalmente.
 
 Em caso de rejeição, **reamostra** de:
-\[ p_{\text{res}}(x) = \frac{\max(0, p(x) - q(x))}{\sum_{x'} \max(0, p(x') - q(x'))}. \]
-Isso compensa exatamente o que a regra de aceitação tirou. Resultado: a distribuição final do **token emitido naquela posição** é \(p\), independentemente de \(q\). É magia? Não, é álgebra.
+
+$$
+p_{\text{res}}(x) = \frac{\max(0, p(x) - q(x))}{\sum_{x'} \max(0, p(x') - q(x'))}.
+$$
+
+Isso compensa exatamente o que a regra de aceitação tirou. Resultado: a distribuição final do **token emitido naquela posição** é $p$, independentemente de $q$. É magia? Não, é álgebra.
 
 #### 2.2.2. Pseudo‑código
 
@@ -176,17 +180,19 @@ def speculative_step(prefix, M_target, M_draft, gamma):
     return accepted + [bonus]
 ```
 
-Note que **se aceitar todos os \(\gamma\)**, ainda ganha 1 token de bônus. Em condições ideais (mesmas distribuições), `gamma+1` tokens por passo.
+Note que **se aceitar todos os $\gamma$**, ainda ganha 1 token de bônus. Em condições ideais (mesmas distribuições), `gamma+1` tokens por passo.
 
 **Speedup** depende de:
-- **Taxa de aceitação \(\alpha\)**: se draft e target concordam muito (texto em inglês corriqueiro, código repetitivo), \(\alpha \to 1\) e o ganho aproxima \(\gamma+1\). Em texto técnico difícil, \(\alpha\) cai.
-- **Custo relativo** \(c = T_q / T_p\) (forward draft / forward target): só compensa se \(c\) for pequeno.
+- **Taxa de aceitação $\alpha$**: se draft e target concordam muito (texto em inglês corriqueiro, código repetitivo), $\alpha \to 1$ e o ganho aproxima $\gamma+1$. Em texto técnico difícil, $\alpha$ cai.
+- **Custo relativo** $c = T_q / T_p$ (forward draft / forward target): só compensa se $c$ for pequeno.
 
-A fórmula clássica (Leviathan, 2022) para o *expected speedup* com \(\gamma\) tokens spec:
-\[
+A fórmula clássica (Leviathan, 2022) para o *expected speedup* com $\gamma$ tokens spec:
+
+$$
 \mathbb{E}[\text{speedup}] = \frac{1 - \alpha^{\gamma+1}}{(1 - \alpha)(1 + c\gamma)}.
-\]
-Com \(\alpha = 0{,}7\) e \(\gamma = 4\), \(c = 0{,}1\), temos ~2,3× — números medidos em T5‑XXL no paper original (2–3×).
+$$
+
+Com $\alpha = 0{,}7$ e $\gamma = 4$, $c = 0{,}1$, temos ~2,3× — números medidos em T5‑XXL no paper original (2–3×).
 
 ```mermaid
 sequenceDiagram
@@ -208,11 +214,11 @@ sequenceDiagram
 
 ### 2.3. Variantes modernas
 
-Vanilla SD tem dois custos: (i) precisa de um **draft separado** treinado de forma compatível; (ii) o draft é serial dentro de cada janela \(\gamma\). As variantes abaixo atacam esses dois pontos.
+Vanilla SD tem dois custos: (i) precisa de um **draft separado** treinado de forma compatível; (ii) o draft é serial dentro de cada janela $\gamma$. As variantes abaixo atacam esses dois pontos.
 
 #### 2.3.1. Medusa — *múltiplas heads* (arXiv:2401.10774, Cai et al., 2024)
 
-Em vez de outro modelo, **anexa-se K heads extras** ao próprio modelo target. Cada head prevê o token \(t+k\). Com **tree attention**, várias combinações de candidatos são verificadas no mesmo passo. *Speedup* tipicamente **2,2×** (Medusa‑1, sem retreinar o backbone) e **2,3–2,8×** (Medusa‑2, fine‑tune conjunto). Vantagem: zero modelo extra carregado em VRAM. Desvantagem: requer treinamento.
+Em vez de outro modelo, **anexa-se K heads extras** ao próprio modelo target. Cada head prevê o token $t+k$. Com **tree attention**, várias combinações de candidatos são verificadas no mesmo passo. *Speedup* tipicamente **2,2×** (Medusa‑1, sem retreinar o backbone) e **2,3–2,8×** (Medusa‑2, fine‑tune conjunto). Vantagem: zero modelo extra carregado em VRAM. Desvantagem: requer treinamento.
 
 #### 2.3.2. EAGLE / EAGLE‑2 — draft autoregressivo no espaço latente (arXiv:2401.15077; arXiv:2406.16858)
 
@@ -245,7 +251,7 @@ Variante mais nova (LayerSkip, Meta 2024): use as **primeiras camadas** do próp
 
 #### 2.3.6. SpecInfer / Tree‑based speculative
 
-Em vez de uma única sequência draft de \(\gamma\) tokens, gera‑se uma **árvore** de possibilidades — várias ramificações que disputam aceitação. SpecInfer (CMU, 2023) e os trabalhos derivados em Medusa/EAGLE‑2 mostram que árvore com 16–64 nós por passo dá ganho de mais 30% sobre cadeia linear.
+Em vez de uma única sequência draft de $\gamma$ tokens, gera‑se uma **árvore** de possibilidades — várias ramificações que disputam aceitação. SpecInfer (CMU, 2023) e os trabalhos derivados em Medusa/EAGLE‑2 mostram que árvore com 16–64 nós por passo dá ganho de mais 30% sobre cadeia linear.
 
 ### 2.4. Tabela: variantes de speculative decoding
 
@@ -322,7 +328,7 @@ Mesmo lossless em distribuição, há padrões previsíveis de **baixa aceitaç�
 
 ### 3.1. O insight: MLP é **a maior parte** do modelo
 
-Num decoder Transformer típico, a camada MLP (FFN) tem **~2/3 dos parâmetros** (porque a hidden é \(4h\), mais o downproj). Se a gente pudesse ter **muitos MLPs candidatos** mas usar **só alguns por token**, ganharíamos capacidade total sem aumentar o cálculo por token.
+Num decoder Transformer típico, a camada MLP (FFN) tem **~2/3 dos parâmetros** (porque a hidden é $4h$, mais o downproj). Se a gente pudesse ter **muitos MLPs candidatos** mas usar **só alguns por token**, ganharíamos capacidade total sem aumentar o cálculo por token.
 
 Essa é a ideia da **Mixture of Experts (MoE)**, viabilizada em escala por **GShard** (Lepikhin et al., Google, 2020) e popularizada pelo **Switch Transformer** (Fedus, Zoph, Shazeer, 2021 — arXiv:2101.03961, JMLR 2022). No Switch, cada token escolhe **1 expert** (top‑1 routing); GShard usa top‑2.
 
@@ -331,22 +337,26 @@ Essa é a ideia da **Mixture of Experts (MoE)**, viabilizada em escala por **GSh
 ### 3.2. Como funciona
 
 Substitui-se o MLP denso por um **bloco MoE** com:
-- **\(E\) experts**: cada um é um MLP completo (digamos, hidden 4h, gated SwiGLU como Llama).
-- **Router (gating)**: uma camada linear simples \(g(x) = \mathrm{softmax}(W_r x)\) que produz um score por expert.
-- **Top‑k**: seleciona os \(k\) experts de maior score (tipicamente k=1 ou k=2).
-- **Combine**: o output é \( y = \sum_{i \in \text{topk}} g_i(x) \cdot \text{Expert}_i(x) \).
+- **$E$ experts**: cada um é um MLP completo (digamos, hidden 4h, gated SwiGLU como Llama).
+- **Router (gating)**: uma camada linear simples $g(x) = \mathrm{softmax}(W_r x)$ que produz um score por expert.
+- **Top‑k**: seleciona os $k$ experts de maior score (tipicamente k=1 ou k=2).
+- **Combine**: o output é $y = \sum_{i \in \text{topk}} g_i(x) \cdot \text{Expert}_i(x)$.
 
 #### 3.2.1. A matemática do roteador
 
-Seja \(x \in \mathbb{R}^d\) o input do token. O router projeta:
-\[
+Seja $x \in \mathbb{R}^d$ o input do token. O router projeta:
+
+$$
 s = W_r\,x \in \mathbb{R}^E.
-\]
-Aplicar softmax direto e fazer top‑k é o mais simples; em algumas variantes (DeepSeek, Mixtral), aplica‑se top‑k **antes** do softmax (renormalizando só os \(k\) selecionados):
-\[
+$$
+
+Aplicar softmax direto e fazer top‑k é o mais simples; em algumas variantes (DeepSeek, Mixtral), aplica‑se top‑k **antes** do softmax (renormalizando só os $k$ selecionados):
+
+$$
 g_i = \frac{\exp(s_i)}{\sum_{j \in \text{topk}(s)} \exp(s_j)} \quad \text{para } i \in \text{topk}(s),
-\]
-e \(g_i = 0\) para os demais. Isso evita que a probabilidade dos selecionados seja “diluída” pela cauda dos não‑selecionados.
+$$
+
+e $g_i = 0$ para os demais. Isso evita que a probabilidade dos selecionados seja “diluída” pela cauda dos não‑selecionados.
 
 #### 3.2.2. Pseudo‑código de um forward MoE
 
@@ -384,18 +394,24 @@ flowchart LR
 ```
 
 **Detalhes que importam**:
-- **Capacity factor** \(c\): o sistema fixa um teto de tokens por expert por batch:
-  \[
-  C = c \cdot \frac{\text{tokens}_\text{batch} \cdot k}{E}.
-  \]
-  Se mais tokens forem roteados para o mesmo expert, há **token drop** (passa por residual sem processar). Treinos modernos usam \(c \in [1{,}25; 2{,}0]\); na inferência, costuma‑se usar valores maiores ou roteamento sem capacity (mas com cuidado de balanceamento).
+- **Capacity factor** $c$: o sistema fixa um teto de tokens por expert por batch:
+  
+
+$$
+C = c \cdot \frac{\text{tokens}_\text{batch} \cdot k}{E}.
+$$
+
+  Se mais tokens forem roteados para o mesmo expert, há **token drop** (passa por residual sem processar). Treinos modernos usam $c \in [1{,}25; 2{,}0]$; na inferência, costuma‑se usar valores maiores ou roteamento sem capacity (mas com cuidado de balanceamento).
 - **Load balancing loss** (Switch Transformer):
-  \[
-  \mathcal{L}_{aux} = \alpha \cdot E \cdot \sum_{i=1}^{E} f_i \cdot P_i,
-  \]
-  onde \(f_i\) é a fração de tokens roteados para o expert \(i\) e \(P_i\) é a média da probabilidade do router para esse expert. Penaliza distribuições degeneradas onde 1 expert vira “pau pra toda obra”.
-- **Auxiliary‑loss‑free balancing** (DeepSeek‑V3): adiciona um *bias* aprendido \(b_i\) ao score \(s_i\) **antes** do top‑k, atualizado online em direção a equilibrar uso. Sem termo extra de loss → menos interferência no objetivo principal. Ganho ~0,5 ppl no paper.
-- **Shared experts** (DeepSeek‑V2/V3, Llama 4 Maverick): além dos \(E\) experts roteados, há **1 ou 2 experts sempre ativos** (não passam pelo router). Captura conhecimento comum e libera os roteados para especialização real.
+  
+
+$$
+\mathcal{L}_{aux} = \alpha \cdot E \cdot \sum_{i=1}^{E} f_i \cdot P_i,
+$$
+
+  onde $f_i$ é a fração de tokens roteados para o expert $i$ e $P_i$ é a média da probabilidade do router para esse expert. Penaliza distribuições degeneradas onde 1 expert vira “pau pra toda obra”.
+- **Auxiliary‑loss‑free balancing** (DeepSeek‑V3): adiciona um *bias* aprendido $b_i$ ao score $s_i$ **antes** do top‑k, atualizado online em direção a equilibrar uso. Sem termo extra de loss → menos interferência no objetivo principal. Ganho ~0,5 ppl no paper.
+- **Shared experts** (DeepSeek‑V2/V3, Llama 4 Maverick): além dos $E$ experts roteados, há **1 ou 2 experts sempre ativos** (não passam pelo router). Captura conhecimento comum e libera os roteados para especialização real.
 - **Fine‑grained experts** (DeepSeek): em vez de 8 experts grandes (Mixtral), 256 experts pequenos. Aumenta combinatória de roteamento (granularidade fina ⇒ mais especialização) sem aumentar parâmetros totais.
 
 #### 3.2.3. Visualizando “fine‑grained vs coarse”
@@ -468,7 +484,7 @@ flowchart LR
   Note1[Razão Total/Ativo:<br/>Mixtral 3.6x | DeepSeek 18x<br/>Llama 4 24x | Qwen3 11x]
 ```
 
-A razão **total/ativo** é o **fator de eficiência de compute** do MoE. Em DeepSeek‑V3, **18×** menos compute por token do que um modelo denso 671 B equivalente — daí treinar custar US$ 5,6 mi (2,79 M H800‑hours) em vez de centenas de milhões.
+A razão **total/ativo** é o **fator de eficiência de compute** do MoE. Em DeepSeek‑V3, **18×** menos compute por token do que um modelo denso 671 B equivalente — daí treinar custar US\$ 5,6 mi (2,79 M H800‑hours) em vez de centenas de milhões.
 
 ### 3.5. Trade‑offs e armadilhas
 
@@ -493,8 +509,8 @@ Se você medir, na sua workload específica, quais experts são **raramente** at
 
 Estratégias práticas:
 
-1. **Frequency‑based**: contabilize uso por expert em \(N\) prompts representativos. Os 25% menos usados são candidatos a pruning. Risco: cauda do dataset (queries raras) pode quebrar.
-2. **Merging**: em vez de podar, **funda** dois experts próximos (medidos por similaridade de cosseno entre seus pesos) numa média ponderada. Reduz \(E\) sem perder “opções”.
+1. **Frequency‑based**: contabilize uso por expert em $N$ prompts representativos. Os 25% menos usados são candidatos a pruning. Risco: cauda do dataset (queries raras) pode quebrar.
+2. **Merging**: em vez de podar, **funda** dois experts próximos (medidos por similaridade de cosseno entre seus pesos) numa média ponderada. Reduz $E$ sem perder “opções”.
 3. **Distill‑and‑prune**: distila o MoE num modelo denso menor especializado em sua workload — vira um caso de **distillation** (§5).
 
 ### 3.7. Expert offload em detalhe
@@ -611,24 +627,24 @@ A latência da comm all‑to‑all é o **gargalo** em EP. Por isso GB200 NVL72 
 
 ### 3.12. MoE sob inferência: estimativa de tokens/s por expert
 
-Suponha DeepSeek‑V3 (256 experts, top‑8). Em batch de 256 tokens, cada expert recebe em média \(256 \cdot 8 / 256 = 8\) tokens. Em batch 4.096, cada expert recebe ~128 tokens — bem perto do nível em que matmul amortiza fixed costs e satura tensor cores. Daí porque MoE escala **muito bem** com batch grande.
+Suponha DeepSeek‑V3 (256 experts, top‑8). Em batch de 256 tokens, cada expert recebe em média $256 \cdot 8 / 256 = 8$ tokens. Em batch 4.096, cada expert recebe ~128 tokens — bem perto do nível em que matmul amortiza fixed costs e satura tensor cores. Daí porque MoE escala **muito bem** com batch grande.
 
 Em contraste, batch=1 envia 1 token para 8 experts; cada expert processa 1 vetor. Isso é **péssimo** em utilização — daí por que MoE local single‑user sofre.
 
 ### 3.13. Custo absoluto de servir os principais MoE (estimativa 2026)
 
-Considerando preços spot/aluguel típicos de **US$ 2–4 por GPU‑hora** (H100/H200 em provedores neoclouds tipo Lambda, RunPod, Together):
+Considerando preços spot/aluguel típicos de **US\$ 2–4 por GPU‑hora** (H100/H200 em provedores neoclouds tipo Lambda, RunPod, Together):
 
 | Modelo | GPUs mínimas | Throughput agregado | Custo por milhão de tokens output |
 |---|---|---|---|
-| Mixtral 8×7B | 1× H100 (Q4) ou 2× A100 | ~2.500 tok/s | US$ 0,50–0,80 |
-| Mixtral 8×22B | 2× H100 | ~3.500 tok/s | US$ 0,80–1,30 |
-| DeepSeek‑V3 671B | 8× H200 (FP8) | ~12.000 tok/s | US$ 1,20–2,00 |
-| Qwen3‑235B‑A22B | 4× H200 | ~5.500 tok/s | US$ 1,00–1,80 |
-| Llama 4 Scout 109B | 1× H100 (INT4) | ~3.000 tok/s | US$ 0,40–0,80 |
-| Llama 4 Maverick 400B | DGX H100 (8× H100) | ~10.000 tok/s | US$ 1,30–2,30 |
+| Mixtral 8×7B | 1× H100 (Q4) ou 2× A100 | ~2.500 tok/s | US\$ 0,50–0,80 |
+| Mixtral 8×22B | 2× H100 | ~3.500 tok/s | US\$ 0,80–1,30 |
+| DeepSeek‑V3 671B | 8× H200 (FP8) | ~12.000 tok/s | US\$ 1,20–2,00 |
+| Qwen3‑235B‑A22B | 4× H200 | ~5.500 tok/s | US\$ 1,00–1,80 |
+| Llama 4 Scout 109B | 1× H100 (INT4) | ~3.000 tok/s | US\$ 0,40–0,80 |
+| Llama 4 Maverick 400B | DGX H100 (8× H100) | ~10.000 tok/s | US\$ 1,30–2,30 |
 
-Por comparação, GPT‑4o cobra ~US$ 15/M tokens output e Claude 3.5 Sonnet ~US$ 15. **Self‑hosted MoE open source sai 5–10× mais barato** — a economia que torna viável o uso massivo em SaaS B2C.
+Por comparação, GPT‑4o cobra ~US\$ 15/M tokens output e Claude 3.5 Sonnet ~US\$ 15. **Self‑hosted MoE open source sai 5–10× mais barato** — a economia que torna viável o uso massivo em SaaS B2C.
 
 ### 3.14. MoE “mental model”: quando ele “entende algo a mais”
 
@@ -677,7 +693,7 @@ One‑shot, *layer‑wise*, baseado em **Hessiana de erro de reconstrução** (m
 
 #### 4.3.2. Wanda (Sun et al., 2023)
 
-Mais simples: a importância de cada peso \(W_{ij}\) é estimada por \(|W_{ij}| \cdot \|X_j\|_2\) (magnitude do peso × norma da ativação correspondente). Sem cálculo de Hessiana — é literalmente uma multiplicação. Surpreendentemente competitivo com SparseGPT, e muito mais barato. **Wanda++** (2025, arXiv:2503.04992v2) adiciona gradientes regionais e melhora 32% em 2:4 sobre Wanda; poda Llama‑7B em < 10 min em 1× H100.
+Mais simples: a importância de cada peso $W_{ij}$ é estimada por $|W_{ij}| \cdot \|X_j\|_2$ (magnitude do peso × norma da ativação correspondente). Sem cálculo de Hessiana — é literalmente uma multiplicação. Surpreendentemente competitivo com SparseGPT, e muito mais barato. **Wanda++** (2025, arXiv:2503.04992v2) adiciona gradientes regionais e melhora 32% em 2:4 sobre Wanda; poda Llama‑7B em < 10 min em 1× H100.
 
 #### 4.3.3. Tabela: métodos de sparsity de pesos
 
@@ -770,7 +786,7 @@ def wanda_prune_layer(W, X, sparsity=0.5, n=2, m=4):
     return mask, W * mask
 ```
 
-A simplicidade é o ponto. Sem Hessiana, sem retraining, sem otimização layer‑wise. **Magnitude × ativação‑norma**, *top‑k* dentro de cada bloco \(m\). Resultado: 2:4 com Wanda em Llama‑7B em **menos de 5 minutos** numa H100, mantendo perplexidade competitiva.
+A simplicidade é o ponto. Sem Hessiana, sem retraining, sem otimização layer‑wise. **Magnitude × ativação‑norma**, *top‑k* dentro de cada bloco $m$. Resultado: 2:4 com Wanda em Llama‑7B em **menos de 5 minutos** numa H100, mantendo perplexidade competitiva.
 
 ### 4.8. KV cache sparsity (sparsity no terceiro eixo)
 
@@ -800,11 +816,11 @@ Combinar KIVI (KV INT4) com SnapKV/H2O entrega 16–40× compressão do KV em mo
 
 Em vez de treinar um *student* só com **labels duros** (one‑hot), treine‑o com a **distribuição de probabilidade** que um *teacher* produz — os *logits* contêm **dark knowledge** sobre as classes vizinhas (“é cachorro 0,7, lobo 0,2, gato 0,01”). Loss:
 
-\[
+$$
 \mathcal{L} = (1-\lambda) \cdot \mathrm{CE}(y, p_s) + \lambda \cdot T^2 \cdot \mathrm{KL}\!\left(p_t^T \,\|\, p_s^T\right),
-\]
+$$
 
-onde \(p^T = \mathrm{softmax}(z/T)\) com **temperatura** \(T > 1\) suaviza as probabilidades.
+onde $p^T = \mathrm{softmax}(z/T)$ com **temperatura** $T > 1$ suaviza as probabilidades.
 
 > **Analogia.** O professor ensina o aluno a entender **por que** uma resposta é razoável e a anterior também era plausível, em vez de só dizer “certo/errado”. O aluno absorve **estrutura**, não só rótulos.
 
@@ -871,7 +887,7 @@ Frameworks: **DSPy** (Stanford) automatiza esse loop; **OpenAI fine‑tune API**
 5. Itere: amplie o dataset com casos onde o student errou (active learning).
 ```
 
-Resultado típico em projetos do tipo: **F1 do student ≈ 0,98 do teacher**, custo por chamada cai de ~US$ 0,02 (Claude) para ~US$ 0,0002 (Llama 8B em vLLM próprio).
+Resultado típico em projetos do tipo: **F1 do student ≈ 0,98 do teacher**, custo por chamada cai de ~US\$ 0,02 (Claude) para ~US\$ 0,0002 (Llama 8B em vLLM próprio).
 
 ### 5.4. *Reasoning distillation* (a febre 2025)
 
@@ -1055,11 +1071,11 @@ O dataset para treinar o classifier vem de **logs com sinal de qualidade**: ex.:
 ### 6.9. Custo total: speculative + MoE + cascading combinados
 
 Exemplo numérico:
-- Sem nada: GPT‑4 API → US$ 30/M tokens.
-- Trocar por DeepSeek‑V3 self‑host → US$ 1,5/M tokens (20×).
+- Sem nada: GPT‑4 API → US\$ 30/M tokens.
+- Trocar por DeepSeek‑V3 self‑host → US\$ 1,5/M tokens (20×).
 - Adicionar EAGLE‑2 spec → 3× a velocidade, mesma economia (mas TPS↑).
-- Adicionar router (40% queries → Phi‑4) → US$ 1,0/M tokens (30×).
-- Adicionar cache semântico (30% hit) → US$ 0,7/M tokens (43×).
+- Adicionar router (40% queries → Phi‑4) → US\$ 1,0/M tokens (30×).
+- Adicionar cache semântico (30% hit) → US\$ 0,7/M tokens (43×).
 
 Combinando, a redução de custo é multiplicativa. **40×** vs OpenAI é factível com infra própria moderna em escala — e essa é a razão da explosão de provedores tipo Together, Fireworks, Groq, Cerebras Inference em 2024–2025.
 
@@ -1104,7 +1120,7 @@ flowchart TB
 
 **Resultado típico** (medições da Baseten/Together/Fireworks publicadas em 2025):
 - TPOT em batch=1: 15–25 ms (Phi‑4) / 40–60 ms (DeepSeek‑V3 com spec).
-- Custo por 1 M tokens output: < US$ 0,30 em Phi‑4, ~US$ 1,5 em DeepSeek‑V3 self‑host vs ~US$ 15 em GPT‑4o.
+- Custo por 1 M tokens output: < US\$ 0,30 em Phi‑4, ~US\$ 1,5 em DeepSeek‑V3 self‑host vs ~US\$ 15 em GPT‑4o.
 
 ### 7.3. Cenário B — assistente jurídico local em 1× RTX 4090 + 64 GB RAM
 
@@ -1130,7 +1146,7 @@ Stack:
 - Draft 1B GGUF Q4_K_M para speculative.
 - **Prompt lookup** ativado — em RAG jurídico a sobreposição prompt/output é altíssima (citações de cláusulas).
 
-Métrica esperada: 4–8 tok/s, 60k contexto, qualidade comparável a Llama‑3‑70B FP16. Sem dados para nuvem. Custo de hardware único: ~US$ 3.500.
+Métrica esperada: 4–8 tok/s, 60k contexto, qualidade comparável a Llama‑3‑70B FP16. Sem dados para nuvem. Custo de hardware único: ~US\$ 3.500.
 
 ### 7.3.1. Detalhamento operacional do Cenário A
 
@@ -1285,7 +1301,7 @@ Medidas típicas (Llama‑3.1‑70B Q4_K_M):
 | 1× H100 + speculative (1B draft) | ~50 tok/s | Spec brilha em batch=1 |
 | 1× B200 192GB + spec + 2:4 | ~110 tok/s | Topo prática 2026 |
 
-Apple Silicon é o **vencedor por dólar gasto em hardware único**. Mac Studio M3 Ultra (US$ 7k) entrega ~70% da performance de uma H100 ($40k+) em uso single‑user.
+Apple Silicon é o **vencedor por dólar gasto em hardware único**. Mac Studio M3 Ultra (US\$ 7k) entrega ~70% da performance de uma H100 (\$40k+) em uso single‑user.
 
 ### 8.4.2. Snapdragon 8 Gen 3 / Apple A‑series
 
@@ -1351,7 +1367,7 @@ Tendências que dá para projetar com confiança:
 
 A próxima fronteira de pesquisa? **Inferência adaptativa por token**: o modelo decide, *para cada token específico*, qual nível de quantização, qual subset de experts, qual profundidade de camadas usar. Trabalhos preliminares (DEED, AdaToken, Mixture‑of‑Depths) apontam nessa direção. Se isso amadurecer, podemos ter mais 2–3× de ganho em ~2027.
 
-A história dos LLMs é a história da queda do **custo por token útil**. Em 2020, GPT‑3 custava ~US$ 60 por milhão. Em 2024, GPT‑4 baixou para US$ 30. Em 2025, DeepSeek‑V3 self‑hosted entrega o equivalente por **US$ 1,5**. Em 2026, com B200 + spec + sparsity + MoE + caching, espera‑se cair para **US$ 0,30–0,50**.
+A história dos LLMs é a história da queda do **custo por token útil**. Em 2020, GPT‑3 custava ~US\$ 60 por milhão. Em 2024, GPT‑4 baixou para US\$ 30. Em 2025, DeepSeek‑V3 self‑hosted entrega o equivalente por **US\$ 1,5**. Em 2026, com B200 + spec + sparsity + MoE + caching, espera‑se cair para **US\$ 0,30–0,50**.
 
 É **40× em 2 anos**. Por hardware? Não — por **engenharia inteligente sobre o mesmo hardware**, somando todas as alavancas que esta série explorou.
 
@@ -1401,7 +1417,7 @@ A tabela abaixo é a **síntese executiva** da série. Linhas: cada técnica em 
 | 11 | **GGUF Q4_K_M / Q5_K_M / Q6_K** | 04 | ↓ 4–6× | ↓ leve | ↑ | ≈ | llama.cpp local; Apple Silicon |
 | 12 | **KV INT8 simples** | 05 | ↓ 2× KV | = | ↑ batch | ↓ pequeno | Win fácil |
 | 13 | **KV INT4 (KIVI/KVQuant per‑channel/per‑token)** | 05 | ↓ 4× KV | = | ↑↑ batch grande | ↓ pequeno (com per‑channel) | Long context, batch alto |
-| 14 | **TurboQuant** (polar + JL + Lloyd–Max) | 06 | ↓ 4–8× pesos e/ou KV | = | ↑↑ | ≈ (não‑enviesado, cota \(4^{-b}\)) | Quando perder bias importa (KV crítico) |
+| 14 | **TurboQuant** (polar + JL + Lloyd–Max) | 06 | ↓ 4–8× pesos e/ou KV | = | ↑↑ | ≈ (não‑enviesado, cota $4^{-b}$) | Quando perder bias importa (KV crítico) |
 | 15 | **RoPE / NTK / YaRN** | 07 | = | = | = | habilita ctx longo | Estender janela |
 | 16 | **Ring Attention** | 07 | distribuído | ↑ comm | ↑↑ ctx | = | Treino/inferência ctx 1 M+ |
 | 17 | **StreamingLLM (sumidouros)** | 07 | janela fixa | ↓↓ em chat infinito | = | ≈ em ctx útil | Chat de longa duração |
@@ -1485,10 +1501,8 @@ A tabela abaixo é a **síntese executiva** da série. Linhas: cada técnica em 
 | TPOT < 80 ms | Chat normal | Medusa + Llama‑3‑70B INT4 + 2:4 | 1× H100 |
 | TPOT < 200 ms | Tarefas batch leves | Llama‑3‑8B INT4 + paged KV | 1× A100 40GB |
 | Throughput > 30k tok/s/serv | RAG corporativo | DeepSeek‑V3 FP8 cluster | 8× H200 |
-| Custo < US$ 0,5/M tok | SaaS B2C | Phi‑4 INT4 + cache | 1× L40S |
+| Custo < US\$ 0,5/M tok | SaaS B2C | Phi‑4 INT4 + cache | 1× L40S |
 | Local gratuito | Uso pessoal | Llama‑3‑70B GGUF Q4_K_M | RTX 4090 + 64 GB RAM |
-
-
 
 ### 9.3. Próximos passos para o leitor
 
@@ -1537,7 +1551,7 @@ A tabela abaixo é a **síntese executiva** da série. Linhas: cada técnica em 
 **Mês 1 — fundamentos práticos**:
 - Semana 1: rodar Llama‑3‑8B em GGUF Q4 local (Ollama). Medir TPOT, TTFT.
 - Semana 2: ativar `--draft` (spec). Comparar TPOT.
-- Semana 3: subir vLLM em uma cloud (RunPod $1/h). Servir endpoint OpenAI‑compatible.
+- Semana 3: subir vLLM em uma cloud (RunPod \$1/h). Servir endpoint OpenAI‑compatible.
 - Semana 4: ler papers de FlashAttention e PagedAttention.
 
 **Mês 2 — quantização e MoE**:
@@ -1771,7 +1785,7 @@ def speculative_decode_step(
 Pontos a observar:
 - `target_model(full_input)` é executado **uma única vez** com batch nas posições — esse é o ganho.
 - `residual = clamp(p - q, min=0)` é a distribuição corrigida de Leviathan.
-- O `bonus` token só vem se aceitar todos os \(\gamma\) propostos.
+- O `bonus` token só vem se aceitar todos os $\gamma$ propostos.
 - Para tree‑attention (Medusa/EAGLE‑2), o trecho do `target_logits` precisa de uma máscara causal especial sobre a árvore.
 
 ### Apêndice B — Forward MoE “de bolso” (sem all‑to‑all distribuído)
@@ -1854,7 +1868,11 @@ Use **wrk2**, **k6** ou **vllm‑bench** para gerar carga concorrente. Meça `to
 A maioria dos engines (vLLM, TGI) expõe `prometheus_metric` `spec_decode_acceptance_rate`. Em llama.cpp, `--log-progress` mostra `mean accept_n`.
 
 #### C.4. Goodput
-\[ \text{Goodput} = \frac{\text{tokens dentro do SLA}}{\text{wall time}}. \]
+
+$$
+\text{Goodput} = \frac{\text{tokens dentro do SLA}}{\text{wall time}}.
+$$
+
 Em vLLM, é direto via `--metrics-port` e Grafana dashboard oficial.
 
 #### C.5. Quality (sem se enganar)
@@ -2016,7 +2034,7 @@ Para sentir o salto, eis a comparação **2022 vs 2026** num servidor com 8× A1
 | TPS/usuário | ~6 | ~30–50 | 5–8× |
 | Throughput agregado | ~2.000 tok/s | ~30.000 tok/s | 15× |
 | Memória/usuário (KV) | ~5 GB (32k ctx) | ~1 GB | 5× |
-| Custo por 1 M tok | ~US$ 30 | ~US$ 1,5–3 | 10–20× |
+| Custo por 1 M tok | ~US\$ 30 | ~US\$ 1,5–3 | 10–20× |
 
 E isso ignorando que o **modelo de 2026** (Llama‑3.3, DeepSeek‑V3) entrega muito mais qualidade do que o de 2022 (LLaMA‑1, OPT). A combinação “mais qualidade + 10× barato” é o que mudou economicamente o jogo dos LLMs.
 
@@ -2030,7 +2048,7 @@ E isso ignorando que o **modelo de 2026** (Llama‑3.3, DeepSeek‑V3) entrega m
   - **L2 (50%)**: Phi‑4 14B INT4 + 2:4 em 4× H100 — 1500 req/s.
   - **L3 (10%)**: DeepSeek‑V3 self‑host em 8× H200 — 50 req/s.
   - **Distillation contínua**: logs de L3 que viram dataset para L2.
-- **Resultado**: latência mediana 280 ms, p99 800 ms; custo unitário < US$ 0,001/query.
+- **Resultado**: latência mediana 280 ms, p99 800 ms; custo unitário < US\$ 0,001/query.
 
 #### Cenário E — research lab privado
 
@@ -2190,7 +2208,7 @@ Esta foi a **última estação** da nossa jornada.
 
 Começamos no Post 01 com um Transformer decoder‑only — uma máquina conceitualmente simples: tokenizer → embeddings → blocos com atenção e MLP → softmax. No Post 02 abrimos a atenção em variantes (MHA, MQA, GQA, MLA) e vimos como o FlashAttention domou seu custo quadrático sem mudar a matemática. No Post 03, o KV cache deixou de ser um detalhe e revelou o gargalo central da inferência — resolvido elegantemente por PagedAttention/vLLM.
 
-Os Posts 04, 05 e 06 mergulharam em **quantização**, com o Post 06 fechando o argumento técnico do **TurboQuant**: rotação polar para gaussianizar, JL para garantir geometria, Lloyd–Max para quantizar otimamente, e a cota \(4^{-b}\) que finalmente coloca quantização não‑enviesada em pé de igualdade com a versão *full precision*. O Post 07 estendeu tudo isso para **contexto longo** — RoPE/YaRN, Ring Attention, StreamingLLM, Mamba.
+Os Posts 04, 05 e 06 mergulharam em **quantização**, com o Post 06 fechando o argumento técnico do **TurboQuant**: rotação polar para gaussianizar, JL para garantir geometria, Lloyd–Max para quantizar otimamente, e a cota $4^{-b}$ que finalmente coloca quantização não‑enviesada em pé de igualdade com a versão *full precision*. O Post 07 estendeu tudo isso para **contexto longo** — RoPE/YaRN, Ring Attention, StreamingLLM, Mamba.
 
 Neste Post 08 fechamos o cerco pelos **eixos restantes**: speculative decoding ataca a serialidade da geração; MoE compra capacidade barata; sparsity (em pesos e ativações) corta o que não importa; distillation faz modelos pequenos brilharem; cascading rotea inteligência. Tudo composto, a curva *capability‑per‑dollar* dos LLMs continua caindo num ritmo que era impensável em 2022.
 

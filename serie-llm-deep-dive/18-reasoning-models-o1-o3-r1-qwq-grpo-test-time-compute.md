@@ -25,7 +25,7 @@ Os marcos:
 5. **DeepSeek‑R1** (jan/2025, arXiv 2501.12948): a "tese de doutorado da década" para a comunidade open. **R1‑Zero** mostra que **RL puro** (GRPO) sobre um base model produz CoT longo emergente — *aha moments*, reflection, verification — sem nenhum SFT. **R1** completo bate o1 em AIME/MATH/Codeforces. Pesos liberados (MIT).
 6. **GRPO** (DeepSeekMath, fev/2024, arXiv 2402.03300): variante de PPO **sem value network**, com vantagem normalizada **por grupo de samples**. Memória menor, código mais simples, perfeito para verifiers determinísticos (math/code).
 7. **QwQ‑32B** (nov/2024 → mar/2025): primeira família open‑weights "reasoning‑first" da Alibaba. Apache 2.0.
-8. **Onda 2025**: Sky‑T1 (US$ 450 reproduzindo R1‑style), HuggingFace **Open‑R1**, **simpleRL**, **LIMO** (817 traces curadas batem benchmarks), **s1** (budget forcing), Kimi K1.5 da Moonshot.
+8. **Onda 2025**: Sky‑T1 (US\$ 450 reproduzindo R1‑style), HuggingFace **Open‑R1**, **simpleRL**, **LIMO** (817 traces curadas batem benchmarks), **s1** (budget forcing), Kimi K1.5 da Moonshot.
 9. **DeepSeek‑R2** (abr/2026, 32B denso, AIME 92.7%, MIT): consolidação do paradigma "GRPO refinado > escala bruta".
 10. **Test‑time scaling laws** (Snell 2024, arXiv 2408.03314): para problemas difíceis, **mais compute na hora da resposta** pode beat **14× mais compute no treinamento**.
 
@@ -253,9 +253,9 @@ Custo dessa decisão: comunidade não consegue **debugar** raciocínio, **distil
 ### 4.4. Pricing e UX
 
 Reasoning tokens são cobrados como **output tokens**, mesmo invisíveis. Em 2024:
-- o1‑preview: **US$ 15 / M input, US$ 60 / M output** (incluindo reasoning).
-- o1‑mini: **US$ 3 / M input, US$ 12 / M output**.
-- Pro mode: **US$ 200 / mês fixo** com chamadas ilimitadas.
+- o1‑preview: **US\$ 15 / M input, US\$ 60 / M output** (incluindo reasoning).
+- o1‑mini: **US\$ 3 / M input, US\$ 12 / M output**.
+- Pro mode: **US\$ 200 / mês fixo** com chamadas ilimitadas.
 
 Latência típica: **30–90 s** para questões médias. Para problemas hard ("o1‑pro mode"), **2–10 minutos**. Isso muda completamente a UX — não dá para usar o1 em chat conversacional rápido. UI do ChatGPT precisou adicionar **"thinking..."** spinner com estimativa.
 
@@ -297,7 +297,7 @@ Demos públicas (não release):
 
 ### 5.2. O custo do "high‑compute"
 
-Aqui mora a pegadinha. ARC Prize (organização que mantém ARC‑AGI) divulgou: o3 high‑compute consumiu **~172× mais tokens** que low‑compute. Custo estimado: **US$ ~17 por task** em low, **US$ ~3.000+ por task** em high. Para resolver os 100 tasks do semi‑private set: **US$ 300.000+** em uma rodada.
+Aqui mora a pegadinha. ARC Prize (organização que mantém ARC‑AGI) divulgou: o3 high‑compute consumiu **~172× mais tokens** que low‑compute. Custo estimado: **US$ ~17 por task** em low, **US$ ~3.000+ por task** em high. Para resolver os 100 tasks do semi‑private set: **US\$ 300.000+** em uma rodada.
 
 > Isso muda a leitura do "87.5%": não é "AGI alcançada", é "AGI alugada por hora a preço de Manhattan".
 
@@ -419,18 +419,18 @@ R1‑Distill‑Qwen‑32B **bate QwQ‑32B‑Preview** em AIME e MATH. Sem RL no
 
 PPO (Schulman 2017) é o algoritmo padrão de RLHF desde 2022 (InstructGPT, Llama Chat). Sua estrutura:
 
-- Política \(\pi_\theta\) (o LLM sendo treinado).
-- Política de referência \(\pi_{\text{ref}}\) (snapshot, congelada, para KL).
-- Reward model \(R_\phi\) (rede neural treinada com preferências humanas).
-- **Value network** \(V_\psi\) (mesma arquitetura do LLM, prevê retorno futuro).
+- Política $\pi_\theta$ (o LLM sendo treinado).
+- Política de referência $\pi_{\text{ref}}$ (snapshot, congelada, para KL).
+- Reward model $R_\phi$ (rede neural treinada com preferências humanas).
+- **Value network** $V_\psi$ (mesma arquitetura do LLM, prevê retorno futuro).
 
 Loss:
 
-\[
+$$
 \mathcal{L}_{\text{PPO}} = -\mathbb{E}_t\!\left[\min\left(\rho_t A_t,\ \mathrm{clip}(\rho_t, 1-\epsilon, 1+\epsilon) A_t\right)\right] + \beta\, \mathrm{KL}(\pi_\theta \,\|\, \pi_{\text{ref}})
-\]
+$$
 
-onde \(\rho_t = \pi_\theta(a_t|s_t) / \pi_{\text{old}}(a_t|s_t)\) e \(A_t = R_t - V_\psi(s_t)\) (advantage via GAE).
+onde $\rho_t = \pi_\theta(a_t|s_t) / \pi_{\text{old}}(a_t|s_t)$ e $A_t = R_t - V_\psi(s_t)$ (advantage via GAE).
 
 **Problema** para reasoning: o **value network** dobra a memória ocupada (você roda dois modelos do mesmo tamanho). Em DeepSeek‑V3 671B, isso seria proibitivo.
 
@@ -563,13 +563,13 @@ Distillações **DeepSeek‑R1‑0528‑Qwen3‑8B** (jun/2025) tornaram‑se o 
 
 | Projeto | Origem | Data | Receita | Custo claim | Resultado destacado |
 |---|---|---|---|---|---|
-| **Sky‑T1‑32B‑Preview** | NovaSky‑AI (Berkeley) | Jan 2025 | Distill traces de QwQ + Qwen 2.5 base | **US$ 450** (~19 H100‑hours) | AIME 43%, MATH 82.4% |
-| **Bespoke‑Stratos** | Bespoke Labs | Jan 2025 | Distill traces R1 (17k) → SFT Qwen 2.5 32B | ~US$ 800 | AIME 63%, GPQA 58% |
+| **Sky‑T1‑32B‑Preview** | NovaSky‑AI (Berkeley) | Jan 2025 | Distill traces de QwQ + Qwen 2.5 base | **US\$ 450** (~19 H100‑hours) | AIME 43%, MATH 82.4% |
+| **Bespoke‑Stratos** | Bespoke Labs | Jan 2025 | Distill traces R1 (17k) → SFT Qwen 2.5 32B | ~US\$ 800 | AIME 63%, GPQA 58% |
 | **OpenThoughts** | Comunidade | Fev 2025 | Dataset **OpenThoughts‑114k** + treinos | (open) | Best 7B/32B reasoning open na época |
 | **HuggingFace Open‑R1** | HF | Jan–set 2025 | Reproduzir pipeline R1 totalmente open (data + training + eval) | — | Open‑R1 dataset, modelos, infra GRPO em TRL |
-| **simpleRL** | Hong et al. | Jan 2025 | GRPO em Qwen 2.5‑Math‑7B com **8k MATH problems** | ~US$ 10‑40 | AIME 33% partindo de 16% |
+| **simpleRL** | Hong et al. | Jan 2025 | GRPO em Qwen 2.5‑Math‑7B com **8k MATH problems** | ~US\$ 10‑40 | AIME 33% partindo de 16% |
 | **LIMO** | Ye 2025 (arXiv 2502.03387) | Fev 2025 | **817 traces** de altíssima qualidade, SFT puro | (mínimo) | AIME 57% (vs 6% base) |
-| **s1** | Muennighoff 2025 (arXiv 2501.19393) | Fev 2025 | 1.000 traces curadas + **budget forcing** | ~US$ 50 | AIME 56% (s1‑32B, base Qwen) |
+| **s1** | Muennighoff 2025 (arXiv 2501.19393) | Fev 2025 | 1.000 traces curadas + **budget forcing** | ~US\$ 50 | AIME 56% (s1‑32B, base Qwen) |
 | **Kimi K1.5** | Moonshot AI | Jan 2025 | Long‑context RL próprio + multimodal | — | AIME 77.5%, MATH 96.2% |
 | **Hunyuan‑T1** | Tencent | Mar 2025 | Mamba‑Transformer hybrid + RL | — | Reasoning competitivo, sub‑linear cost long ctx |
 | **Step‑2** | StepFun | 2025 | Trillion‑param MoE reasoning | — | Top em chinese reasoning leaderboards |
@@ -740,9 +740,9 @@ Em 2024, Math‑Shepherd treinou PRM e alimentou MCTS — descobriram que o mode
 
 Para um base model fixo:
 
-\[
+$$
 \log \text{error} \approx -\alpha \cdot \log(\text{compute}_\text{inf}) + c
-\]
+$$
 
 com α ≈ 0.05–0.15 dependendo do método (best‑of‑N, MCTS, etc.) e do benchmark.
 
@@ -964,7 +964,7 @@ Mitigação: **router** "fast → slow", reasoning sob demanda, "think only when
 
 ### 17.2. Custo
 
-o3 high‑compute pode custar **US$ 20–3.000 por task**. R2 e Distill‑Qwen rodam local, mas em consumer GPU 1 task = 30s = ~ US$ 0.001 amortizado em energia. Para chamadas API: o3‑mini ~US$ 1.10/M output, o4‑mini ~US$ 4.40/M, GPT‑5.4 Pro ~US$ 60/M.
+o3 high‑compute pode custar **US\$ 20–3.000 por task**. R2 e Distill‑Qwen rodam local, mas em consumer GPU 1 task = 30s = ~ US\$ 0.001 amortizado em energia. Para chamadas API: o3‑mini ~US\$ 1.10/M output, o4‑mini ~US\$ 4.40/M, GPT‑5.4 Pro ~US\$ 60/M.
 
 ### 17.3. Overthinking
 
@@ -1078,13 +1078,13 @@ def format_reward(completions, **_):
 
 ### 19.4. Tempo / custo estimados (2026)
 
-| Setup | Hardware | Steps GRPO | Tempo | Custo (~US$ 2/H100‑h) |
+| Setup | Hardware | Steps GRPO | Tempo | Custo (~US\$ 2/H100‑h) |
 |---|---|---|---|---|
-| Qwen 7B + simpleRL receipt | 8× A100 40GB | 1k | 10 h | ~US$ 80 |
-| Qwen 7B Math + SFT + GRPO | 8× H100 | 8k | 100 h | ~US$ 1.600 |
-| Qwen 14B SFT + GRPO | 16× H100 | 8k | 200 h | ~US$ 6.400 |
-| Qwen 32B SFT + GRPO | 32× H100 | 8k | 400 h | ~US$ 25.000 |
-| R1‑clone full (671B MoE) | 256× H100 | 16k | semanas | ~US$ 500k+ |
+| Qwen 7B + simpleRL receipt | 8× A100 40GB | 1k | 10 h | ~US\$ 80 |
+| Qwen 7B Math + SFT + GRPO | 8× H100 | 8k | 100 h | ~US\$ 1.600 |
+| Qwen 14B SFT + GRPO | 16× H100 | 8k | 200 h | ~US\$ 6.400 |
+| Qwen 32B SFT + GRPO | 32× H100 | 8k | 400 h | ~US\$ 25.000 |
+| R1‑clone full (671B MoE) | 256× H100 | 16k | semanas | ~US\$ 500k+ |
 
 ### 19.5. Frameworks (estado da arte 2026)
 
@@ -1163,9 +1163,9 @@ flowchart TB
 
 Não relate "67%" sem **intervalo de confiança**. Para AIME 2024 (30 problemas), variância é alta:
 
-\[
+$$
 \text{IC 95\%} \approx \hat{p} \pm 1.96\sqrt{\frac{\hat{p}(1-\hat{p})}{n}}
-\]
+$$
 
 Para 30 problemas e p̂=0.7, IC ≈ ±16%. Múltiplas runs (seeds) para apertar. Diferenças < 5pts entre modelos em AIME geralmente **não são estatisticamente significativas**.
 
@@ -1214,7 +1214,7 @@ Para 30 problemas e p̂=0.7, IC ≈ ±16%. Múltiplas runs (seeds) para apertar.
 
 ### 22.4. Open‑source onda 2025–2026
 
-- NovaSky‑AI (2025). **Sky‑T1: Train your own o1‑preview model within $450**. <https://novasky-ai.github.io/posts/sky-t1/>
+- NovaSky‑AI (2025). **Sky‑T1: Train your own o1‑preview model within \$450**. <https://novasky-ai.github.io/posts/sky-t1/>
 - HuggingFace Open‑R1 team (2025). **Open‑R1: a fully open reproduction of DeepSeek‑R1**. <https://huggingface.co/blog/open-r1>
 - Ye et al. (2025). **LIMO: Less Is More for Reasoning**. arXiv:2502.03387.
 - Muennighoff et al. (2025). **s1: Simple Test‑time Scaling**. arXiv:2501.19393.

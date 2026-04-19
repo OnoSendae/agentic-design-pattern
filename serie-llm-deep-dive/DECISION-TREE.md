@@ -47,7 +47,7 @@ flowchart TD
 
 | Sintoma | Hipótese comum | Primeiras alavancas |
 |---------|----------------|---------------------|
-| **Prefill** longo (prompt enorme) | Compute de atenção em \(O(T^2)\) para a fase | FlashAttention; chunked prefill; menos tokens no prompt (sumarizar, RAG); modelo menor na etapa de ingestão |
+| **Prefill** longo (prompt enorme) | Compute de atenção em $O(T^2)$ para a fase | FlashAttention; chunked prefill; menos tokens no prompt (sumarizar, RAG); modelo menor na etapa de ingestão |
 | **Decode** lento (geração longa) | Memory-bound lendo KV; poucos tokens/s | KV mais compacto; batch menor; speculative decoding; FP8 KV; kernels otimizados (TensorRT-LLM, vLLM) |
 | **Ambos** | GPU fraca para o modelo | Quantização agressiva, modelo menor, ou hardware maior |
 

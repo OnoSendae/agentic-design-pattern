@@ -310,9 +310,9 @@ Planos:
 
 | Plano  | Preço     | Cloud models simultâneos | Uso vs Free |
 |--------|-----------|--------------------------|-------------|
-| Free   | $0        | 1                        | baixo       |
-| Pro    | $20/mês   | 3                        | 50×         |
-| Max    | $100/mês  | 10                       | 5× sobre Pro |
+| Free   | \$0        | 1                        | baixo       |
+| Pro    | \$20/mês   | 3                        | 50×         |
+| Max    | \$100/mês  | 10                       | 5× sobre Pro |
 
 Útil quando você quer **híbrido**: modelos pequenos local, modelos gigantes na nuvem, mesma API. O cliente nem sente a diferença.
 
@@ -753,9 +753,9 @@ flowchart TD
 
 ## 12. Cookbook 1 — setup família 100% local
 
-**Objetivo:** rodar um "ChatGPT da família" para 3-5 pessoas, num único Mac Mini, **$0/mês após hardware**.
+**Objetivo:** rodar um "ChatGPT da família" para 3-5 pessoas, num único Mac Mini, **\$0/mês após hardware**.
 
-**Hardware:** Mac Mini M4 Pro 64GB unified memory (~$2.200).
+**Hardware:** Mac Mini M4 Pro 64GB unified memory (~\$2.200).
 
 ### 12.1 Modelos sugeridos
 
@@ -819,9 +819,9 @@ Duas opções:
 
 | Setup                              | Preço aprox. | Concorrência típica       | Notas                            |
 |------------------------------------|--------------|---------------------------|----------------------------------|
-| 2× RTX 4090 (48GB total)           | ~$4-5k       | 10-20 usuários ativos     | Quantize agressivo (Q4/Q5)       |
-| 1× H100 80GB                        | ~$30-40k     | 50+ usuários ativos       | FP16/BF16 confortável            |
-| 1× H200 / 2× L40S                   | ~$40-60k     | 100+ usuários             | Modelos grandes em FP8           |
+| 2× RTX 4090 (48GB total)           | ~\$4-5k       | 10-20 usuários ativos     | Quantize agressivo (Q4/Q5)       |
+| 1× H100 80GB                        | ~\$30-40k     | 50+ usuários ativos       | FP16/BF16 confortável            |
+| 1× H200 / 2× L40S                   | ~\$40-60k     | 100+ usuários             | Modelos grandes em FP8           |
 
 Para 50 usuários "casuais" (não simultâneos), 2× RTX 4090 ou 1× RTX 6000 Ada (48GB) + Qwen 3 32B serve bem com Ollama.
 
@@ -1077,12 +1077,12 @@ Configurar OpenAI-compatible provider:
 
 | Setup                                          | Investimento | Custo/mês após | Equivalente hosted (5 users)                | Payback aprox.  |
 |------------------------------------------------|--------------|----------------|----------------------------------------------|------------------|
-| Mac Mini M4 Pro 64GB                           | ~$2.200      | $0 (energia ~$5) | 5× ChatGPT Plus ($20) = $100/mês             | ~22 meses        |
-| Mac Mini M4 Pro 64GB                           | ~$2.200      | $0             | 5× Claude Pro ($20) = $100/mês               | ~22 meses        |
-| Mac Studio M3 Ultra 256GB                      | ~$8.000      | $0 (~$15)      | 5× ChatGPT Team ($30) = $150/mês             | ~52 meses        |
-| Workstation 2× RTX 4090                        | ~$5.000      | ~$30 (energia) | 10× Claude Team ($30) = $300/mês             | ~18 meses        |
-| Servidor 1× H100 80GB                           | ~$35.000     | ~$200          | 50× Claude Team ($30) = $1.500/mês           | ~26 meses        |
-| Servidor 4× H100                                | ~$140.000    | ~$800          | 200× Claude Enterprise (~$60) = $12k/mês     | ~13 meses        |
+| Mac Mini M4 Pro 64GB                           | ~\$2.200      | \$0 (energia ~\$5) | 5× ChatGPT Plus (\$20) = \$100/mês             | ~22 meses        |
+| Mac Mini M4 Pro 64GB                           | ~\$2.200      | \$0             | 5× Claude Pro (\$20) = \$100/mês               | ~22 meses        |
+| Mac Studio M3 Ultra 256GB                      | ~\$8.000      | \$0 (~\$15)      | 5× ChatGPT Team (\$30) = \$150/mês             | ~52 meses        |
+| Workstation 2× RTX 4090                        | ~\$5.000      | ~\$30 (energia) | 10× Claude Team (\$30) = \$300/mês             | ~18 meses        |
+| Servidor 1× H100 80GB                           | ~\$35.000     | ~\$200          | 50× Claude Team (\$30) = \$1.500/mês           | ~26 meses        |
+| Servidor 4× H100                                | ~\$140.000    | ~\$800          | 200× Claude Enterprise (~\$60) = \$12k/mês     | ~13 meses        |
 
 **Notas importantes:**
 

@@ -13,7 +13,7 @@
 
 - Os Posts 01–08 dissecaram **inferência** (atenção, KV cache, quantização, contexto longo, MoE, speculative). Este post abre a outra metade do mundo: **como esses pesos chegam até ali**.
 - O ciclo típico de uma LLM moderna tem 4 estágios: **(1) pretraining** (next‑token em trilhões de tokens da web) → **(2) mid‑training/annealing** (cooldown com dados de alta qualidade + extensão de contexto) → **(3) SFT** (instruction tuning supervisionado) → **(4) preference tuning** (DPO/RLHF/GRPO).
-- **Pretraining** é o estágio mais caro: Llama 3.1 405B custou ~$60 M em ~16 000 H100 (≈ 30,8 M GPU‑hours, ≈ 3,8 × 10²⁵ FLOPs). DeepSeek‑V3 (671 B MoE, 37 B ativos) baixou para ~$5,6 M graças a FP8 + DualPipe + co‑design.
+- **Pretraining** é o estágio mais caro: Llama 3.1 405B custou ~\$60 M em ~16 000 H100 (≈ 30,8 M GPU‑hours, ≈ 3,8 × 10²⁵ FLOPs). DeepSeek‑V3 (671 B MoE, 37 B ativos) baixou para ~\$5,6 M graças a FP8 + DualPipe + co‑design.
 - A lei de **Chinchilla** (Hoffmann 2022) sugeria 20 tokens por parâmetro como ótimo para uma run de treino isolada; em 2024–26 a indústria treina **muito além disso** (200–1000 tokens/parâmetro) porque o ótimo de **inferência amortizada** (modelo pequeno servido bilhões de vezes) bate o ótimo de treino.
 - **SFT** ensina **formato e instruction‑following** com cross‑entropy mascarada; **preferências** ensinam **qualidade subjetiva** (helpful/harmless/honest).
 - **RLHF clássico (PPO)** treina um *reward model* e otimiza a política contra ele com KL‑regularização. **DPO** (Rafailov 2023) provou que o problema é equivalente a uma **classification loss direta** sobre pares — sem RM separado, sem PPO loop, sem 4 modelos em memória.
@@ -85,9 +85,9 @@ flowchart LR
 
 | # | Estágio | Objetivo | Dado típico | Loss | % do compute total | Custo OoM (modelo 8 B) | Custo OoM (modelo 405 B) |
 |---|---------|----------|-------------|------|-------------------:|-----------------------:|-------------------------:|
-| 1 | Pretraining | Aprender linguagem, código, fatos, estatística do mundo | 1–15 T tokens da web (FineWeb, RedPajama, DCLM, Stack v2) | Cross‑entropy de next‑token | 80–95 % | ~1 M GPU‑h H100 (~$2 M) | ~30 M GPU‑h (~$60 M) |
-| 2 | Annealing / cooldown | Refinar com dados premium, baixar LR, estender contexto | 100 B–1 T tokens curados (math, code, papers) | Mesma CE com lr decrescente | 2–10 % | ~50 k GPU‑h (~$100 k) | ~3 M GPU‑h (~$6 M) |
-| 3 | SFT | Instruction following, formato chat | 10 k–1 M pares (prompt, resposta) | CE só na resposta | <1 % | 100–10 000 GPU‑h (~$200–$20 k) | 100 k GPU‑h (~$200 k) |
+| 1 | Pretraining | Aprender linguagem, código, fatos, estatística do mundo | 1–15 T tokens da web (FineWeb, RedPajama, DCLM, Stack v2) | Cross‑entropy de next‑token | 80–95 % | ~1 M GPU‑h H100 (~\$2 M) | ~30 M GPU‑h (~\$60 M) |
+| 2 | Annealing / cooldown | Refinar com dados premium, baixar LR, estender contexto | 100 B–1 T tokens curados (math, code, papers) | Mesma CE com lr decrescente | 2–10 % | ~50 k GPU‑h (~\$100 k) | ~3 M GPU‑h (~\$6 M) |
+| 3 | SFT | Instruction following, formato chat | 10 k–1 M pares (prompt, resposta) | CE só na resposta | <1 % | 100–10 000 GPU‑h (~\$200–\$20 k) | 100 k GPU‑h (~\$200 k) |
 | 4a | RLHF / PPO | Alinhar a preferências humanas | 50 k–500 k pares (chosen, rejected) + RM | RM: BT loss; Policy: PPO + KL | 1–5 % | 10 k–100 k GPU‑h | 1 M+ GPU‑h |
 | 4b | DPO & cia | Mesmo alvo, sem RM | 50 k–500 k pares | DPO loss direta | <1 % | 1 k–10 k GPU‑h | 100 k GPU‑h |
 | 4c | GRPO (reasoning) | Habilitar raciocínio longo (CoT, *thinking*) | Prompts com reward verificável (math, code) | PPO‑like com group‑norm advantage | 5–20 % (R1‑zero) | 10 k–100 k GPU‑h | 1 M+ GPU‑h |
@@ -120,19 +120,19 @@ Um único objetivo (next‑token) é maravilhoso para cobrir o primeiro item, ma
 
 A LLM é treinada para **maximizar a verossimilhança do próximo token** dado o contexto:
 
-\[
+$$
 \mathcal{L}_{\text{CE}}(\theta) = -\,\mathbb{E}_{x \sim \mathcal{D}} \sum_{t=1}^{T} \log p_\theta(x_t \mid x_{<t})
-\]
+$$
 
-- \(x = (x_1,\dots,x_T)\): sequência de tokens.
-- \(p_\theta\): distribuição softmax sobre o vocabulário.
-- \(\mathcal{D}\): dataset (centenas de bilhões a trilhões de tokens).
+- $x = (x_1,\dots,x_T)$: sequência de tokens.
+- $p_\theta$: distribuição softmax sobre o vocabulário.
+- $\mathcal{D}$: dataset (centenas de bilhões a trilhões de tokens).
 
 Em batch, a perda é a **cross‑entropy média** entre o token verdadeiro e o logit emitido:
 
-\[
+$$
 \text{loss} = \frac{1}{B \cdot T} \sum_{b=1}^{B} \sum_{t=1}^{T} -\log p_\theta(x^{(b)}_t \mid x^{(b)}_{<t})
-\]
+$$
 
 > **Por que esse objetivo é tão poderoso?** Porque para prever bem o próximo token em **qualquer texto** o modelo precisa, implicitamente, modelar gramática, sintaxe, semântica, fatos do mundo, causalidade, intenção do autor, estilo. É um **objetivo proxy** absurdamente rico.
 
@@ -180,33 +180,37 @@ Variantes comuns:
 
 A regra **6 N D** (Kaplan 2020; Chinchilla 2022) estima FLOPs de pretraining para um modelo denso:
 
-\[
+$$
 \text{FLOPs} \approx 6 \cdot N \cdot D
-\]
+$$
 
-- \(N\) = número de parâmetros.
-- \(D\) = número de tokens de treino.
+- $N$ = número de parâmetros.
+- $D$ = número de tokens de treino.
 - O fator 6 = forward (2 N D) + backward (4 N D).
 
 **Exemplo Llama 3.1 405B**:
 
-\[
+$$
 6 \cdot 405\!\times\!10^9 \cdot 15{,}6\!\times\!10^{12} \approx 3{,}8\times 10^{25}\ \text{FLOPs}
-\]
+$$
 
 Em 16 000 H100 a ~989 TFLOP/s BF16 com ~40 % MFU (Model FLOPs Utilization realista):
 
-\[
+$$
 \frac{3{,}8\times 10^{25}}{16\,000 \cdot 989\!\times\!10^{12} \cdot 0{,}40} \approx 6{,}0\times 10^6\ \text{s} \approx 70\ \text{dias}
-\]
+$$
 
-Total ≈ **30,8 M GPU‑hours**, custo a $2/H100‑hour ≈ **$60 M** (alinha com estimativas públicas reportadas). Adicione 30–40 % de overhead para falhas, restarts, ablations e a conta sobe para os $80 M citados por analistas.
+Total ≈ **30,8 M GPU‑hours**, custo a \$2/H100‑hour ≈ **\$60 M** (alinha com estimativas públicas reportadas). Adicione 30–40 % de overhead para falhas, restarts, ablations e a conta sobe para os \$80 M citados por analistas.
 
 > **Chinchilla scaling laws (Hoffmann 2022, arXiv:2203.15556).** Para um **orçamento de FLOPs fixo**, o ótimo de loss de pretraining é alcançado com:
 >
-> \[
+> 
+
+$$
 > N^\* \propto C^{0{,}5}, \quad D^\* \propto C^{0{,}5}, \quad \text{razão ótima} \approx 20\ \text{tokens/param}
-> \]
+>
+$$
+
 >
 > Ou seja: para 10⁵ FLOPs, dobrar parâmetros sem dobrar tokens é desperdício; o ponto ótimo balanceia ambos.
 
@@ -315,22 +319,22 @@ Os **últimos 5–15 % dos tokens** são tratados como uma fase distinta:
 
 A indústria **converge** em AdamW (Loshchilov & Hutter 2019) com weight decay desacoplado:
 
-\[
+$$
 \begin{aligned}
 m_t &= \beta_1 m_{t-1} + (1-\beta_1)\, g_t \\
 v_t &= \beta_2 v_{t-1} + (1-\beta_2)\, g_t^2 \\
 \hat{m}_t &= m_t / (1-\beta_1^t),\quad \hat{v}_t = v_t / (1-\beta_2^t) \\
 \theta_t &= \theta_{t-1} - \eta\,\Big(\,\frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon} + \lambda\, \theta_{t-1}\Big)
 \end{aligned}
-\]
+$$
 
 Hyperparams recomendados (consenso 2024–26):
 
-- \(\beta_1 = 0{,}9\), \(\beta_2 = 0{,}95\) (mais baixo que o padrão 0,999 — modelos grandes preferem média móvel mais responsiva da variância).
-- \(\epsilon = 10^{-8}\) (ou \(10^{-5}\) em FP8 para evitar denormals).
-- Weight decay \(\lambda = 0{,}1\).
+- $\beta_1 = 0{,}9$, $\beta_2 = 0{,}95$ (mais baixo que o padrão 0,999 — modelos grandes preferem média móvel mais responsiva da variância).
+- $\epsilon = 10^{-8}$ (ou $10^{-5}$ em FP8 para evitar denormals).
+- Weight decay $\lambda = 0{,}1$.
 
-> **Curiosidade.** A escolha \(\beta_2 = 0{,}95\) (vs 0,999) vem de Brown et al. (GPT‑3, 2020) e empiricamente reduz loss spikes em modelos grandes.
+> **Curiosidade.** A escolha $\beta_2 = 0{,}95$ (vs 0,999) vem de Brown et al. (GPT‑3, 2020) e empiricamente reduz loss spikes em modelos grandes.
 
 #### 4.1.1 Alternativas
 
@@ -343,13 +347,13 @@ Hyperparams recomendados (consenso 2024–26):
 
 Padrão 2024–26: **linear warmup** de ~2 000 steps até `lr_peak`, depois **cosine decay** até 10 % do peak.
 
-\[
+$$
 \eta(t) =
 \begin{cases}
 \eta_{\max}\cdot \dfrac{t}{t_{\text{warm}}} & t \le t_{\text{warm}} \\[4pt]
 \eta_{\min} + \dfrac{1}{2}(\eta_{\max}-\eta_{\min})\,\Big(1 + \cos\big(\pi\,\dfrac{t-t_{\text{warm}}}{T-t_{\text{warm}}}\big)\Big) & t > t_{\text{warm}}
 \end{cases}
-\]
+$$
 
 Variações modernas:
 
@@ -442,11 +446,11 @@ Causas conhecidas:
 
 ### 5.4 Z‑loss (PaLM)
 
-\[
+$$
 \mathcal{L}_{\text{total}} = \mathcal{L}_{\text{CE}} + \alpha\, \big(\log Z(x)\big)^2,\quad \alpha \approx 10^{-4}
-\]
+$$
 
-onde \(Z(x) = \sum_v \exp(\text{logit}_v(x))\). Penaliza logits muito grandes em valor absoluto, mantendo a softmax bem condicionada.
+onde $Z(x) = \sum_v \exp(\text{logit}_v(x))$. Penaliza logits muito grandes em valor absoluto, mantendo a softmax bem condicionada.
 
 ### 5.5 Spike recovery vs restart
 
@@ -493,9 +497,9 @@ flowchart TB
 
 Divide as matrizes **dentro** de cada layer. Para `Y = XA`, divide `A` em colunas:
 
-\[
+$$
 A = [A_1\,|\,A_2],\quad Y = X\,[A_1\,|\,A_2] = [XA_1\,|\,XA_2]
-\]
+$$
 
 Cada GPU calcula uma fatia. Para a próxima camada (`Z = YB`), divide `B` em linhas e faz **all‑reduce** ao final. Tipicamente TP=8 (intra‑node, NVLink), TP=16 começa a sofrer com latência.
 
@@ -613,9 +617,9 @@ Ensinar o modelo a **seguir instruções** num formato conversacional:
 
 A loss é cross‑entropy de next‑token, **mas mascarada para apenas a resposta do assistant**:
 
-\[
+$$
 \mathcal{L}_{\text{SFT}} = -\sum_{t \in \text{response}} \log p_\theta(x_t \mid x_{<t})
-\]
+$$
 
 Tokens do prompt (sistema + usuário) **não recebem gradiente** — caso contrário o modelo aprenderia a "alucinar usuários" também.
 
@@ -829,13 +833,13 @@ Pega o modelo SFT, **substitui** o `lm_head` por um **scalar head** (linear de h
 
 **Loss de Bradley‑Terry** (modelo probabilístico de comparações):
 
-\[
+$$
 P(c \succ r \mid s) = \sigma\big(r_\phi(s, c) - r_\phi(s, r)\big)
-\]
+$$
 
-\[
+$$
 \mathcal{L}_{\text{RM}} = -\,\mathbb{E}_{(s, c, r) \sim \mathcal{D}_{\text{pref}}}\Big[\log \sigma\big(r_\phi(s, c) - r_\phi(s, r)\big)\Big]
-\]
+$$
 
 Pseudo‑código (PyTorch):
 
@@ -857,28 +861,28 @@ def reward_model_loss(model, prompts, chosen, rejected):
 
 ### 10.3 PPO (Proximal Policy Optimization)
 
-Otimiza a **policy** \(\pi_\theta\) maximizando o reward, regularizado por KL ao SFT (ref):
+Otimiza a **policy** $\pi_\theta$ maximizando o reward, regularizado por KL ao SFT (ref):
 
-\[
+$$
 \max_\theta\ \mathbb{E}_{s \sim \mathcal{D},\ a \sim \pi_\theta(\cdot\mid s)}\Big[r_\phi(s, a) - \beta\, \text{KL}\big(\pi_\theta(\cdot\mid s)\,\Vert\,\pi_{\text{ref}}(\cdot\mid s)\big)\Big]
-\]
+$$
 
 PPO clipped objective (Schulman 2017):
 
-\[
+$$
 \mathcal{L}_{\text{PPO}}(\theta) = \mathbb{E}_t\Big[\min\big(\rho_t(\theta)\, A_t,\ \text{clip}(\rho_t(\theta), 1-\epsilon, 1+\epsilon)\, A_t\big)\Big]
-\]
+$$
 
-com \(\rho_t = \pi_\theta(a_t\mid s_t) / \pi_{\theta_{\text{old}}}(a_t \mid s_t)\), \(\epsilon \approx 0{,}2\), \(A_t\) advantage estimado por GAE.
+com $\rho_t = \pi_\theta(a_t\mid s_t) / \pi_{\theta_{\text{old}}}(a_t \mid s_t)$, $\epsilon \approx 0{,}2$, $A_t$ advantage estimado por GAE.
 
 ### 10.4 Os 4 modelos em memória
 
 | Modelo | Função | Treinado? |
 |--------|--------|-----------|
-| **Policy** \(\pi_\theta\) | gera respostas | sim |
-| **Reference** \(\pi_{\text{ref}}\) | KL anchor (cópia congelada do SFT) | não |
-| **Reward Model** \(r_\phi\) | dá score | não (treinado antes) |
-| **Value/Critic** \(V_\psi\) | estima retorno esperado | sim |
+| **Policy** $\pi_\theta$ | gera respostas | sim |
+| **Reference** $\pi_{\text{ref}}$ | KL anchor (cópia congelada do SFT) | não |
+| **Reward Model** $r_\phi$ | dá score | não (treinado antes) |
+| **Value/Critic** $V_\psi$ | estima retorno esperado | sim |
 
 São **4 forwards** por step → memória brutal. É o principal motivo da explosão do DPO e GRPO (que reduzem isso).
 
@@ -904,21 +908,21 @@ Ouyang et al. 2022 (arXiv:2203.02155) mostraram que um GPT‑3 175B + RLHF com *
 
 Sob a parametrização de Bradley‑Terry e a forma fechada do **policy ótimo de RLHF KL‑regularizado**:
 
-\[
+$$
 \pi^*(a\mid s) = \frac{1}{Z(s)} \pi_{\text{ref}}(a\mid s)\, \exp\!\Big(\frac{1}{\beta}\, r(s,a)\Big)
-\]
+$$
 
 Pode‑se **inverter** a relação para escrever o reward em função da policy:
 
-\[
+$$
 r(s, a) = \beta\, \log \frac{\pi^*(a\mid s)}{\pi_{\text{ref}}(a\mid s)} + \beta\,\log Z(s)
-\]
+$$
 
-Substituindo na loss de Bradley‑Terry, o termo \(\log Z(s)\) **cancela** entre chosen e rejected, e ficamos com:
+Substituindo na loss de Bradley‑Terry, o termo $\log Z(s)$ **cancela** entre chosen e rejected, e ficamos com:
 
-\[
+$$
 \mathcal{L}_{\text{DPO}}(\theta) = -\,\mathbb{E}_{(s,c,r)}\Bigg[\log \sigma\Bigg(\beta\, \log\frac{\pi_\theta(c\mid s)}{\pi_{\text{ref}}(c\mid s)} - \beta\, \log\frac{\pi_\theta(r\mid s)}{\pi_{\text{ref}}(r\mid s)}\Bigg)\Bigg]
-\]
+$$
 
 **Não precisa** de RM separado. **Não precisa** de PPO loop. **Não precisa** de value network. Só **2 modelos** (policy + ref) e uma classification loss direta.
 
@@ -1024,11 +1028,11 @@ A "explosão pós‑DPO" corrigiu cada um dos calcanhares‑de‑Aquiles do orig
 
 **Problema do DPO**: a função sigmoid satura quando a margem cresce → policy fica **over‑confident** em pares "fáceis" e overfitta.
 
-**Solução**: substituir \(\log \sigma\) por uma loss MSE‑like que cresce **linearmente**:
+**Solução**: substituir $\log \sigma$ por uma loss MSE‑like que cresce **linearmente**:
 
-\[
+$$
 \mathcal{L}_{\text{IPO}} = \mathbb{E}\Big[\big(\Delta - \tfrac{1}{2\beta}\big)^2\Big],\quad \Delta = \log\frac{\pi_\theta(c)}{\pi_{\text{ref}}(c)} - \log\frac{\pi_\theta(r)}{\pi_{\text{ref}}(r)}
-\]
+$$
 
 Mais robusto a labels ruidosas; melhor em datasets com baixa concordância humana.
 
@@ -1038,11 +1042,11 @@ Mais robusto a labels ruidosas; melhor em datasets com baixa concordância human
 
 **Solução**: usa só (prompt, response, label binário) inspirando‑se em **prospect theory**:
 
-\[
+$$
 \mathcal{L}_{\text{KTO}} = \mathbb{E}\Big[w_{\text{good}}\cdot v(\text{good signal}) + w_{\text{bad}}\cdot v(\text{bad signal})\Big]
-\]
+$$
 
-onde \(v(\cdot)\) é uma função de utilidade côncava para ganhos e convexa para perdas. Torna possível treinar com **logs de produção** (thumbs up/down) sem precisar parear.
+onde $v(\cdot)$ é uma função de utilidade côncava para ganhos e convexa para perdas. Torna possível treinar com **logs de produção** (thumbs up/down) sem precisar parear.
 
 ### 12.3 ORPO — Odds Ratio Preference Optimization (Hong & Lee 2024, arXiv:2403.07691)
 
@@ -1050,27 +1054,27 @@ onde \(v(\cdot)\) é uma função de utilidade côncava para ganhos e convexa pa
 
 **Solução**: combina SFT + preference num **único stage**:
 
-\[
+$$
 \mathcal{L}_{\text{ORPO}} = \mathcal{L}_{\text{SFT}}(c) + \lambda\, \mathcal{L}_{\text{OR}}(c, r)
-\]
+$$
 
-\[
+$$
 \mathcal{L}_{\text{OR}} = -\log \sigma\!\left(\log \frac{\text{odds}(c)}{\text{odds}(r)}\right),\quad \text{odds}(x) = \frac{p_\theta(x)}{1 - p_\theta(x)}
-\]
+$$
 
 Sem reference model. Sem stage extra. Comum em receitas Axolotl 2024.
 
 ### 12.4 SimPO — Simple Preference Optimization (Meng et al. 2024, arXiv:2405.14734)
 
-**Problema do DPO**: depende de \(\pi_{\text{ref}}\) → memória dobrada e inferência da ref a cada step.
+**Problema do DPO**: depende de $\pi_{\text{ref}}$ → memória dobrada e inferência da ref a cada step.
 
 **Solução**: usa **margin direto** sobre log‑likelihood normalizada por comprimento, **sem reference model**:
 
-\[
+$$
 \mathcal{L}_{\text{SimPO}} = -\log \sigma\!\Bigg(\frac{\beta}{|c|}\log \pi_\theta(c\mid s) - \frac{\beta}{|r|}\log \pi_\theta(r\mid s) - \gamma\Bigg)
-\]
+$$
 
-Margem \(\gamma\) é hyperparam de "quanta vantagem o chosen precisa ter".
+Margem $\gamma$ é hyperparam de "quanta vantagem o chosen precisa ter".
 
 ### 12.5 CPO — Contrastive Preference Optimization
 
@@ -1104,21 +1108,21 @@ PPO precisa de:
 
 Para tarefas onde o reward é **calculável diretamente** (a resposta de matemática está certa? o código passa nos testes?), nada disso é necessário. GRPO substitui ambos por **normalização por grupo**:
 
-1. Para cada prompt \(s\), amostra **G respostas**: \(\{a_1, \dots, a_G\} \sim \pi_{\theta_{\text{old}}}(\cdot \mid s)\).
-2. Computa reward \(r_i = R(s, a_i)\) (verificador, judge LLM, ou rule‑based).
+1. Para cada prompt $s$, amostra **G respostas**: $\{a_1, \dots, a_G\} \sim \pi_{\theta_{\text{old}}}(\cdot \mid s)$.
+2. Computa reward $r_i = R(s, a_i)$ (verificador, judge LLM, ou rule‑based).
 3. Calcula **advantage normalizado por grupo**:
 
-\[
+$$
 \hat A_i = \frac{r_i - \mathrm{mean}(\{r_1,\dots,r_G\})}{\mathrm{std}(\{r_1,\dots,r_G\}) + \epsilon}
-\]
+$$
 
 4. Otimiza policy com objetivo PPO‑like:
 
-\[
+$$
 \mathcal{L}_{\text{GRPO}} = \mathbb{E}\Bigg[\frac{1}{G}\sum_{i=1}^{G}\Big( \min\big(\rho_i\,\hat A_i,\ \text{clip}(\rho_i, 1\!-\!\epsilon, 1\!+\!\epsilon)\,\hat A_i\big) - \beta\, D_{\text{KL}}(\pi_\theta\,\Vert\,\pi_{\text{ref}})\Big)\Bigg]
-\]
+$$
 
-com \(\rho_i = \pi_\theta(a_i\mid s)/\pi_{\theta_{\text{old}}}(a_i\mid s)\).
+com $\rho_i = \pi_\theta(a_i\mid s)/\pi_{\theta_{\text{old}}}(a_i\mid s)$.
 
 ### 13.3 Diagrama
 
@@ -1410,15 +1414,15 @@ Ferramentas: **lm‑evaluation‑harness** (EleutherAI), **OpenCompass**, **HELM
 
 | Modelo | Compute estimado | Custo estimado | Fonte |
 |--------|------------------|----------------|-------|
-| GPT‑4 (2023) | ~2 × 10²⁵ FLOPs | $80–100 M | analistas / Patel (SemiAnalysis) |
-| Llama 3.1 405B (2024) | 3,8 × 10²⁵ FLOPs, 30,8 M H100‑h | ~$60 M | Meta (parcial) + estimativa $2/H100‑h |
-| DeepSeek‑V3 (2024) | 2,79 M H800‑h | $5,576 M | DeepSeek paper |
-| Llama 4 Maverick (2025) | ~30 M+ H100‑h estimado | ~$60–80 M | Meta (parcial) |
-| Claude 3.5 Sonnet (2024) | não público | estimado $20–40 M | independentes |
-| Gemini Pro 1.5 (2024) | não público | estimado $30–50 M (TPU‑hora) | independentes |
-| DeepSeek R1 (2025) | base V3 + ~$1 M de RL | ~$6 M total | DeepSeek |
-| Qwen 2.5 72B (2024) | não público | estimado $5–10 M | independentes |
-| Phi‑4 14B (2024) | ~5 M H100‑h | ~$10 M | Microsoft |
+| GPT‑4 (2023) | ~2 × 10²⁵ FLOPs | \$80–100 M | analistas / Patel (SemiAnalysis) |
+| Llama 3.1 405B (2024) | 3,8 × 10²⁵ FLOPs, 30,8 M H100‑h | ~\$60 M | Meta (parcial) + estimativa \$2/H100‑h |
+| DeepSeek‑V3 (2024) | 2,79 M H800‑h | \$5,576 M | DeepSeek paper |
+| Llama 4 Maverick (2025) | ~30 M+ H100‑h estimado | ~\$60–80 M | Meta (parcial) |
+| Claude 3.5 Sonnet (2024) | não público | estimado \$20–40 M | independentes |
+| Gemini Pro 1.5 (2024) | não público | estimado \$30–50 M (TPU‑hora) | independentes |
+| DeepSeek R1 (2025) | base V3 + ~\$1 M de RL | ~\$6 M total | DeepSeek |
+| Qwen 2.5 72B (2024) | não público | estimado \$5–10 M | independentes |
+| Phi‑4 14B (2024) | ~5 M H100‑h | ~\$10 M | Microsoft |
 
 ### 18.2 Tendência: queda dramática
 
@@ -1429,7 +1433,7 @@ Forças que reduzem custo:
 3. **Co‑design**: NCCL otimizado, custom CUDA kernels (Megatron, FlashAttention 3), atenção sparse.
 4. **Data quality**: 4 T tokens curados ≈ 15 T tokens crus → ~3,5× menos compute para mesma qualidade.
 
-> **Hamming**: o custo de treinar **GPT‑4‑class** caiu de ~$100 M (2023) para ~$5–10 M (DeepSeek‑V3 ‑style, 2024–25). **Se a tendência segue**, em 2027 esse custo pode ser <$1 M com ferramentas open‑source. *Frontier* continua caro porque o frontier se move.
+> **Hamming**: o custo de treinar **GPT‑4‑class** caiu de ~\$100 M (2023) para ~\$5–10 M (DeepSeek‑V3 ‑style, 2024–25). **Se a tendência segue**, em 2027 esse custo pode ser <\$1 M com ferramentas open‑source. *Frontier* continua caro porque o frontier se move.
 
 ### 18.3 Como labs frontier amortizam
 
@@ -1544,7 +1548,7 @@ Stack completo de RLHF/DPO/RPO sobre NeMo (Megatron‑LM). Ideal para quem já u
 > 3. Use **Unsloth + TRL SFTTrainer** com `Llama-3.1-8B-Instruct` + `ultrachat_200k`.
 > 4. Faça **DPOTrainer** com `ultrafeedback_binarized`.
 > 5. Avalie com `lm-evaluation-harness` em MMLU + GSM8K.
-> 6. Em 4–8 horas você tem um instruct fine‑tune competitivo, custo <$10.
+> 6. Em 4–8 horas você tem um instruct fine‑tune competitivo, custo <\$10.
 
 ---
 

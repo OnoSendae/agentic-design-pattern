@@ -312,7 +312,7 @@ flowchart LR
 
 **GSM8K — Grade School Math 8K** (Cobbe et al. 2021, OpenAI; arXiv:2110.14168). 8 500 problemas matemáticos de palavras (word problems) tipo:
 
-> *Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?*
+> *Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for \$2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?*
 
 Resposta numérica precisa (\$18). Em 2021, GPT-3 fazia 17%. Em 2026, todos os frontier passam de 95% — **vazou tudo**.
 
@@ -739,9 +739,9 @@ sequenceDiagram
 
 Probabilidade de **i** vencer **j**:
 
-\[
+$$
 P(i > j) = \frac{e^{\theta_i}}{e^{\theta_i} + e^{\theta_j}}
-\]
+$$
 
 Estimação: **MLE** sobre todos os matches. Equivalente a **regressão logística** com indicadores de modelo. Vantagens sobre Elo clássico:
 - **Estatisticamente principled** (intervalos de confiança via bootstrap).
@@ -808,7 +808,7 @@ A arena hoje tem múltiplas categorias e sub-arenas:
 
 ### 13.1 A ideia: substituir humanos por modelos
 
-Avaliar 1 000 outputs com humanos custa ~$5 000 e dias. Com **GPT-4-turbo como juiz**, ~$50 e 30 minutos. Trade-off: **viés do juiz**.
+Avaliar 1 000 outputs com humanos custa ~\$5 000 e dias. Com **GPT-4-turbo como juiz**, ~\$50 e 30 minutos. Trade-off: **viés do juiz**.
 
 > **Analogia.** LLM-as-judge é um **professor lendo redação de aluno**: tem viés (gosta de redações longas, do estilo dele, com vocabulário rebuscado). Útil porque escala. Perigoso se você não corrige o viés.
 
@@ -1269,7 +1269,7 @@ for query in stream_of_queries():
 **Humanity's Last Exam** (CAIS + Scale AI 2025; cais.org/hle). Construído como "**último exame** que humanos podem aplicar em IA":
 
 - 2 500 questões.
-- 1 000+ contribuintes (pesquisadores PhD pagos $5k por questão aceita).
+- 1 000+ contribuintes (pesquisadores PhD pagos \$5k por questão aceita).
 - Distribuição: **matemática 41%, física 9%, biologia/medicina 11%, humanidades/social 9%, CS/IA 10%, química 7%, engenharia 4%, outros 9%**.
 - 14% multimodal (texto + imagem).
 - ~10% das questões são **privadas** (não publicadas, evitar contaminação).
@@ -1300,21 +1300,21 @@ for query in stream_of_queries():
 
 ### 19.1 Quanto custa rodar cada bench
 
-Estimativa para um modelo médio (~$5/M output, ~$1/M input):
+Estimativa para um modelo médio (~\$5/M output, ~\$1/M input):
 
 | Benchmark | Tamanho | Tokens out típicos | Custo aprox |
 |---|---|---|---|
-| MMLU full | 14 042 Q | ~50/Q | $5–15 |
-| MMLU-Pro | 12 032 Q | ~150/Q (CoT) | $15–40 |
-| GSM8K (test) | 1 319 Q | ~200/Q | $2–8 |
-| MATH | 5 000 Q | ~500/Q | $20–50 |
-| FrontierMath | 350 Q | ~10 000/Q (deep think) | $50–200 |
-| HumanEval | 164 Q | ~300/Q | $1–3 |
-| LiveCodeBench | ~300 Q | ~1 000/Q | $5–15 |
-| SWE-bench Verified | 500 Q | enorme (agentic) | **$200–2 000** |
-| Arena-Hard | 500 prompts × 2 modelos × juiz GPT-4 | – | **$50–150** |
-| τ-bench | 200 tasks (multi-turn) | enorme | **$300–1 500** |
-| HLE | 2 500 Q | ~2 000/Q (CoT) | $50–250 |
+| MMLU full | 14 042 Q | ~50/Q | \$5–15 |
+| MMLU-Pro | 12 032 Q | ~150/Q (CoT) | \$15–40 |
+| GSM8K (test) | 1 319 Q | ~200/Q | \$2–8 |
+| MATH | 5 000 Q | ~500/Q | \$20–50 |
+| FrontierMath | 350 Q | ~10 000/Q (deep think) | \$50–200 |
+| HumanEval | 164 Q | ~300/Q | \$1–3 |
+| LiveCodeBench | ~300 Q | ~1 000/Q | \$5–15 |
+| SWE-bench Verified | 500 Q | enorme (agentic) | **\$200–2 000** |
+| Arena-Hard | 500 prompts × 2 modelos × juiz GPT-4 | – | **\$50–150** |
+| τ-bench | 200 tasks (multi-turn) | enorme | **\$300–1 500** |
+| HLE | 2 500 Q | ~2 000/Q (CoT) | \$50–250 |
 
 ### 19.2 Otimizações
 
@@ -1330,10 +1330,10 @@ Estimativa para um modelo médio (~$5/M output, ~$1/M input):
 ### 19.3 ROI: quanto vale cada eval
 
 Pirâmide:
-1. **Smoke test** (5 min, $1): MMLU subset 100 + 10 prompts custom.
-2. **PR gate** (20 min, $5): golden set custom 50 + IFEval 50.
-3. **Nightly** (2 h, $50): golden set 200 + 5 benchmarks core.
-4. **Pre-release** (1 dia, $500–2 000): suite completa + Arena-Hard + SWE-bench se aplicável.
+1. **Smoke test** (5 min, \$1): MMLU subset 100 + 10 prompts custom.
+2. **PR gate** (20 min, \$5): golden set custom 50 + IFEval 50.
+3. **Nightly** (2 h, \$50): golden set 200 + 5 benchmarks core.
+4. **Pre-release** (1 dia, \$500–2 000): suite completa + Arena-Hard + SWE-bench se aplicável.
 5. **External validation** (semanal): submeter para Open Leaderboards relevantes.
 
 ---

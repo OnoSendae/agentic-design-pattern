@@ -10,7 +10,7 @@
 
 Grandes modelos de linguagem (LLMs) custam memória por dois motivos que se somam: **pesos do modelo** e **estado de contexto**, em especial o **KV cache** durante a geração autoregressiva. A **quantização** reduz bits por número, diminuindo uso de VRAM, mas introduz **erro de representação**.
 
-O **TurboQuant** (paper) é um esquema de **quantização vetorial online** e **data-oblivious** (sem calibração em dados de produção): usa **rotação aleatória** para distribuir coordenadas de forma tratável, **quantização escalar** (estilo Lloyd–Max) por coordenada e, para produto interno sem viés, um **segundo estágio** com transformada **QJL** (Quantized Johnson–Lindenstrauss, ~1 bit) no **resíduo** após quantizar em MSE com \(b-1\) bits. Objetivo teórico: taxas de distorção **próximas dos limites de Shannon** (a menos de constantes explícitas no artigo).
+O **TurboQuant** (paper) é um esquema de **quantização vetorial online** e **data-oblivious** (sem calibração em dados de produção): usa **rotação aleatória** para distribuir coordenadas de forma tratável, **quantização escalar** (estilo Lloyd–Max) por coordenada e, para produto interno sem viés, um **segundo estágio** com transformada **QJL** (Quantized Johnson–Lindenstrauss, ~1 bit) no **resíduo** após quantizar em MSE com $b-1$ bits. Objetivo teórico: taxas de distorção **próximas dos limites de Shannon** (a menos de constantes explícitas no artigo).
 
 **O vídeo** explica a ideia com analogia **polar** (módulo + direção) e menciona “PolarQuant” + correção de ~1 bit — intuição útil, mas **não substitui** o enunciado matemático do preprint (ver §4.4).
 
@@ -136,10 +136,10 @@ Isso ajuda a **motivação**, mas **PolarQuant** também é nome de **outro** m�
 
 Em termos de paper (Zandieh et al.), o método é **vector quantization online** com estes eixos:
 
-1. **Rotação aleatória** do vetor (ex.: \( \Pi \in \mathbb{R}^{d\times d} \) ortogonal): coordenadas no espaço rotacionado tendem a uma **distribuição concentrada** (ligação com **Beta** na esfera); em alta dimensão, coordenadas aproximam comportamento em que **quantização escalar** por coordenada é quase ótima para **MSE**.
+1. **Rotação aleatória** do vetor (ex.: $\Pi \in \mathbb{R}^{d\times d}$ ortogonal): coordenadas no espaço rotacionado tendem a uma **distribuição concentrada** (ligação com **Beta** na esfera); em alta dimensão, coordenadas aproximam comportamento em que **quantização escalar** por coordenada é quase ótima para **MSE**.
 2. **Lloyd–Max / k-means 1D** por coordenada: *codebooks* podem ser **pré-computados** para larguras de bit usuais.
-3. **Dois objetivos de distorção:** (a) erro quadrático médio (**MSE**) na reconstrução; (b) erro de **produto interno** — com exigência de **estimador não enviesado** para IP, o artigo combina quantização MSE com **\(b-1\)** bits mais **QJL** (Quantized Johnson–Lindenstrauss, **1 bit** por coordenada no **resíduo**), trabalho anterior dos mesmos autores em QJL para KV.
-4. **Limites inferiores** (Shannon, minimax de Yao): o método fica a **fatores constantes** pequenos dos limites informação-teóricos (ordem \(4^{-b}\) na taxa).
+3. **Dois objetivos de distorção:** (a) erro quadrático médio (**MSE**) na reconstrução; (b) erro de **produto interno** — com exigência de **estimador não enviesado** para IP, o artigo combina quantização MSE com **$b-1$** bits mais **QJL** (Quantized Johnson–Lindenstrauss, **1 bit** por coordenada no **resíduo**), trabalho anterior dos mesmos autores em QJL para KV.
+4. **Limites inferiores** (Shannon, minimax de Yao): o método fica a **fatores constantes** pequenos dos limites informação-teóricos (ordem $4^{-b}$ na taxa).
 
 Em uma frase: **não** é apenas “trocar cartesiano por ângulo”; é **alinhar** o vetor a uma rotação aleatória, **quantizar coordenadas** quase independentemente com boas cotas de MSE e, para IP, **corrigir viés** com QJL no resíduo.
 

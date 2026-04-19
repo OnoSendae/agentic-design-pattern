@@ -23,15 +23,15 @@
 
 No [Post 03](./03-kv-cache-anatomia-pagedattention-vllm.md) vimos que cada camada de atenção, a cada token gerado, **escreve um par (K, V) por cabeça** no cache. O tamanho total é:
 
-\[
+$$
 \text{KV bytes} \;=\; 2 \cdot L \cdot N_{\text{kv}} \cdot d_{\text{head}} \cdot T \cdot B \cdot \text{bytes/elem}
-\]
+$$
 
-onde \(L\) é o número de camadas, \(N_{\text{kv}}\) o número de cabeças KV (ver MQA/GQA no [Post 02](./02-attention-mha-mqa-gqa-mla-flashattention.md)), \(d_{\text{head}}\) a dimensão por cabeça, \(T\) o número de tokens em contexto e \(B\) o batch.
+onde $L$ é o número de camadas, $N_{\text{kv}}$ o número de cabeças KV (ver MQA/GQA no [Post 02](./02-attention-mha-mqa-gqa-mla-flashattention.md)), $d_{\text{head}}$ a dimensão por cabeça, $T$ o número de tokens em contexto e $B$ o batch.
 
 Para sentir a ordem de grandeza:
 
-| Modelo | \(L\) | \(N_{\text{kv}}\) | \(d_{\text{head}}\) | KV bytes/token (FP16) | KV @ 32k tokens |
+| Modelo | $L$ | $N_{\text{kv}}$ | $d_{\text{head}}$ | KV bytes/token (FP16) | KV @ 32k tokens |
 |---|---:|---:|---:|---:|---:|
 | Llama-3-8B (GQA 8) | 32 | 8 | 128 | **128 KiB** | **4 GiB** |
 | Llama-3-70B (GQA 8) | 80 | 8 | 128 | **320 KiB** | **10 GiB** |
@@ -79,11 +79,11 @@ Sobram técnicas **data-free** ou **streaming** (running stats, transformações
 
 ### 2.2 Distribuições mudam **por token** e **por canal**
 
-Para pesos, a distribuição é fixa: você calcula min/max ou percentis **uma vez** por linha/grupo. Para KV, a distribuição **muda a cada novo token** e, dentro do mesmo token, **muda drasticamente entre canais** (dimensões de \(d_{\text{head}}\)). Um esquema de quantização que use **um único par (scale, zero) por tensor** é desastroso.
+Para pesos, a distribuição é fixa: você calcula min/max ou percentis **uma vez** por linha/grupo. Para KV, a distribuição **muda a cada novo token** e, dentro do mesmo token, **muda drasticamente entre canais** (dimensões de $d_{\text{head}}$). Um esquema de quantização que use **um único par (scale, zero) por tensor** é desastroso.
 
 Há dois "eixos de granularidade" possíveis:
 
-- **per-token**: um par (scale, zero) por token (linha do tensor \(K \in \mathbb{R}^{T \times d}\)). Bom quando *outliers variam por canal mas não por token*.
+- **per-token**: um par (scale, zero) por token (linha do tensor $K \in \mathbb{R}^{T \times d}$). Bom quando *outliers variam por canal mas não por token*.
 - **per-channel**: um par (scale, zero) por canal (coluna). Bom quando *outliers vivem em canais específicos e atravessam todos os tokens*.
 
 A pergunta-chave: **K e V têm o mesmo tipo de outlier?** Resposta da literatura: **não** — e essa observação é o coração de KIVI e KVQuant.
@@ -133,7 +133,7 @@ Por causa de §2.3, a regra moderna (KIVI) é:
 | **K** | **per-channel** | outliers vivem em canais fixos, atravessam tokens |
 | **V** | **per-token** | distribuição quase Gaussiana, outliers (se houver) são por token |
 
-Isso parece simples mas tem um detalhe de **engenharia** sutil: per-channel para K significa que **as scales mudam a cada token novo** (porque você acabou de adicionar uma linha à matriz \(K\), o que pode mudar min/max por coluna). KIVI resolve isso quantizando em **grupos de tokens** (group_size = 32 ou 64): você acumula 32 tokens em FP16, então os quantiza per-channel todos de uma vez, e o resíduo (tokens dentro do grupo atual) fica em FP16. É um *streaming quantizer* com **buffer**.
+Isso parece simples mas tem um detalhe de **engenharia** sutil: per-channel para K significa que **as scales mudam a cada token novo** (porque você acabou de adicionar uma linha à matriz $K$, o que pode mudar min/max por coluna). KIVI resolve isso quantizando em **grupos de tokens** (group_size = 32 ou 64): você acumula 32 tokens em FP16, então os quantiza per-channel todos de uma vez, e o resíduo (tokens dentro do grupo atual) fica em FP16. É um *streaming quantizer* com **buffer**.
 
 ---
 
@@ -282,7 +282,7 @@ KVQuant *empilha* quatro ideias que se complementam.
 
 1. **Per-channel K + per-token V** (mesmo princípio de KIVI).
 2. **Pre-RoPE quantization para K**: quantizar K **antes** do RoPE. RoPE é uma rotação por blocos de 2 dimensões dependente da posição; aplicada *antes* da quantização, ela **espalha outliers** e estraga a estrutura per-channel. Aplicada *depois*, K mantém seus outliers limpos por canal e o RoPE é feito **on-the-fly na dequant**. **Ganho**: ~0,6 PPL em 3 bits.
-3. **Non-uniform quantization (sensitivity-weighted)**: ao invés de níveis uniformes (\([-8, -7, ..., 7]\) para 4 bits), usar **codebooks treinados** com distância ponderada pela **sensibilidade do gradiente** de cada região do tensor. Regiões com gradiente alto (mais "sensíveis") ganham mais níveis. Lloyd-Max em espírito, mas com pesos.
+3. **Non-uniform quantization (sensitivity-weighted)**: ao invés de níveis uniformes ($[-8, -7, ..., 7]$ para 4 bits), usar **codebooks treinados** com distância ponderada pela **sensibilidade do gradiente** de cada região do tensor. Regiões com gradiente alto (mais "sensíveis") ganham mais níveis. Lloyd-Max em espírito, mas com pesos.
 4. **Dense-and-sparse** per-vector: isolar **~1% dos elementos extremos** como sparse FP16 (com índice) e quantizar **densamente** o restante. Isso "tira do plano" os outliers que sobreviveram à per-channel.
 
 ```mermaid
@@ -371,13 +371,13 @@ Família de trabalhos que **complementam** ou **rivalizam** com KIVI/KVQuant, ca
 
 Decomposição **tripla** do KV:
 
-\[
+$$
 \text{KV} \;=\; Q(\text{KV}) \;+\; UV^\top \;+\; S
-\]
+$$
 
-- \(Q(\text{KV})\): quantização ultra-baixa (2–4 bits) da maioria.
-- \(UV^\top\): **resíduo low-rank** (rank ~8–16), aproxima erro estrutural.
-- \(S\): **sparse**, ~1% de outliers em FP16.
+- $Q(\text{KV})$: quantização ultra-baixa (2–4 bits) da maioria.
+- $UV^\top$: **resíduo low-rank** (rank ~8–16), aproxima erro estrutural.
+- $S$: **sparse**, ~1% de outliers em FP16.
 
 Resultados: **near-lossless 4-bit**, 2,38× throughput, 2,29× memória. É um *plug-and-play* sobre KIVI/Flexgen.
 
